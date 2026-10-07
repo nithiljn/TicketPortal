@@ -1,7 +1,7 @@
 import { createSchema, createYoga } from 'graphql-yoga'
+import { supabase } from '@/lib/supabase'
 
 // 1. GraphQL Type Definitions (Schema)
-// Idhu thaan contract - Client kitta enna data irukku, enna kekalaam nu define pandrom.
 const typeDefs = /* GraphQL */ `
   enum TicketStatus {
     TODO
@@ -24,6 +24,8 @@ const typeDefs = /* GraphQL */ `
     status: TicketStatus!
     priority: TicketPriority!
     category: String!
+    createdBy: String!
+    updatedBy: String!
     createdAt: String!
     updatedAt: String!
   }
@@ -32,6 +34,7 @@ const typeDefs = /* GraphQL */ `
     id: ID!
     date: String!
     content: String!
+    createdBy: String!
     createdAt: String!
   }
 
@@ -41,6 +44,7 @@ const typeDefs = /* GraphQL */ `
     status: TicketStatus
     priority: TicketPriority
     category: String
+    createdBy: String
   }
 
   input UpdateTicketInput {
@@ -49,21 +53,23 @@ const typeDefs = /* GraphQL */ `
     status: TicketStatus
     priority: TicketPriority
     category: String
+    updatedBy: String
   }
 
   input CreateDailyNoteInput {
-    date: String!
+    date: String
     content: String!
+    createdBy: String
   }
 
-  # QUERIES: REST API GET requests maadhiri (Data fetch panna)
+  # QUERIES
   type Query {
     tickets(status: TicketStatus, priority: TicketPriority, search: String): [Ticket!]!
     ticket(id: ID!): Ticket
     dailyNotes(date: String): [DailyNote!]!
   }
 
-  # MUTATIONS: REST API POST, PUT, DELETE maadhiri (Data modify panna)
+  # MUTATIONS
   type Mutation {
     createTicket(input: CreateTicketInput!): Ticket!
     updateTicket(id: ID!, input: UpdateTicketInput!): Ticket!
@@ -73,126 +79,225 @@ const typeDefs = /* GraphQL */ `
   }
 `
 
-// In-memory mock data (Supabase connect pandradhukku munnadi test panna)
-let mockTickets = [
-  {
-    id: '1',
-    title: 'Setup TicketPortal Next.js Project',
-    description: 'Install Next.js, configure TypeScript, Tailwind CSS and GraphQL Yoga',
-    status: 'DONE',
-    priority: 'HIGH',
-    category: 'DEV',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    title: 'Design GraphQL Schema & Resolvers',
-    description: 'Define Ticket, DailyNote types, Query and Mutation fields',
-    status: 'IN_PROGRESS',
-    priority: 'URGENT',
-    category: 'DEV',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    title: 'Connect Supabase PostgreSQL Database',
-    description: 'Create tickets and daily_notes tables in Supabase and hook up DB client',
-    status: 'TODO',
-    priority: 'MEDIUM',
-    category: 'DATABASE',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-]
+// Helper: Database Snake_case columns -> GraphQL camelCase fields
+interface TicketRow {
+  id: string
+  title: string
+  description: string | null
+  status: string
+  priority: string
+  category: string
+  created_by: string
+  updated_by: string
+  created_at: string
+  updated_at: string
+}
 
-let mockNotes = [
-  {
-    id: '1',
-    date: new Date().toISOString().split('T')[0],
-    content: 'Learned GraphQL basics: TypeDefs, Resolvers, and Yoga server integration with Next.js App Router!',
-    createdAt: new Date().toISOString(),
-  },
-]
+interface NoteRow {
+  id: string
+  date: string
+  content: string
+  created_by: string
+  created_at: string
+}
 
-// 2. Resolvers
-// Query or Mutation call aagum bodhu actual-ah run aagura functions!
+function formatTicket(row: TicketRow) {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description || '',
+    status: row.status,
+    priority: row.priority,
+    category: row.category,
+    createdBy: row.created_by,
+    updatedBy: row.updated_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function formatDailyNote(row: NoteRow) {
+  return {
+    id: row.id,
+    date: row.date,
+    content: row.content,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+  }
+}
+
+// 2. Resolvers: Connect to Supabase PostgreSQL Database!
 const resolvers = {
   Query: {
-    tickets: (_: unknown, args: { status?: string; priority?: string; search?: string }) => {
-      let filtered = [...mockTickets]
+    tickets: async (
+      _: unknown,
+      args: { status?: string; priority?: string; search?: string }
+    ) => {
+      let query = supabase
+        .from('tickets')
+        .select('*')
+        .order('created_at', { ascending: false })
+
       if (args.status) {
-        filtered = filtered.filter((t) => t.status === args.status)
+        query = query.eq('status', args.status)
       }
       if (args.priority) {
-        filtered = filtered.filter((t) => t.priority === args.priority)
+        query = query.eq('priority', args.priority)
       }
       if (args.search) {
-        const query = args.search.toLowerCase()
-        filtered = filtered.filter(
-          (t) =>
-            t.title.toLowerCase().includes(query) ||
-            (t.description && t.description.toLowerCase().includes(query))
+        query = query.or(
+          `title.ilike.%${args.search}%,description.ilike.%${args.search}%`
         )
       }
-      return filtered
-    },
-    ticket: (_: unknown, { id }: { id: string }) => {
-      return mockTickets.find((t) => t.id === id) || null
-    },
-    dailyNotes: (_: unknown, { date }: { date?: string }) => {
-      if (date) {
-        return mockNotes.filter((n) => n.date === date)
+
+      const { data, error } = await query
+      if (error) {
+        console.error('Supabase tickets query error:', error)
+        throw new Error(error.message)
       }
-      return mockNotes
+      return (data as TicketRow[] || []).map(formatTicket)
+    },
+
+    ticket: async (_: unknown, { id }: { id: string }) => {
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error) {
+        console.error('Supabase ticket query error:', error)
+        return null
+      }
+      return formatTicket(data as TicketRow)
+    },
+
+    dailyNotes: async (_: unknown, { date }: { date?: string }) => {
+      let query = supabase
+        .from('daily_notes')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (date) {
+        query = query.eq('date', date)
+      }
+
+      const { data, error } = await query
+      if (error) {
+        console.error('Supabase dailyNotes query error:', error)
+        throw new Error(error.message)
+      }
+      return (data as NoteRow[] || []).map(formatDailyNote)
     },
   },
 
   Mutation: {
-    createTicket: (_: unknown, { input }: { input: any }) => {
-      const newTicket = {
-        id: String(Date.now()),
-        title: input.title,
-        description: input.description || '',
-        status: input.status || 'TODO',
-        priority: input.priority || 'MEDIUM',
-        category: input.category || 'GENERAL',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+    createTicket: async (
+      _: unknown,
+      { input }: { input: { title: string; description?: string; status?: string; priority?: string; category?: string; createdBy?: string } }
+    ) => {
+      const { data, error } = await supabase
+        .from('tickets')
+        .insert([
+          {
+            title: input.title,
+            description: input.description || null,
+            status: input.status || 'TODO',
+            priority: input.priority || 'MEDIUM',
+            category: input.category || 'DEV',
+            created_by: input.createdBy || 'Nithil',
+            updated_by: input.createdBy || 'Nithil',
+          },
+        ])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Supabase createTicket error:', error)
+        throw new Error(error.message)
       }
-      mockTickets.push(newTicket)
-      return newTicket
+      return formatTicket(data as TicketRow)
     },
-    updateTicket: (_: unknown, { id, input }: { id: string; input: any }) => {
-      const index = mockTickets.findIndex((t) => t.id === id)
-      if (index === -1) throw new Error('Ticket not found')
-      mockTickets[index] = {
-        ...mockTickets[index],
-        ...input,
-        updatedAt: new Date().toISOString(),
+
+    updateTicket: async (
+      _: unknown,
+      {
+        id,
+        input,
+      }: {
+        id: string
+        input: {
+          title?: string
+          description?: string
+          status?: string
+          priority?: string
+          category?: string
+          updatedBy?: string
+        }
       }
-      return mockTickets[index]
-    },
-    deleteTicket: (_: unknown, { id }: { id: string }) => {
-      const initialLength = mockTickets.length
-      mockTickets = mockTickets.filter((t) => t.id !== id)
-      return mockTickets.length < initialLength
-    },
-    createDailyNote: (_: unknown, { input }: { input: any }) => {
-      const newNote = {
-        id: String(Date.now()),
-        date: input.date,
-        content: input.content,
-        createdAt: new Date().toISOString(),
+    ) => {
+      const updateData: Record<string, unknown> = {}
+      if (input.title !== undefined) updateData.title = input.title
+      if (input.description !== undefined) updateData.description = input.description
+      if (input.status !== undefined) updateData.status = input.status
+      if (input.priority !== undefined) updateData.priority = input.priority
+      if (input.category !== undefined) updateData.category = input.category
+      if (input.updatedBy !== undefined) updateData.updated_by = input.updatedBy
+
+      const { data, error } = await supabase
+        .from('tickets')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Supabase updateTicket error:', error)
+        throw new Error(error.message)
       }
-      mockNotes.push(newNote)
-      return newNote
+      return formatTicket(data as TicketRow)
     },
-    deleteDailyNote: (_: unknown, { id }: { id: string }) => {
-      const initialLength = mockNotes.length
-      mockNotes = mockNotes.filter((n) => n.id !== id)
-      return mockNotes.length < initialLength
+
+    deleteTicket: async (_: unknown, { id }: { id: string }) => {
+      const { error } = await supabase.from('tickets').delete().eq('id', id)
+      if (error) {
+        console.error('Supabase deleteTicket error:', error)
+        throw new Error(error.message)
+      }
+      return true
+    },
+
+    createDailyNote: async (
+      _: unknown,
+      { input }: { input: { date?: string; content: string; createdBy?: string } }
+    ) => {
+      const today = new Date().toISOString().split('T')[0]
+      const { data, error } = await supabase
+        .from('daily_notes')
+        .insert([
+          {
+            date: input.date || today,
+            content: input.content,
+            created_by: input.createdBy || 'Nithil',
+          },
+        ])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Supabase createDailyNote error:', error)
+        throw new Error(error.message)
+      }
+      return formatDailyNote(data as NoteRow)
+    },
+
+    deleteDailyNote: async (_: unknown, { id }: { id: string }) => {
+      const { error } = await supabase.from('daily_notes').delete().eq('id', id)
+      if (error) {
+        console.error('Supabase deleteDailyNote error:', error)
+        throw new Error(error.message)
+      }
+      return true
     },
   },
 }
@@ -207,4 +312,14 @@ const { handleRequest } = createYoga({
   fetchAPI: { Response },
 })
 
-export { handleRequest as GET, handleRequest as POST, handleRequest as OPTIONS }
+export async function GET(request: Request) {
+  return handleRequest(request, {})
+}
+
+export async function POST(request: Request) {
+  return handleRequest(request, {})
+}
+
+export async function OPTIONS(request: Request) {
+  return handleRequest(request, {})
+}

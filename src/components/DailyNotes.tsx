@@ -6,7 +6,7 @@ import { DailyNote } from '@/types'
 interface DailyNotesProps {
   notes: DailyNote[]
   onAddNote: (content: string, date: string) => Promise<void>
-  onDeleteNote: (id: string) => Promise<void>
+  onDeleteNote: (note: DailyNote) => void
   theme?: 'dark' | 'light'
 }
 
@@ -182,11 +182,7 @@ export function DailyNotes({
                       by {note.createdBy}
                     </span>
                     <button
-                      onClick={() => {
-                        if (confirm('Delete this standup log?')) {
-                          onDeleteNote(note.id)
-                        }
-                      }}
+                      onClick={() => onDeleteNote(note)}
                       className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-rose-500 transition cursor-pointer"
                       title="Delete log"
                     >

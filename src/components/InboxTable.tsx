@@ -7,7 +7,7 @@ interface InboxTableProps {
   tickets: Ticket[]
   onStatusChange: (id: string, newStatus: TicketStatus) => Promise<void>
   onEditTicket: (ticket: Ticket) => void
-  onDeleteTicket: (id: string) => Promise<void>
+  onDeleteTicket: (ticket: Ticket) => void
   selectedProject: string
   theme?: 'dark' | 'light'
 }
@@ -294,15 +294,7 @@ export function InboxTable({
                           </svg>
                         </button>
                         <button
-                          onClick={() => {
-                            if (
-                              confirm(
-                                'Are you sure you want to delete this ticket?'
-                              )
-                            ) {
-                              onDeleteTicket(ticket.id)
-                            }
-                          }}
+                          onClick={() => onDeleteTicket(ticket)}
                           className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
                           title="Delete ticket"
                         >
@@ -395,10 +387,7 @@ export function InboxTable({
                         </svg>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Delete ticket?'))
-                            onDeleteTicket(ticket.id)
-                        }}
+                        onClick={() => onDeleteTicket(ticket)}
                         className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10"
                         title="Delete ticket"
                       >

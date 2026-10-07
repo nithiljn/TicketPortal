@@ -7,7 +7,7 @@ interface KanbanBoardProps {
   tickets: Ticket[]
   onStatusChange: (id: string, newStatus: TicketStatus) => Promise<void>
   onEditTicket: (ticket: Ticket) => void
-  onDeleteTicket: (id: string) => Promise<void>
+  onDeleteTicket: (ticket: Ticket) => void
   theme?: 'dark' | 'light'
 }
 
@@ -248,11 +248,7 @@ export function KanbanBoard({
                           </svg>
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm('Delete ticket?')) {
-                              onDeleteTicket(ticket.id)
-                            }
-                          }}
+                          onClick={() => onDeleteTicket(ticket)}
                           className="p-1 rounded text-zinc-400 hover:text-rose-500 transition cursor-pointer"
                           title="Delete ticket"
                         >

@@ -10,6 +10,7 @@ import { KanbanBoard } from '@/components/KanbanBoard'
 import { DailyNotes } from '@/components/DailyNotes'
 import { TicketModal } from '@/components/TicketModal'
 import { WorkspaceModal } from '@/components/WorkspaceModal'
+import { ConfirmModal } from '@/components/ConfirmModal'
 
 export default function Home() {
   const [tickets, setTickets] = useState<Ticket[]>([])
@@ -18,6 +19,9 @@ export default function Home() {
     'Ticket Portal',
   ])
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false)
+  const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null)
+  const [noteToDelete, setNoteToDelete] = useState<DailyNote | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Theme State: 'dark' | 'light' (Persisted in localStorage)
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
@@ -266,17 +270,22 @@ export default function Home() {
     loadData()
   }
 
-  const handleDeleteTicket = async (id: string) => {
+  const handleConfirmDeleteTicket = async () => {
+    if (!ticketToDelete) return
+    setIsDeleting(true)
     try {
       const mutation = /* GraphQL */ `
         mutation DeleteTicket($id: ID!) {
           deleteTicket(id: $id)
         }
       `
-      await fetchGraphQL(mutation, { id })
-      setTickets((prev) => prev.filter((t) => t.id !== id))
+      await fetchGraphQL(mutation, { id: ticketToDelete.id })
+      setTickets((prev) => prev.filter((t) => t.id !== ticketToDelete.id))
+      setTicketToDelete(null)
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Failed to delete ticket')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -328,14 +337,23 @@ export default function Home() {
     loadData()
   }
 
-  const handleDeleteDailyNote = async (id: string) => {
-    const mutation = /* GraphQL */ `
-      mutation DeleteNote($id: ID!) {
-        deleteDailyNote(id: $id)
-      }
-    `
-    await fetchGraphQL(mutation, { id })
-    setDailyNotes((prev) => prev.filter((n) => n.id !== id))
+  const handleConfirmDeleteDailyNote = async () => {
+    if (!noteToDelete) return
+    setIsDeleting(true)
+    try {
+      const mutation = /* GraphQL */ `
+        mutation DeleteNote($id: ID!) {
+          deleteDailyNote(id: $id)
+        }
+      `
+      await fetchGraphQL(mutation, { id: noteToDelete.id })
+      setDailyNotes((prev) => prev.filter((n) => n.id !== noteToDelete.id))
+      setNoteToDelete(null)
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to delete note')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const isDark = theme === 'dark'
@@ -601,7 +619,7 @@ export default function Home() {
                     setEditingTicket(ticket)
                     setIsModalOpen(true)
                   }}
-                  onDeleteTicket={handleDeleteTicket}
+                  onDeleteTicket={(ticket) => setTicketToDelete(ticket)}
                   selectedProject={selectedProject}
                   theme={theme}
                 />
@@ -627,7 +645,7 @@ export default function Home() {
                       setEditingTicket(ticket)
                       setIsModalOpen(true)
                     }}
-                    onDeleteTicket={handleDeleteTicket}
+                    onDeleteTicket={(ticket) => setTicketToDelete(ticket)}
                     theme={theme}
                   />
                 </div>
@@ -639,7 +657,7 @@ export default function Home() {
                   <DailyNotes
                     notes={dailyNotes}
                     onAddNote={handleAddDailyNote}
-                    onDeleteNote={handleDeleteDailyNote}
+                    onDeleteNote={(note) => setNoteToDelete(note)}
                     theme={theme}
                   />
                 </div>
@@ -670,6 +688,40 @@ export default function Home() {
         availableProjects={availableProjects}
         currentProject={selectedProject}
         theme={theme}
+      />
+
+      {/* Confirm Delete Ticket Modal */}
+      <ConfirmModal
+        isOpen={Boolean(ticketToDelete)}
+        onClose={() => setTicketToDelete(null)}
+        onConfirm={handleConfirmDeleteTicket}
+        title="Delete Ticket"
+        message={
+          ticketToDelete
+            ? `Are you sure you want to delete "${ticketToDelete.title}"? This action cannot be undone.`
+            : 'Are you sure you want to delete this ticket?'
+        }
+        confirmText="Delete Ticket"
+        cancelText="Cancel"
+        theme={theme}
+        loading={isDeleting}
+      />
+
+      {/* Confirm Delete Daily Note Modal */}
+      <ConfirmModal
+        isOpen={Boolean(noteToDelete)}
+        onClose={() => setNoteToDelete(null)}
+        onConfirm={handleConfirmDeleteDailyNote}
+        title="Delete Work Log"
+        message={
+          noteToDelete
+            ? `Are you sure you want to delete this work log for ${noteToDelete.date}? This action cannot be undone.`
+            : 'Are you sure you want to delete this log?'
+        }
+        confirmText="Delete Log"
+        cancelText="Cancel"
+        theme={theme}
+        loading={isDeleting}
       />
     </div>
   )

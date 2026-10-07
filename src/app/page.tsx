@@ -11,6 +11,7 @@ import { DailyNotes } from '@/components/DailyNotes'
 import { TicketModal } from '@/components/TicketModal'
 import { WorkspaceModal } from '@/components/WorkspaceModal'
 import { ConfirmModal } from '@/components/ConfirmModal'
+import { Toast } from '@/components/Toast'
 
 export default function Home() {
   const [tickets, setTickets] = useState<Ticket[]>([])
@@ -22,6 +23,15 @@ export default function Home() {
   const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null)
   const [noteToDelete, setNoteToDelete] = useState<DailyNote | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [toast, setToast] = useState<{
+    isOpen: boolean
+    title: string
+    message?: string
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+  })
 
   // Theme State: 'dark' | 'light' (Persisted in localStorage)
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
@@ -239,6 +249,11 @@ export default function Home() {
           updatedBy: ticketData.author,
         },
       })
+      setToast({
+        isOpen: true,
+        title: 'Ticket Updated Successfully',
+        message: `Changes saved for "${ticketData.title}"`,
+      })
     } else {
       const mutation = /* GraphQL */ `
         mutation CreateTicket($input: CreateTicketInput!) {
@@ -266,12 +281,18 @@ export default function Home() {
           createdBy: ticketData.author,
         },
       })
+      setToast({
+        isOpen: true,
+        title: 'Ticket Created Successfully',
+        message: `"${ticketData.title}" added to ${ticketData.projectName}`,
+      })
     }
     loadData()
   }
 
   const handleConfirmDeleteTicket = async () => {
     if (!ticketToDelete) return
+    const deletedTitle = ticketToDelete.title
     setIsDeleting(true)
     try {
       const mutation = /* GraphQL */ `
@@ -282,6 +303,11 @@ export default function Home() {
       await fetchGraphQL(mutation, { id: ticketToDelete.id })
       setTickets((prev) => prev.filter((t) => t.id !== ticketToDelete.id))
       setTicketToDelete(null)
+      setToast({
+        isOpen: true,
+        title: 'Ticket Deleted',
+        message: `"${deletedTitle}" was deleted successfully`,
+      })
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Failed to delete ticket')
     } finally {
@@ -313,6 +339,11 @@ export default function Home() {
 
     setSelectedProject(name)
     setIsWorkspaceModalOpen(false)
+    setToast({
+      isOpen: true,
+      title: 'Workspace Created',
+      message: `Workspace "${name}" is ready`,
+    })
   }
 
   const handleAddDailyNote = async (content: string, date: string) => {
@@ -722,6 +753,15 @@ export default function Home() {
         cancelText="Cancel"
         theme={theme}
         loading={isDeleting}
+      />
+
+      {/* Floating Success / Action Toast Notification */}
+      <Toast
+        isOpen={toast.isOpen}
+        onClose={() => setToast((prev) => ({ ...prev, isOpen: false }))}
+        title={toast.title}
+        message={toast.message}
+        theme={theme}
       />
     </div>
   )

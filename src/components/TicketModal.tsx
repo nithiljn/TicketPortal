@@ -101,33 +101,22 @@ export function TicketModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4 overflow-y-auto">
-      <div className="w-full max-w-lg rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-2xl text-slate-100 animate-in fade-in zoom-in-95 duration-150">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-400">
-              <svg
-                className="w-4 h-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="12" y1="18" x2="12" y2="12" />
-                <line x1="9" y1="15" x2="15" y2="15" />
-              </svg>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 overflow-y-auto">
+      <div className="w-full max-w-lg rounded-2xl bg-[#121215] border border-white/[0.08] p-5 sm:p-6 shadow-2xl text-zinc-100 animate-in fade-in zoom-in-95 duration-150">
+        {/* Header */}
+        <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2">
+            <span className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-zinc-300 font-mono text-xs">
+              TP
             </span>
-            <h2 className="text-base font-semibold text-slate-100">
-              {existingTicket ? 'Edit Ticket' : 'Create New Ticket'}
+            <h2 className="text-sm font-semibold text-zinc-100">
+              {existingTicket ? 'Edit Ticket' : 'New Ticket'}
             </h2>
           </div>
           <button
             onClick={onClose}
             type="button"
-            className="text-slate-400 hover:text-slate-200 text-sm p-1.5 rounded-lg hover:bg-slate-800 transition cursor-pointer"
+            className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/[0.06] transition cursor-pointer"
           >
             <svg
               className="w-4 h-4"
@@ -143,15 +132,15 @@ export function TicketModal({
         </div>
 
         {error && (
-          <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+          <div className="mt-3.5 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
           {/* Project Workspace */}
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            <label className="block text-[11px] font-medium text-zinc-400 mb-1">
               Project Workspace
             </label>
             {!isCustomProject ? (
@@ -164,7 +153,7 @@ export function TicketModal({
                     setProjectName(e.target.value)
                   }
                 }}
-                className="w-full rounded-lg bg-slate-950/80 border border-slate-800 px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
+                className="w-full rounded-lg bg-black/40 border border-white/[0.08] px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/[0.2] cursor-pointer"
               >
                 {availableProjects.map((proj) => (
                   <option key={proj} value={proj}>
@@ -180,13 +169,13 @@ export function TicketModal({
                   placeholder="Enter project name..."
                   value={customProject}
                   onChange={(e) => setCustomProject(e.target.value)}
-                  className="flex-1 rounded-lg bg-slate-950 border border-cyan-500 px-3 py-2 text-xs text-slate-100 focus:outline-none"
+                  className="flex-1 rounded-lg bg-black/40 border border-white/[0.2] px-3 py-2 text-xs text-zinc-100 focus:outline-none"
                   autoFocus
                 />
                 <button
                   type="button"
                   onClick={() => setIsCustomProject(false)}
-                  className="px-3 py-2 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition cursor-pointer"
+                  className="px-3 py-2 text-xs bg-white/[0.06] hover:bg-white/[0.1] rounded-lg text-zinc-300 transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -196,43 +185,43 @@ export function TicketModal({
 
           {/* Title */}
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-              Title *
+            <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+              Ticket Title *
             </label>
             <input
               type="text"
-              placeholder="Brief summary of the task or issue..."
+              placeholder="What needs to be done?"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg bg-slate-950/80 border border-slate-800 px-3 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              className="w-full rounded-lg bg-black/40 border border-white/[0.08] px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-white/[0.2]"
               required
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            <label className="block text-[11px] font-medium text-zinc-400 mb-1">
               Description & Notes
             </label>
             <textarea
               rows={3}
-              placeholder="Detailed description, criteria, links, or notes..."
+              placeholder="Add details, links, or notes..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-lg bg-slate-950/80 border border-slate-800 p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 resize-none leading-relaxed"
+              className="w-full rounded-lg bg-black/40 border border-white/[0.08] p-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-white/[0.2] resize-none leading-relaxed"
             />
           </div>
 
-          {/* Status, Priority, Category */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Status, Priority, Category Grid */}
+          <div className="grid grid-cols-3 gap-2.5">
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label className="block text-[11px] font-medium text-zinc-400 mb-1">
                 Status
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as TicketStatus)}
-                className="w-full rounded-lg bg-slate-950/80 border border-slate-800 px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
+                className="w-full rounded-lg bg-black/40 border border-white/[0.08] px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-white/[0.2] cursor-pointer"
               >
                 <option value="TODO">To Do</option>
                 <option value="IN_PROGRESS">In Progress</option>
@@ -242,13 +231,13 @@ export function TicketModal({
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label className="block text-[11px] font-medium text-zinc-400 mb-1">
                 Priority
               </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as TicketPriority)}
-                className="w-full rounded-lg bg-slate-950/80 border border-slate-800 px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
+                className="w-full rounded-lg bg-black/40 border border-white/[0.08] px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-white/[0.2] cursor-pointer"
               >
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Medium</option>
@@ -258,13 +247,13 @@ export function TicketModal({
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label className="block text-[11px] font-medium text-zinc-400 mb-1">
                 Category
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-lg bg-slate-950/80 border border-slate-800 px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
+                className="w-full rounded-lg bg-black/40 border border-white/[0.08] px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-white/[0.2] cursor-pointer"
               >
                 <option value="DEV">DEV</option>
                 <option value="FEATURE">FEATURE</option>
@@ -279,33 +268,32 @@ export function TicketModal({
 
           {/* Author */}
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-              Assigned Author
+            <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+              Author
             </label>
             <input
               type="text"
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
-              className="w-full rounded-lg bg-slate-950/80 border border-slate-800 px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              className="w-full rounded-lg bg-black/40 border border-white/[0.08] px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-white/[0.2]"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+          <div className="flex justify-end gap-2 pt-3 border-t border-white/[0.06]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+              className="px-3.5 py-1.5 text-xs rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2 text-xs font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/30 transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-white text-zinc-950 hover:bg-zinc-200 shadow-sm transition disabled:opacity-50 cursor-pointer"
             >
-              {loading && <span className="animate-spin text-xs">...</span>}
-              <span>{existingTicket ? 'Save Changes' : 'Create Ticket'}</span>
+              {loading ? 'Saving...' : existingTicket ? 'Save Changes' : 'Create Ticket'}
             </button>
           </div>
         </form>

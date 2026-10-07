@@ -16,8 +16,13 @@ export default function Home() {
     'Ticket Portal',
   ])
 
-  // Navigation & Facet Filters (Managed via ChatGPT Left Sidebar)
+  // Mobile Drawer State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  // Top Right View Switcher: 'inbox' | 'board' | 'notes'
   const [activeTab, setActiveTab] = useState<'inbox' | 'board' | 'notes'>('inbox')
+
+  // Facet Filters (Managed via Sidebar)
   const [selectedProject, setSelectedProject] = useState<string>('ALL')
   const [selectedStatus, setSelectedStatus] = useState<TicketStatus | 'ALL'>('ALL')
   const [selectedPriority, setSelectedPriority] = useState<TicketPriority | 'ALL'>('ALL')
@@ -89,7 +94,7 @@ export default function Home() {
     loadData()
   }, [loadData])
 
-  // Keyboard shortcut Ctrl+N or Cmd+N for New Ticket
+  // Keyboard shortcut Ctrl+N or Cmd+N
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
@@ -102,7 +107,7 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // 2. Filtered Tickets based on Sidebar Status & Priority Facets
+  // 2. Filtered Tickets based on Facet Selections
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
       if (selectedStatus !== 'ALL' && t.status !== selectedStatus) {
@@ -264,11 +269,11 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500 selection:text-slate-950">
-      {/* 1. ChatGPT-Style Full-Height Left Sidebar */}
+    <div className="flex h-screen w-screen overflow-hidden bg-[#09090b] text-zinc-100 font-sans selection:bg-white/[0.2] selection:text-white">
+      {/* 1. Left Sidebar (ChatGPT-style with Mobile Drawer support) */}
       <Sidebar
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
         availableProjects={availableProjects}
         selectedProject={selectedProject}
         onSelectProject={setSelectedProject}
@@ -284,57 +289,124 @@ export default function Home() {
       />
 
       {/* 2. Main Content Canvas */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-slate-950">
-        {/* Top Global Search & Metric Bar */}
-        <header className="h-14 px-6 border-b border-slate-850 flex items-center justify-between gap-4 bg-slate-950 shrink-0">
-          {/* Search Box */}
-          <div className="relative w-72 sm:w-96">
-            <svg
-              className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#09090b]">
+        {/* Top Header Bar: Search on Left + Views Switcher on Right */}
+        <header className="h-14 px-4 sm:px-6 border-b border-white/[0.06] flex items-center justify-between gap-3 bg-[#09090b] shrink-0">
+          {/* Left: Mobile Hamburger + Search Input */}
+          <div className="flex items-center gap-2.5 flex-1 max-w-sm">
+            {/* Mobile Hamburger Button */}
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] transition cursor-pointer shrink-0"
+              title="Open Navigation"
             >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search tickets by title, details..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg bg-slate-900 border border-slate-800 pl-8 pr-8 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-200 cursor-pointer"
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+
+            {/* Search Input */}
+            <div className="relative w-full">
+              <svg
+                className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-500"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
               >
-                ✕
-              </button>
-            )}
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search tickets..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-lg bg-white/[0.04] border border-white/[0.06] pl-8 pr-8 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-white/[0.2] transition"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2.5 top-2 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="hidden md:flex items-center gap-3 text-xs font-mono">
-            <span className="text-slate-400">
-              Scope: <strong className="text-slate-200">{ticketCounts.total}</strong>
-            </span>
-            <span className="text-slate-600">|</span>
-            <span className="text-cyan-400">
-              In Progress: <strong>{ticketCounts.inProgress}</strong>
-            </span>
-            <span className="text-slate-600">|</span>
-            <span className="text-emerald-400">
-              Completed: <strong>{ticketCounts.done}</strong>
-            </span>
+          {/* Right: Views Switcher (Inbox Table, Board, Daily Notes) + Action Button */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* View Switcher Pill (Top Right of Inbox area) */}
+            <div className="flex items-center p-0.5 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+              <button
+                onClick={() => setActiveTab('inbox')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'inbox'
+                    ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+                  <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+                </svg>
+                <span className="hidden sm:inline">Inbox</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('board')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'board'
+                    ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="7" height="18" rx="1" />
+                  <rect x="14" y="3" width="7" height="18" rx="1" />
+                </svg>
+                <span className="hidden sm:inline">Board</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('notes')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'notes'
+                    ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                </svg>
+                <span className="hidden sm:inline">Notes</span>
+              </button>
+            </div>
+
+            {/* Quick Create Ticket Button */}
+            <button
+              onClick={() => {
+                setEditingTicket(null)
+                setIsModalOpen(true)
+              }}
+              className="hidden sm:flex h-8 px-3 rounded-lg bg-white/[0.1] hover:bg-white/[0.16] border border-white/[0.1] text-zinc-100 hover:text-white text-xs font-medium items-center gap-1.5 transition cursor-pointer"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>Create</span>
+            </button>
           </div>
         </header>
 
         {/* Error Notification */}
         {error && (
-          <div className="mx-6 mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+          <div className="mx-4 sm:mx-6 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center justify-between">
             <span>{error}</span>
             <button
               onClick={loadData}
@@ -345,12 +417,12 @@ export default function Home() {
           </div>
         )}
 
-        {/* Main View Display */}
+        {/* Main Display Area */}
         <div className="flex-1 overflow-auto flex flex-col">
           {loading && tickets.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
+            <div className="flex-1 flex flex-col items-center justify-center text-zinc-500">
               <svg
-                className="w-6 h-6 text-cyan-400 animate-spin mb-3"
+                className="w-6 h-6 text-zinc-400 animate-spin mb-3"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -358,8 +430,8 @@ export default function Home() {
               >
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
-              <p className="text-xs font-mono uppercase tracking-wider text-slate-400">
-                Fetching records from PostgreSQL...
+              <p className="text-xs font-mono uppercase tracking-wider text-zinc-400">
+                Loading PostgreSQL workspace data...
               </p>
             </div>
           ) : (
@@ -380,7 +452,7 @@ export default function Home() {
 
               {/* View 2: Kanban Board */}
               {activeTab === 'board' && (
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <KanbanBoard
                     tickets={filteredTickets}
                     onStatusChange={handleStatusChange}
@@ -395,7 +467,7 @@ export default function Home() {
 
               {/* View 3: Daily Work Logs */}
               {activeTab === 'notes' && (
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <DailyNotes
                     notes={dailyNotes}
                     onAddNote={handleAddDailyNote}

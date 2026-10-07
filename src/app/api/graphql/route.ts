@@ -24,6 +24,7 @@ const typeDefs = /* GraphQL */ `
     status: TicketStatus!
     priority: TicketPriority!
     category: String!
+    projectName: String!
     createdBy: String!
     updatedBy: String!
     createdAt: String!
@@ -44,6 +45,7 @@ const typeDefs = /* GraphQL */ `
     status: TicketStatus
     priority: TicketPriority
     category: String
+    projectName: String
     createdBy: String
   }
 
@@ -53,6 +55,7 @@ const typeDefs = /* GraphQL */ `
     status: TicketStatus
     priority: TicketPriority
     category: String
+    projectName: String
     updatedBy: String
   }
 
@@ -64,8 +67,14 @@ const typeDefs = /* GraphQL */ `
 
   # QUERIES
   type Query {
-    tickets(status: TicketStatus, priority: TicketPriority, search: String): [Ticket!]!
+    tickets(
+      status: TicketStatus
+      priority: TicketPriority
+      projectName: String
+      search: String
+    ): [Ticket!]!
     ticket(id: ID!): Ticket
+    projects: [String!]!
     dailyNotes(date: String): [DailyNote!]!
   }
 
@@ -79,7 +88,7 @@ const typeDefs = /* GraphQL */ `
   }
 `
 
-// Helper: Database Snake_case columns -> GraphQL camelCase fields
+// Helper: Database snake_case columns -> GraphQL camelCase fields
 interface TicketRow {
   id: string
   title: string
@@ -87,6 +96,7 @@ interface TicketRow {
   status: string
   priority: string
   category: string
+  project_name: string
   created_by: string
   updated_by: string
   created_at: string
@@ -109,6 +119,7 @@ function formatTicket(row: TicketRow) {
     status: row.status,
     priority: row.priority,
     category: row.category,
+    projectName: row.project_name || 'Ticket Portal',
     createdBy: row.created_by,
     updatedBy: row.updated_by,
     createdAt: row.created_at,
@@ -131,13 +142,21 @@ const resolvers = {
   Query: {
     tickets: async (
       _: unknown,
-      args: { status?: string; priority?: string; search?: string }
+      args: {
+        status?: string
+        priority?: string
+        projectName?: string
+        search?: string
+      }
     ) => {
       let query = supabase
         .from('tickets')
         .select('*')
         .order('created_at', { ascending: false })
 
+      if (args.projectName && args.projectName !== 'ALL') {
+        query = query.eq('project_name', args.projectName)
+      }
       if (args.status) {
         query = query.eq('status', args.status)
       }
@@ -156,6 +175,32 @@ const resolvers = {
         throw new Error(error.message)
       }
       return (data as TicketRow[] || []).map(formatTicket)
+    },
+
+    projects: async () => {
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('project_name')
+
+      if (error) {
+        console.error('Supabase projects query error:', error)
+        return ['Ticket Portal']
+      }
+
+      // Unique project names extract pandrom
+      const uniqueProjects = Array.from(
+        new Set(
+          (data || [])
+            .map((t: { project_name: string }) => t.project_name)
+            .filter(Boolean)
+        )
+      )
+
+      if (uniqueProjects.length === 0) {
+        uniqueProjects.push('Ticket Portal')
+      }
+
+      return uniqueProjects
     },
 
     ticket: async (_: unknown, { id }: { id: string }) => {
@@ -194,7 +239,19 @@ const resolvers = {
   Mutation: {
     createTicket: async (
       _: unknown,
-      { input }: { input: { title: string; description?: string; status?: string; priority?: string; category?: string; createdBy?: string } }
+      {
+        input,
+      }: {
+        input: {
+          title: string
+          description?: string
+          status?: string
+          priority?: string
+          category?: string
+          projectName?: string
+          createdBy?: string
+        }
+      }
     ) => {
       const { data, error } = await supabase
         .from('tickets')
@@ -205,6 +262,7 @@ const resolvers = {
             status: input.status || 'TODO',
             priority: input.priority || 'MEDIUM',
             category: input.category || 'DEV',
+            project_name: input.projectName || 'Ticket Portal',
             created_by: input.createdBy || 'Nithil',
             updated_by: input.createdBy || 'Nithil',
           },
@@ -232,6 +290,7 @@ const resolvers = {
           status?: string
           priority?: string
           category?: string
+          projectName?: string
           updatedBy?: string
         }
       }
@@ -242,6 +301,7 @@ const resolvers = {
       if (input.status !== undefined) updateData.status = input.status
       if (input.priority !== undefined) updateData.priority = input.priority
       if (input.category !== undefined) updateData.category = input.category
+      if (input.projectName !== undefined) updateData.project_name = input.projectName
       if (input.updatedBy !== undefined) updateData.updated_by = input.updatedBy
 
       const { data, error } = await supabase

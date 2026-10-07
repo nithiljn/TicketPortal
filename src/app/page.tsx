@@ -5,9 +5,11 @@ import { Ticket, DailyNote, TicketStatus, TicketPriority } from '@/types'
 import { fetchGraphQL } from '@/lib/graphql-client'
 import { Sidebar } from '@/components/Sidebar'
 import { InboxTable } from '@/components/InboxTable'
+import { DashboardView } from '@/components/DashboardView'
 import { KanbanBoard } from '@/components/KanbanBoard'
 import { DailyNotes } from '@/components/DailyNotes'
 import { TicketModal } from '@/components/TicketModal'
+import { WorkspaceModal } from '@/components/WorkspaceModal'
 
 export default function Home() {
   const [tickets, setTickets] = useState<Ticket[]>([])
@@ -15,17 +17,38 @@ export default function Home() {
   const [availableProjects, setAvailableProjects] = useState<string[]>([
     'Ticket Portal',
   ])
+  const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false)
+
+  // Theme State: 'dark' | 'light' (Persisted in localStorage)
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('tp_theme') as 'dark' | 'light' | null
+    if (savedTheme) {
+      setTheme(savedTheme)
+    }
+  }, [])
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark'
+      localStorage.setItem('tp_theme', next)
+      return next
+    })
+  }
 
   // Mobile Drawer State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
-  // Top Right View Switcher: 'inbox' | 'board' | 'notes'
-  const [activeTab, setActiveTab] = useState<'inbox' | 'board' | 'notes'>('inbox')
+  // Views: 'inbox' | 'dashboard' | 'board' | 'notes'
+  const [activeTab, setActiveTab] = useState<'inbox' | 'dashboard' | 'board' | 'notes'>('inbox')
 
-  // Facet Filters (Managed via Sidebar)
+  // Facet Filters
   const [selectedProject, setSelectedProject] = useState<string>('ALL')
   const [selectedStatus, setSelectedStatus] = useState<TicketStatus | 'ALL'>('ALL')
   const [selectedPriority, setSelectedPriority] = useState<TicketPriority | 'ALL'>('ALL')
+  const [fromDate, setFromDate] = useState<string>('')
+  const [toDate, setToDate] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
 
   const [loading, setLoading] = useState(true)
@@ -79,9 +102,21 @@ export default function Home() {
       setTickets(data.tickets || [])
       setDailyNotes(data.dailyNotes || [])
 
-      if (data.projects && data.projects.length > 0) {
-        setAvailableProjects(data.projects)
+      // Merge with locally stored workspaces
+      let localWs: string[] = []
+      try {
+        const stored = localStorage.getItem('tp_workspaces')
+        if (stored) {
+          localWs = JSON.parse(stored)
+        }
+      } catch {
+        // ignore
       }
+
+      const merged = Array.from(
+        new Set(['Ticket Portal', ...(data.projects || []), ...localWs])
+      )
+      setAvailableProjects(merged)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error loading data'
       setError(msg)
@@ -94,7 +129,7 @@ export default function Home() {
     loadData()
   }, [loadData])
 
-  // Keyboard shortcut Ctrl+N or Cmd+N
+  // Keyboard shortcut Ctrl+N / Cmd+N
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
@@ -107,7 +142,7 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // 2. Filtered Tickets based on Facet Selections
+  // 2. Filtered Tickets based on Facets + Date Range (From - To)
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
       if (selectedStatus !== 'ALL' && t.status !== selectedStatus) {
@@ -116,9 +151,18 @@ export default function Home() {
       if (selectedPriority !== 'ALL' && t.priority !== selectedPriority) {
         return false
       }
+      // Date Range Filter
+      if (fromDate) {
+        const ticketDate = t.createdAt.split('T')[0]
+        if (ticketDate < fromDate) return false
+      }
+      if (toDate) {
+        const ticketDate = t.createdAt.split('T')[0]
+        if (ticketDate > toDate) return false
+      }
       return true
     })
-  }, [tickets, selectedStatus, selectedPriority])
+  }, [tickets, selectedStatus, selectedPriority, fromDate, toDate])
 
   // 3. Facet Counts
   const ticketCounts = useMemo(() => {
@@ -236,6 +280,32 @@ export default function Home() {
     }
   }
 
+  const handleCreateWorkspace = async (name: string) => {
+    try {
+      const mutation = /* GraphQL */ `
+        mutation CreateWorkspace($name: String!) {
+          createWorkspace(name: $name)
+        }
+      `
+      await fetchGraphQL(mutation, { name })
+    } catch (err: unknown) {
+      console.warn('Workspace GraphQL notice:', err)
+    }
+
+    setAvailableProjects((prev) => {
+      const updated = Array.from(new Set([...prev, name]))
+      try {
+        localStorage.setItem('tp_workspaces', JSON.stringify(updated))
+      } catch {
+        // ignore
+      }
+      return updated
+    })
+
+    setSelectedProject(name)
+    setIsWorkspaceModalOpen(false)
+  }
+
   const handleAddDailyNote = async (content: string, date: string) => {
     const mutation = /* GraphQL */ `
       mutation AddNote($input: CreateDailyNoteInput!) {
@@ -268,9 +338,17 @@ export default function Home() {
     setDailyNotes((prev) => prev.filter((n) => n.id !== id))
   }
 
+  const isDark = theme === 'dark'
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#09090b] text-zinc-100 font-sans selection:bg-white/[0.2] selection:text-white">
-      {/* 1. Left Sidebar (ChatGPT-style with Mobile Drawer support) */}
+    <div
+      className={`flex h-screen w-screen overflow-hidden font-sans transition-colors duration-150 ${
+        isDark
+          ? 'bg-[#09090b] text-zinc-100 selection:bg-white/[0.2] selection:text-white'
+          : 'bg-zinc-50 text-zinc-900 selection:bg-zinc-900 selection:text-white'
+      }`}
+    >
+      {/* 1. Left Sidebar (ChatGPT-Style with Theme Settings & Date Range) */}
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -281,24 +359,49 @@ export default function Home() {
         onSelectStatus={setSelectedStatus}
         selectedPriority={selectedPriority}
         onSelectPriority={setSelectedPriority}
+        fromDate={fromDate}
+        toDate={toDate}
+        onSelectFromDate={setFromDate}
+        onSelectToDate={setToDate}
+        onClearDateRange={() => {
+          setFromDate('')
+          setToDate('')
+        }}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
         ticketCounts={ticketCounts}
         onOpenCreateModal={() => {
           setEditingTicket(null)
           setIsModalOpen(true)
         }}
+        onOpenCreateWorkspaceModal={() => setIsWorkspaceModalOpen(true)}
       />
 
       {/* 2. Main Content Canvas */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#09090b]">
-        {/* Top Header Bar: Search on Left + Views Switcher on Right */}
-        <header className="h-14 px-4 sm:px-6 border-b border-white/[0.06] flex items-center justify-between gap-3 bg-[#09090b] shrink-0">
+      <div
+        className={`flex-1 flex flex-col min-w-0 h-screen overflow-hidden ${
+          isDark ? 'bg-[#09090b]' : 'bg-zinc-50'
+        }`}
+      >
+        {/* Top Header Bar: Search on Left + Views Switcher (Inbox, Dashboard, Board, Notes) on Right */}
+        <header
+          className={`h-14 px-4 sm:px-6 border-b flex items-center justify-between gap-3 shrink-0 ${
+            isDark
+              ? 'border-white/[0.06] bg-[#09090b]'
+              : 'border-zinc-200 bg-white'
+          }`}
+        >
           {/* Left: Mobile Hamburger + Search Input */}
           <div className="flex items-center gap-2.5 flex-1 max-w-sm">
             {/* Mobile Hamburger Button */}
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] transition cursor-pointer shrink-0"
-              title="Open Navigation"
+              className={`lg:hidden p-2 rounded-lg transition cursor-pointer shrink-0 ${
+                isDark
+                  ? 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+              }`}
+              title="Open Navigation Drawer"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="3" y1="12" x2="21" y2="12" />
@@ -310,7 +413,7 @@ export default function Home() {
             {/* Search Input */}
             <div className="relative w-full">
               <svg
-                className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-500"
+                className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -324,29 +427,47 @@ export default function Home() {
                 placeholder="Search tickets..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg bg-white/[0.04] border border-white/[0.06] pl-8 pr-8 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-white/[0.2] transition"
+                className={`w-full rounded-lg border pl-8 pr-8 py-1.5 text-xs focus:outline-none transition ${
+                  isDark
+                    ? 'bg-white/[0.04] border-white/[0.06] text-zinc-100 placeholder-zinc-500 focus:border-white/[0.2]'
+                    : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400'
+                }`}
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
                   className="absolute right-2.5 top-2 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer"
                 >
-                  ✕
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Right: Views Switcher (Inbox Table, Board, Daily Notes) + Action Button */}
+          {/* Right: Views Switcher (Inbox, Dashboard, Board, Notes) + Action Button */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* View Switcher Pill (Top Right of Inbox area) */}
-            <div className="flex items-center p-0.5 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+            {/* View Switcher Segmented Pill */}
+            <div
+              className={`flex items-center p-0.5 rounded-lg border ${
+                isDark
+                  ? 'bg-white/[0.04] border-white/[0.06]'
+                  : 'bg-zinc-100 border-zinc-200'
+              }`}
+            >
+              {/* 1. Inbox Table */}
               <button
                 onClick={() => setActiveTab('inbox')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'inbox'
-                    ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    ? isDark
+                      ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                      : 'bg-white text-zinc-950 shadow-sm font-semibold'
+                    : isDark
+                    ? 'text-zinc-400 hover:text-zinc-200'
+                    : 'text-zinc-500 hover:text-zinc-900'
                 }`}
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -356,12 +477,38 @@ export default function Home() {
                 <span className="hidden sm:inline">Inbox</span>
               </button>
 
+              {/* 2. Dashboard (Charts & Status) */}
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'dashboard'
+                    ? isDark
+                      ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                      : 'bg-white text-zinc-950 shadow-sm font-semibold'
+                    : isDark
+                    ? 'text-zinc-400 hover:text-zinc-200'
+                    : 'text-zinc-500 hover:text-zinc-900'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+                <span className="hidden sm:inline">Dashboard</span>
+              </button>
+
+              {/* 3. Board (Kanban) */}
               <button
                 onClick={() => setActiveTab('board')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'board'
-                    ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    ? isDark
+                      ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                      : 'bg-white text-zinc-950 shadow-sm font-semibold'
+                    : isDark
+                    ? 'text-zinc-400 hover:text-zinc-200'
+                    : 'text-zinc-500 hover:text-zinc-900'
                 }`}
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -371,12 +518,17 @@ export default function Home() {
                 <span className="hidden sm:inline">Board</span>
               </button>
 
+              {/* 4. Notes (Daily Standup) */}
               <button
                 onClick={() => setActiveTab('notes')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'notes'
-                    ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    ? isDark
+                      ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                      : 'bg-white text-zinc-950 shadow-sm font-semibold'
+                    : isDark
+                    ? 'text-zinc-400 hover:text-zinc-200'
+                    : 'text-zinc-500 hover:text-zinc-900'
                 }`}
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -393,7 +545,11 @@ export default function Home() {
                 setEditingTicket(null)
                 setIsModalOpen(true)
               }}
-              className="hidden sm:flex h-8 px-3 rounded-lg bg-white/[0.1] hover:bg-white/[0.16] border border-white/[0.1] text-zinc-100 hover:text-white text-xs font-medium items-center gap-1.5 transition cursor-pointer"
+              className={`hidden sm:flex h-8 px-3 rounded-lg border text-xs font-medium items-center gap-1.5 transition cursor-pointer ${
+                isDark
+                  ? 'bg-white/[0.1] hover:bg-white/[0.16] border-white/[0.1] text-zinc-100 hover:text-white'
+                  : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-900 text-white'
+              }`}
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -406,11 +562,11 @@ export default function Home() {
 
         {/* Error Notification */}
         {error && (
-          <div className="mx-4 sm:mx-6 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center justify-between">
+          <div className="mx-4 sm:mx-6 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center justify-between">
             <span>{error}</span>
             <button
               onClick={loadData}
-              className="font-semibold underline hover:text-rose-200 cursor-pointer"
+              className="font-semibold underline hover:text-rose-300 cursor-pointer"
             >
               Retry
             </button>
@@ -431,12 +587,12 @@ export default function Home() {
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
               <p className="text-xs font-mono uppercase tracking-wider text-zinc-400">
-                Loading PostgreSQL workspace data...
+                Loading workspace data...
               </p>
             </div>
           ) : (
             <>
-              {/* Primary View: Inbox Table Structure */}
+              {/* View 1: Inbox (Primary Table View) */}
               {activeTab === 'inbox' && (
                 <InboxTable
                   tickets={filteredTickets}
@@ -447,10 +603,21 @@ export default function Home() {
                   }}
                   onDeleteTicket={handleDeleteTicket}
                   selectedProject={selectedProject}
+                  theme={theme}
                 />
               )}
 
-              {/* View 2: Kanban Board */}
+              {/* View 2: Dashboard (Visual Charts & Status Metrics) */}
+              {activeTab === 'dashboard' && (
+                <DashboardView
+                  tickets={filteredTickets}
+                  dailyNotes={dailyNotes}
+                  availableProjects={availableProjects}
+                  theme={theme}
+                />
+              )}
+
+              {/* View 3: Kanban Board */}
               {activeTab === 'board' && (
                 <div className="p-4 sm:p-6">
                   <KanbanBoard
@@ -461,17 +628,19 @@ export default function Home() {
                       setIsModalOpen(true)
                     }}
                     onDeleteTicket={handleDeleteTicket}
+                    theme={theme}
                   />
                 </div>
               )}
 
-              {/* View 3: Daily Work Logs */}
+              {/* View 4: Daily Work Logs */}
               {activeTab === 'notes' && (
                 <div className="p-4 sm:p-6">
                   <DailyNotes
                     notes={dailyNotes}
                     onAddNote={handleAddDailyNote}
                     onDeleteNote={handleDeleteDailyNote}
+                    theme={theme}
                   />
                 </div>
               )}
@@ -479,6 +648,15 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* Separate Workspace Creation Modal */}
+      <WorkspaceModal
+        isOpen={isWorkspaceModalOpen}
+        onClose={() => setIsWorkspaceModalOpen(false)}
+        onCreateWorkspace={handleCreateWorkspace}
+        existingWorkspaces={availableProjects}
+        theme={theme}
+      />
 
       {/* Ticket Modal */}
       <TicketModal
@@ -491,6 +669,7 @@ export default function Home() {
         existingTicket={editingTicket}
         availableProjects={availableProjects}
         currentProject={selectedProject}
+        theme={theme}
       />
     </div>
   )

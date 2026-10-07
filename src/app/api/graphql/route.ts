@@ -85,6 +85,8 @@ const typeDefs = /* GraphQL */ `
     deleteTicket(id: ID!): Boolean!
     createDailyNote(input: CreateDailyNoteInput!): DailyNote!
     deleteDailyNote(id: ID!): Boolean!
+    createWorkspace(name: String!): String!
+    deleteWorkspace(name: String!): Boolean!
   }
 `
 
@@ -178,29 +180,37 @@ const resolvers = {
     },
 
     projects: async () => {
-      const { data, error } = await supabase
-        .from('tickets')
-        .select('project_name')
+      const projectSet = new Set<string>(['Ticket Portal'])
 
-      if (error) {
-        console.error('Supabase projects query error:', error)
-        return ['Ticket Portal']
+      // 1. Check workspaces table
+      try {
+        const { data: wsData, error: wsError } = await supabase
+          .from('workspaces')
+          .select('name')
+        if (!wsError && wsData) {
+          wsData.forEach((w: { name: string }) => {
+            if (w.name) projectSet.add(w.name)
+          })
+        }
+      } catch {
+        // Workspaces table may not exist yet
       }
 
-      // Unique project names extract pandrom
-      const uniqueProjects = Array.from(
-        new Set(
-          (data || [])
-            .map((t: { project_name: string }) => t.project_name)
-            .filter(Boolean)
-        )
-      )
-
-      if (uniqueProjects.length === 0) {
-        uniqueProjects.push('Ticket Portal')
+      // 2. Also check tickets table project_name
+      try {
+        const { data: tData, error: tError } = await supabase
+          .from('tickets')
+          .select('project_name')
+        if (!tError && tData) {
+          tData.forEach((t: { project_name: string }) => {
+            if (t.project_name) projectSet.add(t.project_name)
+          })
+        }
+      } catch {
+        // Tickets table error
       }
 
-      return uniqueProjects
+      return Array.from(projectSet)
     },
 
     ticket: async (_: unknown, { id }: { id: string }) => {
@@ -356,6 +366,30 @@ const resolvers = {
       if (error) {
         console.error('Supabase deleteDailyNote error:', error)
         throw new Error(error.message)
+      }
+      return true
+    },
+
+    createWorkspace: async (_: unknown, { name }: { name: string }) => {
+      const trimmed = name.trim()
+      if (!trimmed) {
+        throw new Error('Workspace name cannot be empty')
+      }
+
+      // Try inserting into workspaces table if available
+      try {
+        await supabase.from('workspaces').insert({ name: trimmed })
+      } catch (err) {
+        console.warn('Workspaces table insert notice:', err)
+      }
+      return trimmed
+    },
+
+    deleteWorkspace: async (_: unknown, { name }: { name: string }) => {
+      try {
+        await supabase.from('workspaces').delete().eq('name', name)
+      } catch (err) {
+        console.warn('Workspaces table delete notice:', err)
       }
       return true
     },

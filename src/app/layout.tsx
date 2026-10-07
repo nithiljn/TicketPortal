@@ -13,9 +13,12 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'TicketPortal — Personal Work & Daily Notes',
+  title: 'TicketFlow Engineering Work OS',
   description:
-    'Track your daily work, tickets, projects, and standup notes with Next.js, GraphQL, and Supabase.',
+    'Engineering ticket management, multi-workspace tracking, and daily standup notes powered by GraphQL and Supabase.',
+  icons: {
+    icon: '/ticket-icon.svg',
+  },
 }
 
 export default function RootLayout({

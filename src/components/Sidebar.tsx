@@ -1,5 +1,4 @@
-'use client'
-
+import React, { useState, useRef, useEffect } from 'react'
 import { TicketStatus, TicketPriority, AuthUser } from '@/types'
 
 interface SidebarProps {
@@ -73,6 +72,22 @@ export function Sidebar({
   onOpenCreateWorkspaceModal,
 }: SidebarProps) {
   const isDark = theme === 'dark'
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const settingsRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setIsSettingsOpen(false)
+      }
+    }
+    if (isSettingsOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isSettingsOpen])
 
   const sidebarBg = isDark
     ? 'bg-[#0d0d10] border-white/[0.06] text-zinc-400'
@@ -81,8 +96,8 @@ export function Sidebar({
   const textPrimary = isDark ? 'text-zinc-100' : 'text-zinc-900'
   const itemHover = isDark ? 'hover:bg-white/[0.04] hover:text-zinc-200' : 'hover:bg-zinc-100 hover:text-zinc-900'
   const itemActive = isDark
-    ? 'bg-sky-500/10 text-sky-300 font-medium border border-sky-500/20'
-    : 'bg-sky-50 text-sky-800 font-semibold border border-sky-200'
+    ? 'bg-white/[0.08] text-white font-medium border border-white/[0.12]'
+    : 'bg-zinc-100 text-zinc-950 font-semibold border border-zinc-300/80 shadow-2xs'
   const inputBg = isDark
     ? 'bg-black/40 border-white/[0.08] text-zinc-200'
     : 'bg-zinc-50 border-zinc-200 text-zinc-900'
@@ -109,8 +124,8 @@ export function Sidebar({
             <div className="flex items-center gap-2.5">
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0 ${
                 isDark
-                  ? 'bg-sky-500/10 border border-sky-500/20 text-sky-400 shadow-sm shadow-sky-500/5'
-                  : 'bg-sky-50 border border-sky-200 text-sky-600 shadow-sm'
+                  ? 'bg-zinc-800 border border-zinc-700/80 text-white shadow-xs'
+                  : 'bg-zinc-900 border border-zinc-800 text-white shadow-xs'
               }`}>
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
@@ -125,7 +140,9 @@ export function Sidebar({
                     TicketFlow
                   </span>
                 </div>
-                <span className="block text-[10px] text-zinc-500 font-mono">Engineering Work</span>
+                <span className={`block text-[11px] font-medium leading-none ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  Maintain Daily Work
+                </span>
               </div>
             </div>
 
@@ -148,24 +165,17 @@ export function Sidebar({
                 onOpenCreateModal()
                 onClose()
               }}
-              className={`w-full h-9 px-3 rounded-xl border text-xs font-medium flex items-center justify-between transition cursor-pointer shadow-sm ${
+              className={`w-full h-9 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-sm ${
                 isDark
-                  ? 'bg-white/[0.07] hover:bg-white/[0.12] border-white/[0.08] text-zinc-100'
+                  ? 'bg-white hover:bg-zinc-200 border-white text-zinc-950'
                   : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-900 text-white'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                <span>New Ticket</span>
-              </div>
-              <kbd className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                isDark ? 'bg-black/40 border border-white/[0.06] text-zinc-400' : 'bg-zinc-800 text-zinc-300'
-              }`}>
-                ⌘N
-              </kbd>
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>New Ticket</span>
             </button>
           </div>
 
@@ -353,51 +363,91 @@ export function Sidebar({
             </div>
           </div>
 
-          {/* Theme Settings & Profile Footer */}
-          <div className={`p-3 border-t ${headerBorder}`}>
-            {/* Theme Switcher Toggle */}
-            <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-inherit">
-              <span className="text-[11px] text-zinc-400 font-medium">Appearance</span>
-              <button
-                onClick={onToggleTheme}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition cursor-pointer ${
+          {/* Profile & Settings Footer */}
+          <div className={`p-3 border-t ${headerBorder} relative`} ref={settingsRef}>
+            {/* Settings Popover Dropdown Menu (Anchored above the profile card) */}
+            {isSettingsOpen && (
+              <div
+                className={`absolute bottom-full left-3 right-3 mb-2.5 p-2 rounded-2xl border shadow-2xl z-50 transition-all ${
                   isDark
-                    ? 'bg-white/[0.06] border-white/[0.1] text-zinc-200 hover:bg-white/[0.1]'
-                    : 'bg-zinc-100 border-zinc-200 text-zinc-800 hover:bg-zinc-200'
+                    ? 'bg-[#151518] border-white/[0.12] text-zinc-200 shadow-black/80'
+                    : 'bg-white border-zinc-200 text-zinc-900 shadow-zinc-500/20'
                 }`}
-                title="Switch Theme"
               >
-                {isDark ? (
-                  <>
-                    <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="5" />
-                      <line x1="12" y1="1" x2="12" y2="3" />
-                      <line x1="12" y1="21" x2="12" y2="23" />
-                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                      <line x1="1" y1="12" x2="3" y2="12" />
-                      <line x1="21" y1="12" x2="23" y2="12" />
-                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                    </svg>
-                    <span>Dark</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-3.5 h-3.5 text-zinc-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                    </svg>
-                    <span>Light</span>
-                  </>
-                )}
-              </button>
-            </div>
+                <div className="px-2 pt-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                  Settings & Preferences
+                </div>
 
-            {/* Profile Card & Logout */}
-            <div className={`p-2.5 rounded-xl border flex flex-col gap-2.5 ${
+                {/* Appearance Theme Switcher */}
+                <div className={`flex items-center justify-between p-2 rounded-xl transition ${
+                  isDark ? 'hover:bg-white/[0.04]' : 'hover:bg-zinc-50'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    {isDark ? (
+                      <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" y1="1" x2="12" y2="3" />
+                        <line x1="12" y1="21" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                        <line x1="1" y1="12" x2="3" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3.5 h-3.5 text-zinc-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                      </svg>
+                    )}
+                    <span className="text-xs font-medium">Appearance</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={onToggleTheme}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition cursor-pointer ${
+                      isDark
+                        ? 'bg-white/[0.08] border-white/[0.12] text-zinc-200 hover:bg-white/[0.12]'
+                        : 'bg-zinc-100 border-zinc-300 text-zinc-800 hover:bg-zinc-200'
+                    }`}
+                  >
+                    <span>{isDark ? 'Dark' : 'Light'}</span>
+                  </button>
+                </div>
+
+                <div className={`my-1 border-t ${isDark ? 'border-white/[0.08]' : 'border-zinc-100'}`} />
+
+                {/* Log Out Option */}
+                {onLogout && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSettingsOpen(false)
+                      onLogout()
+                    }}
+                    className={`w-full flex items-center gap-2 p-2 rounded-xl text-xs font-medium transition cursor-pointer text-left ${
+                      isDark
+                        ? 'hover:bg-rose-500/10 text-rose-400 hover:text-rose-300'
+                        : 'hover:bg-rose-50 text-rose-700'
+                    }`}
+                  >
+                    <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                    <span>Log Out</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Profile Card with Settings Gear Trigger */}
+            <div className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition ${
               isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50 border-zinc-200'
             }`}>
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 {user?.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
@@ -427,25 +477,35 @@ export function Sidebar({
                 </div>
               </div>
 
-              {onLogout && (
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className={`w-full py-1.5 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-2 border transition cursor-pointer ${
-                    isDark
-                      ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20 hover:border-rose-500/30'
-                      : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
-                  }`}
-                  title="Sign out of TicketFlow"
+              {/* Settings Gear Button */}
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen((prev) => !prev)}
+                className={`p-1.5 rounded-lg border transition cursor-pointer shrink-0 ${
+                  isSettingsOpen
+                    ? isDark
+                      ? 'bg-white/[0.1] border-white/[0.2] text-white'
+                      : 'bg-zinc-200 border-zinc-300 text-zinc-900'
+                    : isDark
+                      ? 'bg-transparent border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] hover:border-white/[0.08]'
+                      : 'bg-transparent border-transparent text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/70 hover:border-zinc-300'
+                }`}
+                title="Settings & Appearance"
+                aria-label="Settings"
+              >
+                <svg
+                  className={`w-4 h-4 transition-transform duration-200 ${isSettingsOpen ? 'rotate-90' : ''}`}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <polyline points="16 17 21 12 16 7" />
-                    <line x1="21" y1="12" x2="9" y2="12" />
-                  </svg>
-                  <span>Log Out</span>
-                </button>
-              )}
+                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>

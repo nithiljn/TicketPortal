@@ -95,8 +95,8 @@ export function KanbanBoard({
     : 'bg-white hover:bg-zinc-50/80 border-zinc-200 hover:border-zinc-300 text-zinc-900 shadow-xs'
 
   const workspaceBadge = isDark
-    ? 'bg-sky-500/10 text-sky-300 border-sky-500/20'
-    : 'bg-sky-50 text-sky-700 border-sky-200 font-medium'
+    ? 'bg-white/[0.06] text-zinc-200 border-white/[0.1]'
+    : 'bg-zinc-100 text-zinc-800 border-zinc-200 font-medium'
 
   const categoryBadge = isDark
     ? 'bg-white/[0.04] border-white/[0.06] text-zinc-400'

@@ -71,7 +71,7 @@ export function WorkspaceModal({
           <div className="flex items-center gap-2.5">
             <div
               className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                isDark ? 'bg-sky-500/10 text-sky-400' : 'bg-sky-100 text-sky-600'
+                isDark ? 'bg-zinc-800 border border-zinc-700 text-white' : 'bg-zinc-900 border border-zinc-800 text-white shadow-xs'
               }`}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -116,8 +116,8 @@ export function WorkspaceModal({
               autoFocus
               className={`w-full rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition ${
                 isDark
-                  ? 'bg-black/40 border border-white/[0.08] text-zinc-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20'
-                  : 'bg-zinc-50 border border-zinc-200 text-zinc-900 focus:border-sky-600 focus:ring-1 focus:ring-sky-600/20'
+                  ? 'bg-black/40 border border-white/[0.08] text-zinc-100 focus:border-white/[0.2] focus:ring-1 focus:ring-white/[0.05]'
+                  : 'bg-zinc-50 border border-zinc-200 text-zinc-900 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-200'
               }`}
             />
             <p className="mt-1.5 text-[11px] text-zinc-500">
@@ -130,10 +130,10 @@ export function WorkspaceModal({
             <button
               type="button"
               onClick={onClose}
-              className={`px-3.5 py-2 text-xs rounded-xl transition cursor-pointer ${
+              className={`px-3.5 py-2 text-xs font-medium rounded-xl border transition cursor-pointer ${
                 isDark
-                  ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300'
-                  : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                  ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 border-white/[0.08]'
+                  : 'bg-white hover:bg-zinc-50 text-zinc-700 border-zinc-200 shadow-xs'
               }`}
             >
               Cancel
@@ -141,7 +141,11 @@ export function WorkspaceModal({
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-xs font-semibold rounded-xl bg-sky-600 hover:bg-sky-500 text-white shadow-sm transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+              className={`px-4 py-2 text-xs font-semibold rounded-xl shadow-sm transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5 ${
+                isDark
+                  ? 'bg-white hover:bg-zinc-200 text-zinc-950'
+                  : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+              }`}
             >
               {loading ? (
                 <span>Creating...</span>

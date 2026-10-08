@@ -52,8 +52,8 @@ export function ConfirmModal({
     : 'bg-rose-50 border-rose-200 text-rose-600'
 
   const cancelBtn = isDark
-    ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300'
-    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+    ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 border border-white/[0.08]'
+    : 'bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 shadow-xs'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-150 select-none">

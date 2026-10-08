@@ -424,7 +424,7 @@ export default function Home() {
           theme === 'dark' ? 'bg-[#09090b] text-zinc-100' : 'bg-zinc-50 text-zinc-900'
         }`}
       >
-        <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/[0.1] text-sky-400 flex items-center justify-center animate-pulse mb-3">
+        <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/[0.1] text-white flex items-center justify-center animate-pulse mb-3">
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M2 9a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v2a2 2 0 0 0 0 4v2a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-2a2 2 0 0 0 0-4V9z" />
           </svg>
@@ -658,24 +658,6 @@ export default function Home() {
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               <span>Create</span>
-            </button>
-
-            {/* Quick Logout Button */}
-            <button
-              onClick={logout}
-              className={`h-8 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition cursor-pointer ${
-                isDark
-                  ? 'bg-white/[0.04] hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/20 border-white/[0.08] text-zinc-400'
-                  : 'bg-zinc-100 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 border-zinc-200 text-zinc-600'
-              }`}
-              title="Sign out of TicketFlow"
-            >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
         </header>

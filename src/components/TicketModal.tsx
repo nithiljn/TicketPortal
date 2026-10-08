@@ -130,12 +130,12 @@ export function TicketModal({
     : 'bg-white border-zinc-200 text-zinc-900'
   const headerBorder = isDark ? 'border-white/[0.06]' : 'border-zinc-200'
   const inputBg = isDark
-    ? 'bg-black/40 border-white/[0.08] text-zinc-100 placeholder-zinc-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20'
-    : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-sky-600 focus:ring-1 focus:ring-sky-600/20'
+    ? 'bg-black/40 border-white/[0.08] text-zinc-100 placeholder-zinc-500 focus:border-white/[0.2] focus:ring-1 focus:ring-white/[0.05]'
+    : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-200'
   const labelColor = isDark ? 'text-zinc-400' : 'text-zinc-600'
   const cancelBtn = isDark
-    ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300'
-    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+    ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 border border-white/[0.08]'
+    : 'bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 shadow-xs'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-150">
@@ -147,7 +147,7 @@ export function TicketModal({
           <div className="flex items-center gap-3">
             <div
               className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                isDark ? 'bg-sky-500/10 text-sky-400' : 'bg-sky-100 text-sky-600'
+                isDark ? 'bg-zinc-800 border border-zinc-700 text-white' : 'bg-zinc-900 border border-zinc-800 text-white shadow-xs'
               }`}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -364,7 +364,11 @@ export function TicketModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2 text-xs font-semibold rounded-xl bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20 transition active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                className={`px-5 py-2 text-xs font-semibold rounded-xl shadow-sm transition active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center gap-2 ${
+                  isDark
+                    ? 'bg-white hover:bg-zinc-200 text-zinc-950'
+                    : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                }`}
               >
                 {loading ? (
                   <span>Saving...</span>

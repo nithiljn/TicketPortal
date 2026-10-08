@@ -78,6 +78,14 @@ export default function Home() {
 
   // 1. Fetch Data from GraphQL
   const loadData = useCallback(async () => {
+    // Security: Do not fetch or flash data before authentication resolves
+    if (isAuthLoading || !user?.email) {
+      setTickets([])
+      setDailyNotes([])
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       setError('')
@@ -115,19 +123,22 @@ export default function Home() {
       }>(query, {
         projectName: selectedProject !== 'ALL' ? selectedProject : null,
         search: searchTerm.trim() || null,
-        userEmail: user?.email || null,
+        userEmail: user.email,
       })
 
       setTickets(data.tickets || [])
       setDailyNotes(data.dailyNotes || [])
 
-      // Merge with locally stored workspaces
+      // Merge with user-specific locally stored workspaces
       let localWs: string[] = []
+      const storageKey = `tp_workspaces_${user.email.toLowerCase()}`
       try {
-        const stored = localStorage.getItem('tp_workspaces')
+        const stored = localStorage.getItem(storageKey)
         if (stored) {
           localWs = JSON.parse(stored)
         }
+        // Clean legacy un-scoped workspaces cache
+        localStorage.removeItem('tp_workspaces')
       } catch {
         // ignore
       }
@@ -142,11 +153,13 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
-  }, [selectedProject, searchTerm, user?.email])
+  }, [selectedProject, searchTerm, user?.email, isAuthLoading])
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    if (!isAuthLoading && user?.email) {
+      loadData()
+    }
+  }, [loadData, isAuthLoading, user?.email])
 
   // Keyboard shortcut Ctrl+N / Cmd+N
   useEffect(() => {
@@ -323,28 +336,34 @@ export default function Home() {
   }
 
   const handleCreateWorkspace = async (name: string) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+
     try {
       const mutation = /* GraphQL */ `
         mutation CreateWorkspace($name: String!) {
           createWorkspace(name: $name)
         }
       `
-      await fetchGraphQL(mutation, { name })
+      await fetchGraphQL(mutation, { name: trimmed })
     } catch (err: unknown) {
       console.warn('Workspace GraphQL notice:', err)
     }
 
     setAvailableProjects((prev) => {
-      const updated = Array.from(new Set([...prev, name]))
-      try {
-        localStorage.setItem('tp_workspaces', JSON.stringify(updated))
-      } catch {
-        // ignore
+      const updated = Array.from(new Set([...prev, trimmed]))
+      if (user?.email) {
+        try {
+          const storageKey = `tp_workspaces_${user.email.toLowerCase()}`
+          localStorage.setItem(storageKey, JSON.stringify(updated))
+        } catch {
+          // ignore
+        }
       }
       return updated
     })
 
-    setSelectedProject(name)
+    setSelectedProject(trimmed)
     setIsWorkspaceModalOpen(false)
     setToast({
       isOpen: true,

@@ -162,22 +162,27 @@ const resolvers = {
         userEmail?: string
       }
     ) => {
+      // Security: Never return tickets if userEmail is missing or unauthenticated
+      if (!args.userEmail || !args.userEmail.trim()) {
+        return []
+      }
+
+      const userEmail = args.userEmail.trim().toLowerCase()
+      const prefix = userEmail.split('@')[0]
+
       let query = supabase
         .from('tickets')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (args.userEmail) {
-        if (args.userEmail === 'admin@ticketflow.io') {
-          query = query.or(
-            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
-          )
-        } else {
-          const prefix = args.userEmail.split('@')[0]
-          query = query.or(
-            `created_by.eq.${args.userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
-          )
-        }
+      if (userEmail === 'admin@ticketflow.io') {
+        query = query.or(
+          'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+        )
+      } else {
+        query = query.or(
+          `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+        )
       }
 
       if (args.projectName && args.projectName !== 'ALL') {
@@ -206,20 +211,25 @@ const resolvers = {
     projects: async (_: unknown, args: { userEmail?: string }) => {
       const projectSet = new Set<string>(['Ticket Portal'])
 
+      // Security: Only return projects if userEmail is provided
+      if (!args.userEmail || !args.userEmail.trim()) {
+        return Array.from(projectSet)
+      }
+
+      const userEmail = args.userEmail.trim().toLowerCase()
+      const prefix = userEmail.split('@')[0]
+
       // 1. Check user-specific tickets for project names
       try {
         let tQuery = supabase.from('tickets').select('project_name')
-        if (args.userEmail) {
-          if (args.userEmail === 'admin@ticketflow.io') {
-            tQuery = tQuery.or(
-              'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
-            )
-          } else {
-            const prefix = args.userEmail.split('@')[0]
-            tQuery = tQuery.or(
-              `created_by.eq.${args.userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
-            )
-          }
+        if (userEmail === 'admin@ticketflow.io') {
+          tQuery = tQuery.or(
+            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+          )
+        } else {
+          tQuery = tQuery.or(
+            `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+          )
         }
         const { data: tData, error: tError } = await tQuery
         if (!tError && tData) {
@@ -229,20 +239,6 @@ const resolvers = {
         }
       } catch {
         // Tickets table error
-      }
-
-      // 2. Check workspaces table
-      try {
-        const { data: wsData, error: wsError } = await supabase
-          .from('workspaces')
-          .select('name')
-        if (!wsError && wsData) {
-          wsData.forEach((w: { name: string }) => {
-            if (w.name) projectSet.add(w.name)
-          })
-        }
-      } catch {
-        // Workspaces table may not exist yet
       }
 
       return Array.from(projectSet)
@@ -266,6 +262,14 @@ const resolvers = {
       _: unknown,
       { date, userEmail }: { date?: string; userEmail?: string }
     ) => {
+      // Security: Never return daily notes if userEmail is missing or unauthenticated
+      if (!userEmail || !userEmail.trim()) {
+        return []
+      }
+
+      const email = userEmail.trim().toLowerCase()
+      const prefix = email.split('@')[0]
+
       let query = supabase
         .from('daily_notes')
         .select('*')
@@ -275,17 +279,14 @@ const resolvers = {
         query = query.eq('date', date)
       }
 
-      if (userEmail) {
-        if (userEmail === 'admin@ticketflow.io') {
-          query = query.or(
-            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
-          )
-        } else {
-          const prefix = userEmail.split('@')[0]
-          query = query.or(
-            `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
-          )
-        }
+      if (email === 'admin@ticketflow.io') {
+        query = query.or(
+          'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+        )
+      } else {
+        query = query.or(
+          `created_by.eq.${email},created_by.eq.@${prefix},created_by.eq.${prefix}`
+        )
       }
 
       const { data, error } = await query
@@ -383,18 +384,21 @@ const resolvers = {
       _: unknown,
       { id, userEmail }: { id: string; userEmail?: string }
     ) => {
+      if (!userEmail || !userEmail.trim()) {
+        throw new Error('Unauthorized: user email required to delete a ticket')
+      }
+      const email = userEmail.trim().toLowerCase()
+      const prefix = email.split('@')[0]
+
       let q = supabase.from('tickets').delete().eq('id', id)
-      if (userEmail) {
-        if (userEmail === 'admin@ticketflow.io') {
-          q = q.or(
-            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
-          )
-        } else {
-          const prefix = userEmail.split('@')[0]
-          q = q.or(
-            `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
-          )
-        }
+      if (email === 'admin@ticketflow.io') {
+        q = q.or(
+          'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+        )
+      } else {
+        q = q.or(
+          `created_by.eq.${email},created_by.eq.@${prefix},created_by.eq.${prefix}`
+        )
       }
       const { error } = await q
       if (error) {
@@ -432,18 +436,21 @@ const resolvers = {
       _: unknown,
       { id, userEmail }: { id: string; userEmail?: string }
     ) => {
+      if (!userEmail || !userEmail.trim()) {
+        throw new Error('Unauthorized: user email required to delete a note')
+      }
+      const email = userEmail.trim().toLowerCase()
+      const prefix = email.split('@')[0]
+
       let q = supabase.from('daily_notes').delete().eq('id', id)
-      if (userEmail) {
-        if (userEmail === 'admin@ticketflow.io') {
-          q = q.or(
-            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
-          )
-        } else {
-          const prefix = userEmail.split('@')[0]
-          q = q.or(
-            `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
-          )
-        }
+      if (email === 'admin@ticketflow.io') {
+        q = q.or(
+          'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+        )
+      } else {
+        q = q.or(
+          `created_by.eq.${email},created_by.eq.@${prefix},created_by.eq.${prefix}`
+        )
       }
       const { error } = await q
       if (error) {
@@ -459,9 +466,11 @@ const resolvers = {
         throw new Error('Workspace name cannot be empty')
       }
 
-      // Try inserting into workspaces table if available
+      // Upsert so duplicate names across different users never error
       try {
-        await supabase.from('workspaces').insert({ name: trimmed })
+        await supabase
+          .from('workspaces')
+          .upsert({ name: trimmed }, { onConflict: 'name', ignoreDuplicates: true })
       } catch (err) {
         console.warn('Workspaces table insert notice:', err)
       }

@@ -37,13 +37,15 @@ export default function Home() {
     message: '',
   })
 
-  // Theme State: 'dark' | 'light' (Persisted in localStorage)
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  // Theme State: 'dark' | 'light' (Default: 'light', persisted in localStorage)
+  const [theme, setTheme] = useState<'dark' | 'light'>('light')
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('tp_theme') as 'dark' | 'light' | null
     if (savedTheme) {
       setTheme(savedTheme)
+    } else {
+      setTheme('light')
     }
   }, [])
 

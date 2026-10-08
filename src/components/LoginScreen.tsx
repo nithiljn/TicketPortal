@@ -80,7 +80,9 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
 
   return (
     <div
-      className={`min-h-screen w-screen flex flex-col justify-center items-center p-4 sm:p-6 transition-colors duration-150 relative selection:bg-white/[0.2] ${containerBg}`}
+      className={`min-h-screen w-screen flex flex-col justify-center items-center p-4 sm:p-6 transition-colors duration-150 relative ${
+        isDark ? 'selection:bg-sky-500/30 selection:text-white' : 'selection:bg-zinc-900 selection:text-white'
+      } ${containerBg}`}
     >
       {/* Top Bar Theme Toggle */}
       <div className="absolute top-5 right-5 sm:top-6 sm:right-6">
@@ -123,7 +125,9 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
       <div className="w-full max-w-md space-y-5">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-zinc-900 border border-white/[0.1] text-zinc-100 shadow-md mx-auto">
+          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl border shadow-sm mx-auto ${
+            isDark ? 'bg-zinc-900 border-white/[0.1] text-zinc-100' : 'bg-zinc-900 border-zinc-800 text-zinc-100'
+          }`}>
             <svg
               className="w-6 h-6"
               viewBox="0 0 24 24"
@@ -137,11 +141,15 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
               <line x1="9" y1="9" x2="9" y2="15" strokeDasharray="2 2" />
             </svg>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            TicketFlow <span className="text-sky-500 font-mono text-xs uppercase px-1.5 py-0.5 rounded border border-sky-500/30">SECURE</span>
+          <h1 className={`text-xl sm:text-2xl font-bold tracking-tight ${
+            isDark ? 'text-white' : 'text-zinc-900'
+          }`}>
+            TicketFlow
           </h1>
-          <p className="text-xs text-zinc-400 font-mono">
-            Engineering Work OS • Private Isolated Access
+          <p className={`text-xs font-medium tracking-normal ${
+            isDark ? 'text-zinc-400' : 'text-zinc-600'
+          }`}>
+            Maintain your tasks effortlessly & boost daily productivity
           </p>
         </div>
 
@@ -186,9 +194,9 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
 
           {/* Divider */}
           <div className="relative flex items-center justify-center">
-            <div className="w-full border-t border-inherit opacity-40" />
+            <div className={`w-full border-t ${isDark ? 'border-white/[0.08]' : 'border-zinc-200'}`} />
             <span className={`px-2 text-[10px] font-mono uppercase tracking-wider absolute ${
-              isDark ? 'bg-[#121215] text-zinc-500' : 'bg-white text-zinc-400'
+              isDark ? 'bg-[#121215] text-zinc-500' : 'bg-white text-zinc-500 font-medium'
             }`}>
               or continue with email
             </span>
@@ -209,7 +217,9 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
                   ? isDark
                     ? 'bg-zinc-800 text-white shadow-xs'
                     : 'bg-white text-zinc-900 shadow-xs'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  : isDark
+                  ? 'text-zinc-400 hover:text-zinc-200'
+                  : 'text-zinc-600 hover:text-zinc-900'
               }`}
             >
               Sign In
@@ -225,7 +235,9 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
                   ? isDark
                     ? 'bg-zinc-800 text-white shadow-xs'
                     : 'bg-white text-zinc-900 shadow-xs'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  : isDark
+                  ? 'text-zinc-400 hover:text-zinc-200'
+                  : 'text-zinc-600 hover:text-zinc-900'
               }`}
             >
               Create Account
@@ -234,13 +246,24 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
 
           {/* Error Notice */}
           {errorMsg && (
-            <div className="p-3 rounded-xl text-xs bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-start gap-2">
-              <svg className="w-4 h-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <span>{errorMsg}</span>
+            <div
+              role="alert"
+              className={`p-3 rounded-xl text-xs flex items-center gap-2.5 border transition-all animate-in fade-in duration-150 ${
+                isDark
+                  ? 'bg-rose-950/40 border-rose-800/40 text-rose-300'
+                  : 'bg-rose-50 border-rose-200 text-rose-800'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${
+                isDark ? 'bg-rose-500/20 text-rose-400' : 'bg-rose-100 text-rose-700'
+              }`}>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              <span className="font-medium flex-1 text-[12px] leading-snug">{errorMsg}</span>
             </div>
           )}
 
@@ -250,7 +273,9 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
               <>
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-[11px] font-mono font-medium text-zinc-400 uppercase">
+                    <label className={`block text-[11px] font-mono font-medium mb-1 uppercase ${
+                      isDark ? 'text-zinc-400' : 'text-zinc-600'
+                    }`}>
                       Unique Username
                     </label>
                     <span className="text-[10px] font-mono text-zinc-500">
@@ -275,7 +300,9 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-mono font-medium text-zinc-400 mb-1 uppercase">
+                  <label className={`block text-[11px] font-mono font-medium mb-1 uppercase ${
+                    isDark ? 'text-zinc-400' : 'text-zinc-600'
+                  }`}>
                     Email Address
                   </label>
                   <input
@@ -290,7 +317,9 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
               </>
             ) : (
               <div>
-                <label className="block text-[11px] font-mono font-medium text-zinc-400 mb-1 uppercase">
+                <label className={`block text-[11px] font-mono font-medium mb-1 uppercase ${
+                  isDark ? 'text-zinc-400' : 'text-zinc-600'
+                }`}>
                   Username or Email
                 </label>
                 <input
@@ -305,7 +334,9 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
             )}
 
             <div>
-              <label className="block text-[11px] font-mono font-medium text-zinc-400 mb-1 uppercase">
+              <label className={`block text-[11px] font-mono font-medium mb-1 uppercase ${
+                isDark ? 'text-zinc-400' : 'text-zinc-600'
+              }`}>
                 Password
               </label>
               <input
@@ -321,47 +352,46 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
             <button
               type="submit"
               disabled={loading || oauthLoading !== null}
-              className={`w-full py-2.5 rounded-xl text-xs font-semibold transition active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 shadow-sm ${
+              className={`w-full h-10.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-150 cursor-pointer flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 active:scale-[0.99] ${
                 isDark
-                  ? 'bg-zinc-100 hover:bg-white text-zinc-900'
-                  : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                  ? 'bg-zinc-100 hover:bg-white text-zinc-950 shadow-white/5'
+                  : 'bg-zinc-900 hover:bg-zinc-800 text-white shadow-zinc-900/10'
               }`}
             >
               {loading ? (
                 <>
-                  <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="w-3.5 h-3.5 animate-spin text-inherit" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
                     <path d="M12 2a10 10 0 0 1 10 10" />
                   </svg>
                   <span>Processing...</span>
                 </>
               ) : mode === 'signin' ? (
-                <span>Sign In</span>
+                <div className="flex items-center gap-1.5">
+                  <span>Sign In</span>
+                  <svg className="w-3.5 h-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </div>
               ) : (
-                <span>Create Account</span>
+                <div className="flex items-center gap-1.5">
+                  <span>Create Account</span>
+                  <svg className="w-3.5 h-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </div>
               )}
             </button>
           </form>
-
-          {/* Privacy & Isolation Notice */}
-          <div className={`p-3 rounded-xl text-[11px] border flex items-center gap-2.5 ${
-            isDark
-              ? 'bg-sky-500/10 border-sky-500/20 text-sky-300'
-              : 'bg-sky-50 border-sky-200 text-sky-800'
-          }`}>
-            <svg className="w-4 h-4 shrink-0 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <span className="leading-tight">
-              <strong>Private Isolation:</strong> You and your brother will each only see and manage tickets created under your own login accounts.
-            </span>
-          </div>
         </div>
 
         {/* Footer info */}
-        <p className="text-center text-[11px] font-mono text-zinc-500">
-          Supabase PostgreSQL • End-to-End User Isolation
+        <p className={`text-center text-[11px] font-mono tracking-wide ${
+          isDark ? 'text-zinc-500' : 'text-zinc-500'
+        }`}>
+          TicketFlow • Designed for focused task momentum & daily execution
         </p>
       </div>
     </div>

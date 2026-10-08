@@ -5,7 +5,8 @@ import { Ticket, TicketStatus } from '@/types'
 
 interface KanbanBoardProps {
   tickets: Ticket[]
-  onStatusChange: (id: string, newStatus: TicketStatus) => Promise<void>
+  onStatusChange?: (id: string, newStatus: TicketStatus) => Promise<void>
+  onViewTicket?: (ticket: Ticket) => void
   onEditTicket: (ticket: Ticket) => void
   onDeleteTicket: (ticket: Ticket) => void
   theme?: 'dark' | 'light'
@@ -25,6 +26,7 @@ const COLUMNS: {
 export function KanbanBoard({
   tickets,
   onStatusChange,
+  onViewTicket,
   onEditTicket,
   onDeleteTicket,
   theme = 'dark',
@@ -108,10 +110,6 @@ export function KanbanBoard({
   const cardDesc = isDark ? 'text-zinc-400' : 'text-zinc-500'
   const divider = isDark ? 'border-white/[0.04]' : 'border-zinc-100'
 
-  const moveBtn = isDark
-    ? 'bg-white/[0.04] hover:bg-white/[0.1] text-zinc-300'
-    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
       {COLUMNS.map((col) => {
@@ -147,7 +145,9 @@ export function KanbanBoard({
                 columnTickets.map((ticket) => (
                   <div
                     key={ticket.id}
-                    className={`group rounded-xl border p-3.5 transition-all ${cardBg}`}
+                    onDoubleClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
+                    onClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
+                    className={`group rounded-xl border p-3.5 transition-all cursor-pointer ${cardBg}`}
                   >
                     {/* Header: Priority & Category & Workspace */}
                     <div className="flex items-center justify-between gap-1 mb-2">
@@ -181,56 +181,20 @@ export function KanbanBoard({
                       </p>
                     )}
 
-                    {/* Author & Timestamp */}
+                    {/* Author, Timestamp & Actions */}
                     <div className={`flex items-center justify-between text-[10px] text-zinc-500 pt-2 border-t mt-2 ${divider}`}>
-                      <span className="truncate max-w-[100px]">
-                        {ticket.createdBy?.split('@')[0] || ticket.createdBy}
-                      </span>
-                      <span className="font-mono">
-                        {formatRelativeTime(ticket.createdAt)}
-                      </span>
-                    </div>
-
-                    {/* Actions Toolbar */}
-                    <div className={`flex items-center justify-between gap-1 pt-2 mt-2 border-t ${divider}`}>
-                      {/* Status transitions */}
-                      <div className="flex items-center gap-1">
-                        {ticket.status !== 'TODO' && (
-                          <button
-                            onClick={() => onStatusChange(ticket.id, 'TODO')}
-                            className={`px-1.5 py-0.5 rounded text-[10px] transition cursor-pointer ${moveBtn}`}
-                          >
-                            To Do
-                          </button>
-                        )}
-                        {ticket.status !== 'IN_PROGRESS' && (
-                          <button
-                            onClick={() => onStatusChange(ticket.id, 'IN_PROGRESS')}
-                            className={`px-1.5 py-0.5 rounded text-[10px] transition cursor-pointer ${moveBtn}`}
-                          >
-                            In Progress
-                          </button>
-                        )}
-                        {ticket.status !== 'DONE' && (
-                          <button
-                            onClick={() => onStatusChange(ticket.id, 'DONE')}
-                            className={`px-1.5 py-0.5 rounded text-[10px] transition cursor-pointer ${moveBtn}`}
-                          >
-                            Done
-                          </button>
-                        )}
-                        {ticket.status !== 'BLOCKED' && (
-                          <button
-                            onClick={() => onStatusChange(ticket.id, 'BLOCKED')}
-                            className={`px-1.5 py-0.5 rounded text-[10px] transition cursor-pointer ${moveBtn}`}
-                          >
-                            Block
-                          </button>
-                        )}
+                      <div className="flex items-center gap-1.5 truncate max-w-[150px]">
+                        <span className="truncate">
+                          {ticket.createdBy?.split('@')[0] || ticket.createdBy}
+                        </span>
+                        <span>•</span>
+                        <span className="font-mono shrink-0">
+                          {formatRelativeTime(ticket.createdAt)}
+                        </span>
                       </div>
 
                       {/* Edit & Delete Action Buttons */}
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => onEditTicket(ticket)}
                           className="p-1 rounded text-zinc-400 hover:text-zinc-800 dark:hover:text-white transition cursor-pointer"

@@ -5,7 +5,8 @@ import { Ticket, TicketStatus } from '@/types'
 
 interface InboxTableProps {
   tickets: Ticket[]
-  onStatusChange: (id: string, newStatus: TicketStatus) => Promise<void>
+  onStatusChange?: (id: string, newStatus: TicketStatus) => Promise<void>
+  onViewTicket?: (ticket: Ticket) => void
   onEditTicket: (ticket: Ticket) => void
   onDeleteTicket: (ticket: Ticket) => void
   selectedProject: string
@@ -15,6 +16,7 @@ interface InboxTableProps {
 export function InboxTable({
   tickets,
   onStatusChange,
+  onViewTicket,
   onEditTicket,
   onDeleteTicket,
   selectedProject,
@@ -148,10 +150,6 @@ export function InboxTable({
     ? 'bg-white/[0.04] text-zinc-400 border-white/[0.06]'
     : 'bg-zinc-100 text-zinc-600 border-zinc-200'
 
-  const selectBg = isDark
-    ? 'bg-[#18181b] border-white/[0.08] text-zinc-200 focus:border-white/[0.2]'
-    : 'bg-white border-zinc-200 text-zinc-800 shadow-2xs focus:border-zinc-400'
-
   const actionBtn = isDark
     ? 'text-zinc-400 hover:text-white hover:bg-white/[0.08]'
     : 'text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100'
@@ -209,28 +207,12 @@ export function InboxTable({
                     <tr
                       key={ticket.id}
                       className={`transition-colors group cursor-pointer ${tableRowHover}`}
-                      onClick={() => onEditTicket(ticket)}
+                      onDoubleClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
+                      onClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
                     >
                       {/* Status */}
-                      <td
-                        className="py-3 px-4"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <select
-                          value={ticket.status}
-                          onChange={(e) =>
-                            onStatusChange(
-                              ticket.id,
-                              e.target.value as TicketStatus
-                            )
-                          }
-                          className={`text-[11px] rounded-lg px-2 py-1 focus:outline-none cursor-pointer border ${selectBg}`}
-                        >
-                          <option value="TODO">To Do</option>
-                          <option value="IN_PROGRESS">In Progress</option>
-                          <option value="DONE">Completed</option>
-                          <option value="BLOCKED">Blocked</option>
-                        </select>
+                      <td className="py-3 px-4">
+                        {getStatusBadge(ticket.status)}
                       </td>
 
                       {/* Title & Preview */}
@@ -278,7 +260,10 @@ export function InboxTable({
                         onClick={(e) => e.stopPropagation()}
                       >
                         <button
-                          onClick={() => onEditTicket(ticket)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onEditTicket(ticket)
+                          }}
                           className={`p-1 rounded transition cursor-pointer ${actionBtn}`}
                           title="Edit ticket"
                         >
@@ -321,7 +306,8 @@ export function InboxTable({
               {tickets.map((ticket) => (
                 <div
                   key={ticket.id}
-                  onClick={() => onEditTicket(ticket)}
+                  onDoubleClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
+                  onClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
                   className={`rounded-xl border p-3.5 space-y-2.5 shadow-xs cursor-pointer ${
                     isDark
                       ? 'border-white/[0.06] bg-[#111114] active:bg-white/[0.04]'
@@ -354,22 +340,8 @@ export function InboxTable({
                   <div className={`flex items-center justify-between pt-2 border-t text-[11px] ${
                     isDark ? 'border-white/[0.04]' : 'border-zinc-100'
                   }`}>
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <select
-                        value={ticket.status}
-                        onChange={(e) =>
-                          onStatusChange(
-                            ticket.id,
-                            e.target.value as TicketStatus
-                          )
-                        }
-                        className={`text-[11px] rounded px-2 py-1 border ${selectBg}`}
-                      >
-                        <option value="TODO">To Do</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="DONE">Completed</option>
-                        <option value="BLOCKED">Blocked</option>
-                      </select>
+                    <div className="flex items-center">
+                      {getStatusBadge(ticket.status)}
                     </div>
 
                     <div
@@ -377,7 +349,10 @@ export function InboxTable({
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
-                        onClick={() => onEditTicket(ticket)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEditTicket(ticket)
+                        }}
                         className={`p-1 rounded ${actionBtn}`}
                         title="Edit ticket"
                       >

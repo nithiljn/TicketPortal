@@ -77,6 +77,25 @@ export default function Home() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
+  const [modalMode, setModalMode] = useState<'view' | 'edit'>('edit')
+
+  const handleOpenCreateTicket = () => {
+    setEditingTicket(null)
+    setModalMode('edit')
+    setIsModalOpen(true)
+  }
+
+  const handleOpenViewTicket = (ticket: Ticket) => {
+    setEditingTicket(ticket)
+    setModalMode('view')
+    setIsModalOpen(true)
+  }
+
+  const handleOpenEditTicket = (ticket: Ticket) => {
+    setEditingTicket(ticket)
+    setModalMode('edit')
+    setIsModalOpen(true)
+  }
 
   // 1. Fetch Data from GraphQL
   const loadData = useCallback(async () => {
@@ -472,10 +491,7 @@ export default function Home() {
         theme={theme}
         onToggleTheme={handleToggleTheme}
         ticketCounts={ticketCounts}
-        onOpenCreateModal={() => {
-          setEditingTicket(null)
-          setIsModalOpen(true)
-        }}
+        onOpenCreateModal={handleOpenCreateTicket}
         onOpenCreateWorkspaceModal={() => setIsWorkspaceModalOpen(true)}
       />
 
@@ -643,10 +659,7 @@ export default function Home() {
 
             {/* Quick Create Ticket Button */}
             <button
-              onClick={() => {
-                setEditingTicket(null)
-                setIsModalOpen(true)
-              }}
+              onClick={handleOpenCreateTicket}
               className={`hidden sm:flex h-8 px-3 rounded-lg border text-xs font-medium items-center gap-1.5 transition cursor-pointer ${
                 isDark
                   ? 'bg-white/[0.1] hover:bg-white/[0.16] border-white/[0.1] text-zinc-100 hover:text-white'
@@ -699,10 +712,8 @@ export default function Home() {
                 <InboxTable
                   tickets={filteredTickets}
                   onStatusChange={handleStatusChange}
-                  onEditTicket={(ticket) => {
-                    setEditingTicket(ticket)
-                    setIsModalOpen(true)
-                  }}
+                  onViewTicket={handleOpenViewTicket}
+                  onEditTicket={handleOpenEditTicket}
                   onDeleteTicket={(ticket) => setTicketToDelete(ticket)}
                   selectedProject={selectedProject}
                   theme={theme}
@@ -725,10 +736,8 @@ export default function Home() {
                   <KanbanBoard
                     tickets={filteredTickets}
                     onStatusChange={handleStatusChange}
-                    onEditTicket={(ticket) => {
-                      setEditingTicket(ticket)
-                      setIsModalOpen(true)
-                    }}
+                    onViewTicket={handleOpenViewTicket}
+                    onEditTicket={handleOpenEditTicket}
                     onDeleteTicket={(ticket) => setTicketToDelete(ticket)}
                     theme={theme}
                   />
@@ -769,6 +778,7 @@ export default function Home() {
         }}
         onSave={handleSaveTicket}
         existingTicket={editingTicket}
+        initialMode={modalMode}
         availableProjects={availableProjects}
         currentProject={selectedProject}
         theme={theme}

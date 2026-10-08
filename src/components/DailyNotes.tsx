@@ -81,49 +81,49 @@ export function DailyNotes({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3.5">
-          <div>
-            <label className="block text-[11px] font-medium text-zinc-400 mb-1">
-              Entry Date
-            </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className={`w-full rounded-lg border px-3 py-1.5 text-xs focus:outline-none font-mono ${inputBg}`}
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-[11px] font-medium text-zinc-400">
-                Work Content
+            <div>
+              <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+                Entry Date
               </label>
-              <button
-                type="button"
-                onClick={() => handleQuickTemplate('standup')}
-                className={`text-[10px] px-2 py-0.5 rounded border transition cursor-pointer ${templateBtn}`}
-              >
-                + Template
-              </button>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className={`w-full rounded-lg border px-3 py-1.5 text-xs focus:outline-none font-mono ${inputBg}`}
+              />
             </div>
-            <textarea
-              rows={8}
-              placeholder="Record daily achievements, challenges, decisions, or code notes..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className={`w-full rounded-lg border p-3 text-xs focus:outline-none font-mono leading-relaxed resize-none ${inputBg}`}
-              required
-            />
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading || !content.trim()}
-            className="w-full py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-medium text-xs transition disabled:opacity-50 cursor-pointer shadow-sm"
-          >
-            {loading ? 'Saving Entry...' : 'Save Work Log'}
-          </button>
-        </form>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-medium text-zinc-400">
+                  Work Content
+                </label>
+                <button
+                  type="button"
+                  onClick={() => handleQuickTemplate('standup')}
+                  className={`text-[10px] px-2 py-0.5 rounded border transition cursor-pointer ${templateBtn}`}
+                >
+                  + Template
+                </button>
+              </div>
+              <textarea
+                rows={8}
+                placeholder="Record daily achievements, challenges, decisions, or code notes..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className={`w-full rounded-lg border p-3 text-xs focus:outline-none font-mono leading-relaxed resize-none ${inputBg}`}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !content.trim()}
+              className="w-full py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-medium text-xs transition disabled:opacity-50 cursor-pointer shadow-sm"
+            >
+              {loading ? 'Saving Entry...' : 'Save Work Log'}
+            </button>
+          </form>
       </div>
 
       {/* History / Log Timeline */}
@@ -179,7 +179,7 @@ export function DailyNotes({
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-zinc-500">
-                      by {note.createdBy}
+                      by {note.createdBy?.split('@')[0] || note.createdBy}
                     </span>
                     <button
                       onClick={() => onDeleteNote(note)}

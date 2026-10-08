@@ -322,7 +322,7 @@ export function InboxTable({
                 <div
                   key={ticket.id}
                   onClick={() => onEditTicket(ticket)}
-                  className={`rounded-xl border p-3.5 space-y-2.5 shadow-xs ${
+                  className={`rounded-xl border p-3.5 space-y-2.5 shadow-xs cursor-pointer ${
                     isDark
                       ? 'border-white/[0.06] bg-[#111114] active:bg-white/[0.04]'
                       : 'border-zinc-200 bg-white active:bg-zinc-50'
@@ -388,7 +388,7 @@ export function InboxTable({
                       </button>
                       <button
                         onClick={() => onDeleteTicket(ticket)}
-                        className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10"
+                        className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer"
                         title="Delete ticket"
                       >
                         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

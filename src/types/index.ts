@@ -42,3 +42,15 @@ export interface UpdateTicketInput {
   projectName?: string
   updatedBy?: string
 }
+
+export type UserRole = 'USER' | 'ADMIN' | 'VIEWER'
+
+export interface AuthUser {
+  id: string
+  email: string
+  name: string
+  username?: string
+  role?: string
+  avatarUrl?: string
+}
+

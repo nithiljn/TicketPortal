@@ -183,8 +183,8 @@ export function KanbanBoard({
 
                     {/* Author & Timestamp */}
                     <div className={`flex items-center justify-between text-[10px] text-zinc-500 pt-2 border-t mt-2 ${divider}`}>
-                      <span className="truncate max-w-[80px]">
-                        {ticket.createdBy}
+                      <span className="truncate max-w-[100px]">
+                        {ticket.createdBy?.split('@')[0] || ticket.createdBy}
                       </span>
                       <span className="font-mono">
                         {formatRelativeTime(ticket.createdAt)}

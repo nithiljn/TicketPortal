@@ -1,12 +1,15 @@
 'use client'
 
-import React from 'react'
-import { TicketStatus, TicketPriority } from '@/types'
+import { TicketStatus, TicketPriority, AuthUser } from '@/types'
 
 interface SidebarProps {
   // Mobile drawer state
   isOpen: boolean
   onClose: () => void
+
+  // User Auth & Role
+  user?: AuthUser | null
+  onLogout?: () => void
 
   // Projects
   availableProjects: string[]
@@ -49,6 +52,8 @@ interface SidebarProps {
 export function Sidebar({
   isOpen,
   onClose,
+  user,
+  onLogout,
   availableProjects,
   selectedProject,
   onSelectProject,
@@ -388,21 +393,59 @@ export function Sidebar({
               </button>
             </div>
 
-            {/* Profile Bar */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className={`w-6 h-6 rounded-md font-semibold text-[10px] flex items-center justify-center shrink-0 ${
-                  isDark ? 'bg-white/[0.1] text-zinc-200' : 'bg-zinc-200 text-zinc-800'
-                }`}>
-                  JN
-                </div>
-                <div className="truncate">
-                  <span className={`block text-xs font-medium truncate ${textPrimary}`}>
-                    James Nithil
+            {/* Profile Card & Logout */}
+            <div className={`p-2.5 rounded-xl border flex flex-col gap-2.5 ${
+              isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50 border-zinc-200'
+            }`}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                {user?.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt=""
+                    className="w-8 h-8 rounded-lg object-cover shrink-0 border border-white/[0.08]"
+                  />
+                ) : (
+                  <div className={`w-8 h-8 rounded-lg font-semibold text-xs flex items-center justify-center shrink-0 uppercase ${
+                    isDark ? 'bg-white/[0.08] text-zinc-200' : 'bg-zinc-200 text-zinc-800'
+                  }`}>
+                    {user?.name ? user.name.slice(0, 2) : 'US'}
+                  </div>
+                )}
+                <div className="truncate min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`block text-xs font-semibold truncate ${textPrimary}`}>
+                      {user?.name || 'User'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.2 rounded border font-semibold bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      Active
+                    </span>
+                  </div>
+                  <span className="block text-[10px] text-zinc-500 truncate">
+                    {user?.email || (user?.username ? `@${user.username}` : 'authenticated')}
                   </span>
                 </div>
               </div>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Online" />
+
+              {onLogout && (
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className={`w-full py-1.5 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-2 border transition cursor-pointer ${
+                    isDark
+                      ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20 hover:border-rose-500/30'
+                      : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                  }`}
+                  title="Sign out of TicketFlow"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  <span>Log Out</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

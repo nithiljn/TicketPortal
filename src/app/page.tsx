@@ -12,8 +12,12 @@ import { TicketModal } from '@/components/TicketModal'
 import { WorkspaceModal } from '@/components/WorkspaceModal'
 import { ConfirmModal } from '@/components/ConfirmModal'
 import { Toast } from '@/components/Toast'
+import { LoginScreen } from '@/components/LoginScreen'
+import { useAuth } from '@/context/AuthContext'
 
 export default function Home() {
+  const { user, isLoading: isAuthLoading, logout } = useAuth()
+
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([])
   const [availableProjects, setAvailableProjects] = useState<string[]>([
@@ -79,9 +83,9 @@ export default function Home() {
       setError('')
 
       const query = /* GraphQL */ `
-        query GetPortalData($projectName: String, $search: String) {
-          projects
-          tickets(projectName: $projectName, search: $search) {
+        query GetPortalData($projectName: String, $search: String, $userEmail: String) {
+          projects(userEmail: $userEmail)
+          tickets(projectName: $projectName, search: $search, userEmail: $userEmail) {
             id
             title
             description
@@ -94,7 +98,7 @@ export default function Home() {
             createdAt
             updatedAt
           }
-          dailyNotes {
+          dailyNotes(userEmail: $userEmail) {
             id
             date
             content
@@ -111,6 +115,7 @@ export default function Home() {
       }>(query, {
         projectName: selectedProject !== 'ALL' ? selectedProject : null,
         search: searchTerm.trim() || null,
+        userEmail: user?.email || null,
       })
 
       setTickets(data.tickets || [])
@@ -137,7 +142,7 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
-  }, [selectedProject, searchTerm])
+  }, [selectedProject, searchTerm, user?.email])
 
   useEffect(() => {
     loadData()
@@ -221,6 +226,8 @@ export default function Home() {
     projectName: string
     author: string
   }) => {
+    const currentUserName = user?.email || user?.name || ticketData.author || 'User'
+
     if (ticketData.id) {
       const mutation = /* GraphQL */ `
         mutation UpdateTicket($id: ID!, $input: UpdateTicketInput!) {
@@ -246,7 +253,7 @@ export default function Home() {
           priority: ticketData.priority,
           category: ticketData.category,
           projectName: ticketData.projectName,
-          updatedBy: ticketData.author,
+          updatedBy: currentUserName,
         },
       })
       setToast({
@@ -278,7 +285,7 @@ export default function Home() {
           priority: ticketData.priority,
           category: ticketData.category,
           projectName: ticketData.projectName,
-          createdBy: ticketData.author,
+          createdBy: currentUserName,
         },
       })
       setToast({
@@ -296,11 +303,11 @@ export default function Home() {
     setIsDeleting(true)
     try {
       const mutation = /* GraphQL */ `
-        mutation DeleteTicket($id: ID!) {
-          deleteTicket(id: $id)
+        mutation DeleteTicket($id: ID!, $userEmail: String) {
+          deleteTicket(id: $id, userEmail: $userEmail)
         }
       `
-      await fetchGraphQL(mutation, { id: ticketToDelete.id })
+      await fetchGraphQL(mutation, { id: ticketToDelete.id, userEmail: user?.email })
       setTickets((prev) => prev.filter((t) => t.id !== ticketToDelete.id))
       setTicketToDelete(null)
       setToast({
@@ -362,7 +369,7 @@ export default function Home() {
       input: {
         content,
         date,
-        createdBy: 'Nithil',
+        createdBy: user?.email || user?.name || 'User',
       },
     })
     loadData()
@@ -373,11 +380,11 @@ export default function Home() {
     setIsDeleting(true)
     try {
       const mutation = /* GraphQL */ `
-        mutation DeleteNote($id: ID!) {
-          deleteDailyNote(id: $id)
+        mutation DeleteNote($id: ID!, $userEmail: String) {
+          deleteDailyNote(id: $id, userEmail: $userEmail)
         }
       `
-      await fetchGraphQL(mutation, { id: noteToDelete.id })
+      await fetchGraphQL(mutation, { id: noteToDelete.id, userEmail: user?.email })
       setDailyNotes((prev) => prev.filter((n) => n.id !== noteToDelete.id))
       setNoteToDelete(null)
     } catch (err: unknown) {
@@ -388,6 +395,29 @@ export default function Home() {
   }
 
   const isDark = theme === 'dark'
+
+  if (isAuthLoading) {
+    return (
+      <div
+        className={`h-screen w-screen flex flex-col items-center justify-center font-sans ${
+          theme === 'dark' ? 'bg-[#09090b] text-zinc-100' : 'bg-zinc-50 text-zinc-900'
+        }`}
+      >
+        <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/[0.1] text-sky-400 flex items-center justify-center animate-pulse mb-3">
+          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M2 9a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v2a2 2 0 0 0 0 4v2a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-2a2 2 0 0 0 0-4V9z" />
+          </svg>
+        </div>
+        <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
+          Authenticating TicketFlow...
+        </p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <LoginScreen theme={theme} onToggleTheme={handleToggleTheme} />
+  }
 
   return (
     <div
@@ -401,6 +431,8 @@ export default function Home() {
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        user={user}
+        onLogout={logout}
         availableProjects={availableProjects}
         selectedProject={selectedProject}
         onSelectProject={setSelectedProject}
@@ -605,6 +637,24 @@ export default function Home() {
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               <span>Create</span>
+            </button>
+
+            {/* Quick Logout Button */}
+            <button
+              onClick={logout}
+              className={`h-8 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition cursor-pointer ${
+                isDark
+                  ? 'bg-white/[0.04] hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/20 border-white/[0.08] text-zinc-400'
+                  : 'bg-zinc-100 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 border-zinc-200 text-zinc-600'
+              }`}
+              title="Sign out of TicketFlow"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
         </header>

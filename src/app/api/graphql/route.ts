@@ -72,19 +72,20 @@ const typeDefs = /* GraphQL */ `
       priority: TicketPriority
       projectName: String
       search: String
+      userEmail: String
     ): [Ticket!]!
     ticket(id: ID!): Ticket
-    projects: [String!]!
-    dailyNotes(date: String): [DailyNote!]!
+    projects(userEmail: String): [String!]!
+    dailyNotes(date: String, userEmail: String): [DailyNote!]!
   }
 
   # MUTATIONS
   type Mutation {
     createTicket(input: CreateTicketInput!): Ticket!
     updateTicket(id: ID!, input: UpdateTicketInput!): Ticket!
-    deleteTicket(id: ID!): Boolean!
+    deleteTicket(id: ID!, userEmail: String): Boolean!
     createDailyNote(input: CreateDailyNoteInput!): DailyNote!
-    deleteDailyNote(id: ID!): Boolean!
+    deleteDailyNote(id: ID!, userEmail: String): Boolean!
     createWorkspace(name: String!): String!
     deleteWorkspace(name: String!): Boolean!
   }
@@ -113,7 +114,16 @@ interface NoteRow {
   created_at: string
 }
 
+function formatAuthor(raw: string): string {
+  if (!raw) return '@user'
+  if (raw.includes('@') && raw.includes('.')) {
+    return `@${raw.split('@')[0]}`
+  }
+  return raw.startsWith('@') ? raw : `@${raw}`
+}
+
 function formatTicket(row: TicketRow) {
+  const displayAuthor = formatAuthor(row.created_by)
   return {
     id: row.id,
     title: row.title,
@@ -122,8 +132,8 @@ function formatTicket(row: TicketRow) {
     priority: row.priority,
     category: row.category,
     projectName: row.project_name || 'Ticket Portal',
-    createdBy: row.created_by,
-    updatedBy: row.updated_by,
+    createdBy: displayAuthor,
+    updatedBy: formatAuthor(row.updated_by || row.created_by),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -134,7 +144,7 @@ function formatDailyNote(row: NoteRow) {
     id: row.id,
     date: row.date,
     content: row.content,
-    createdBy: row.created_by,
+    createdBy: formatAuthor(row.created_by),
     createdAt: row.created_at,
   }
 }
@@ -149,12 +159,26 @@ const resolvers = {
         priority?: string
         projectName?: string
         search?: string
+        userEmail?: string
       }
     ) => {
       let query = supabase
         .from('tickets')
         .select('*')
         .order('created_at', { ascending: false })
+
+      if (args.userEmail) {
+        if (args.userEmail === 'admin@ticketflow.io') {
+          query = query.or(
+            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+          )
+        } else {
+          const prefix = args.userEmail.split('@')[0]
+          query = query.or(
+            `created_by.eq.${args.userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+          )
+        }
+      }
 
       if (args.projectName && args.projectName !== 'ALL') {
         query = query.eq('project_name', args.projectName)
@@ -176,13 +200,38 @@ const resolvers = {
         console.error('Supabase tickets query error:', error)
         throw new Error(error.message)
       }
-      return (data as TicketRow[] || []).map(formatTicket)
+      return ((data as TicketRow[]) || []).map(formatTicket)
     },
 
-    projects: async () => {
+    projects: async (_: unknown, args: { userEmail?: string }) => {
       const projectSet = new Set<string>(['Ticket Portal'])
 
-      // 1. Check workspaces table
+      // 1. Check user-specific tickets for project names
+      try {
+        let tQuery = supabase.from('tickets').select('project_name')
+        if (args.userEmail) {
+          if (args.userEmail === 'admin@ticketflow.io') {
+            tQuery = tQuery.or(
+              'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+            )
+          } else {
+            const prefix = args.userEmail.split('@')[0]
+            tQuery = tQuery.or(
+              `created_by.eq.${args.userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+            )
+          }
+        }
+        const { data: tData, error: tError } = await tQuery
+        if (!tError && tData) {
+          tData.forEach((t: { project_name: string }) => {
+            if (t.project_name) projectSet.add(t.project_name)
+          })
+        }
+      } catch {
+        // Tickets table error
+      }
+
+      // 2. Check workspaces table
       try {
         const { data: wsData, error: wsError } = await supabase
           .from('workspaces')
@@ -194,20 +243,6 @@ const resolvers = {
         }
       } catch {
         // Workspaces table may not exist yet
-      }
-
-      // 2. Also check tickets table project_name
-      try {
-        const { data: tData, error: tError } = await supabase
-          .from('tickets')
-          .select('project_name')
-        if (!tError && tData) {
-          tData.forEach((t: { project_name: string }) => {
-            if (t.project_name) projectSet.add(t.project_name)
-          })
-        }
-      } catch {
-        // Tickets table error
       }
 
       return Array.from(projectSet)
@@ -227,7 +262,10 @@ const resolvers = {
       return formatTicket(data as TicketRow)
     },
 
-    dailyNotes: async (_: unknown, { date }: { date?: string }) => {
+    dailyNotes: async (
+      _: unknown,
+      { date, userEmail }: { date?: string; userEmail?: string }
+    ) => {
       let query = supabase
         .from('daily_notes')
         .select('*')
@@ -237,12 +275,25 @@ const resolvers = {
         query = query.eq('date', date)
       }
 
+      if (userEmail) {
+        if (userEmail === 'admin@ticketflow.io') {
+          query = query.or(
+            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+          )
+        } else {
+          const prefix = userEmail.split('@')[0]
+          query = query.or(
+            `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+          )
+        }
+      }
+
       const { data, error } = await query
       if (error) {
         console.error('Supabase dailyNotes query error:', error)
         throw new Error(error.message)
       }
-      return (data as NoteRow[] || []).map(formatDailyNote)
+      return ((data as NoteRow[]) || []).map(formatDailyNote)
     },
   },
 
@@ -328,8 +379,24 @@ const resolvers = {
       return formatTicket(data as TicketRow)
     },
 
-    deleteTicket: async (_: unknown, { id }: { id: string }) => {
-      const { error } = await supabase.from('tickets').delete().eq('id', id)
+    deleteTicket: async (
+      _: unknown,
+      { id, userEmail }: { id: string; userEmail?: string }
+    ) => {
+      let q = supabase.from('tickets').delete().eq('id', id)
+      if (userEmail) {
+        if (userEmail === 'admin@ticketflow.io') {
+          q = q.or(
+            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+          )
+        } else {
+          const prefix = userEmail.split('@')[0]
+          q = q.or(
+            `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+          )
+        }
+      }
+      const { error } = await q
       if (error) {
         console.error('Supabase deleteTicket error:', error)
         throw new Error(error.message)
@@ -361,8 +428,24 @@ const resolvers = {
       return formatDailyNote(data as NoteRow)
     },
 
-    deleteDailyNote: async (_: unknown, { id }: { id: string }) => {
-      const { error } = await supabase.from('daily_notes').delete().eq('id', id)
+    deleteDailyNote: async (
+      _: unknown,
+      { id, userEmail }: { id: string; userEmail?: string }
+    ) => {
+      let q = supabase.from('daily_notes').delete().eq('id', id)
+      if (userEmail) {
+        if (userEmail === 'admin@ticketflow.io') {
+          q = q.or(
+            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+          )
+        } else {
+          const prefix = userEmail.split('@')[0]
+          q = q.or(
+            `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+          )
+        }
+      }
+      const { error } = await q
       if (error) {
         console.error('Supabase deleteDailyNote error:', error)
         throw new Error(error.message)

@@ -13,11 +13,15 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'TicketFlow Engineering Work OS',
+  title: 'TicketFlow',
   description:
     'Engineering ticket management, multi-workspace tracking, and daily standup notes powered by GraphQL and Supabase.',
   icons: {
-    icon: '/ticket-icon.svg',
+    icon: [
+      { url: '/ticket-icon.svg', type: 'image/svg+xml' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '32x32' },
+    ],
   },
 }
 

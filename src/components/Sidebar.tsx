@@ -46,6 +46,7 @@ interface SidebarProps {
   // Trigger modal
   onOpenCreateModal: () => void
   onOpenCreateWorkspaceModal?: () => void
+  onDeleteWorkspace?: (proj: string) => void
 }
 
 export function Sidebar({
@@ -70,6 +71,7 @@ export function Sidebar({
   ticketCounts,
   onOpenCreateModal,
   onOpenCreateWorkspaceModal,
+  onDeleteWorkspace,
 }: SidebarProps) {
   const isDark = theme === 'dark'
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -223,26 +225,57 @@ export function Sidebar({
                   {selectedProject === 'ALL' && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
                 </button>
 
-                {availableProjects.map((proj) => (
-                  <button
-                    key={proj}
-                    onClick={() => {
-                      onSelectProject(proj)
-                      onClose()
-                    }}
-                    className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer text-left ${
-                      selectedProject === proj ? itemActive : itemHover
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                      </svg>
-                      <span className="truncate">{proj}</span>
+                {availableProjects.map((proj) => {
+                  const isSelected = selectedProject === proj
+                  const canDelete = availableProjects.length > 1
+
+                  return (
+                    <div
+                      key={proj}
+                      className={`group/ws w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer text-left ${
+                        isSelected ? itemActive : itemHover
+                      }`}
+                      onClick={() => {
+                        onSelectProject(proj)
+                        onClose()
+                      }}
+                    >
+                      <div className="flex items-center gap-2 truncate flex-1 min-w-0 pr-1">
+                        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                        </svg>
+                        <span className="truncate">{proj}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {isSelected && (
+                          <span className={`w-1.5 h-1.5 rounded-full bg-current ${canDelete ? 'group-hover/ws:hidden' : ''}`} />
+                        )}
+
+                        {canDelete && onDeleteWorkspace && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onDeleteWorkspace(proj)
+                            }}
+                            className={`p-1 rounded transition cursor-pointer sm:opacity-0 group-hover/ws:opacity-100 focus:opacity-100 ${
+                              isDark
+                                ? 'text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10'
+                                : 'text-zinc-400 hover:text-rose-600 hover:bg-rose-50'
+                            }`}
+                            title={`Delete workspace "${proj}"`}
+                          >
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    {selectedProject === proj && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
-                  </button>
-                ))}
+                  )
+                })}
 
                 {onOpenCreateWorkspaceModal && (
                   <button

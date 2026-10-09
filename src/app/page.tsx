@@ -10,6 +10,7 @@ import { KanbanBoard } from '@/components/KanbanBoard'
 import { DailyNotes } from '@/components/DailyNotes'
 import { TicketModal } from '@/components/TicketModal'
 import { WorkspaceModal } from '@/components/WorkspaceModal'
+import { DeleteWorkspaceModal } from '@/components/DeleteWorkspaceModal'
 import { ConfirmModal } from '@/components/ConfirmModal'
 import { Toast } from '@/components/Toast'
 import { LoginScreen } from '@/components/LoginScreen'
@@ -24,6 +25,7 @@ export default function Home() {
     'Ticket Portal',
   ])
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false)
+  const [workspaceToDelete, setWorkspaceToDelete] = useState<string | null>(null)
   const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null)
   const [noteToDelete, setNoteToDelete] = useState<DailyNote | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -393,6 +395,55 @@ export default function Home() {
     })
   }
 
+  const handleConfirmDeleteWorkspace = async (workspaceName: string) => {
+    try {
+      const mutation = /* GraphQL */ `
+        mutation DeleteWorkspace($name: String!) {
+          deleteWorkspace(name: $name)
+        }
+      `
+      await fetchGraphQL(mutation, { name: workspaceName })
+
+      // Update available workspaces state
+      setAvailableProjects((prev) => {
+        const next = prev.filter((p) => p !== workspaceName)
+        const updated = next.length > 0 ? next : ['Ticket Portal']
+        if (user?.email) {
+          try {
+            const storageKey = `tp_workspaces_${user.email.toLowerCase()}`
+            localStorage.setItem(storageKey, JSON.stringify(updated))
+          } catch {
+            // ignore
+          }
+        }
+        return updated
+      })
+
+      // If the deleted workspace was currently selected, reset filter to 'ALL'
+      if (selectedProject === workspaceName) {
+        setSelectedProject('ALL')
+      }
+
+      // Remove local tickets that belonged to that workspace
+      setTickets((prev) => prev.filter((t) => t.projectName !== workspaceName))
+
+      setWorkspaceToDelete(null)
+      setToast({
+        isOpen: true,
+        title: 'Workspace Deleted',
+        message: `Workspace "${workspaceName}" has been deleted successfully`,
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete workspace'
+      setToast({
+        isOpen: true,
+        title: 'Error',
+        message: msg,
+      })
+      throw err
+    }
+  }
+
   const handleAddDailyNote = async (content: string, date: string) => {
     const mutation = /* GraphQL */ `
       mutation AddNote($input: CreateDailyNoteInput!) {
@@ -493,6 +544,7 @@ export default function Home() {
         ticketCounts={ticketCounts}
         onOpenCreateModal={handleOpenCreateTicket}
         onOpenCreateWorkspaceModal={() => setIsWorkspaceModalOpen(true)}
+        onDeleteWorkspace={(proj) => setWorkspaceToDelete(proj)}
       />
 
       {/* 2. Main Content Canvas */}
@@ -817,6 +869,18 @@ export default function Home() {
         theme={theme}
         loading={isDeleting}
       />
+
+      {/* Delete Workspace Confirmation Modal */}
+      {workspaceToDelete && (
+        <DeleteWorkspaceModal
+          isOpen={Boolean(workspaceToDelete)}
+          onClose={() => setWorkspaceToDelete(null)}
+          workspaceName={workspaceToDelete}
+          ticketCount={tickets.filter((t) => t.projectName === workspaceToDelete).length}
+          onConfirmDelete={handleConfirmDeleteWorkspace}
+          theme={theme}
+        />
+      )}
 
       {/* Floating Success / Action Toast Notification */}
       <Toast

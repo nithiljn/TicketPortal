@@ -21,9 +21,7 @@ export default function Home() {
 
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([])
-  const [availableProjects, setAvailableProjects] = useState<string[]>([
-    'Ticket Portal',
-  ])
+  const [availableProjects, setAvailableProjects] = useState<string[]>([])
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false)
   const [workspaceToDelete, setWorkspaceToDelete] = useState<string | null>(null)
   const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null)
@@ -166,10 +164,20 @@ export default function Home() {
         // ignore
       }
 
-      const merged = Array.from(
-        new Set(['Ticket Portal', ...(data.projects || []), ...localWs])
+      const serverProjects = data.projects || []
+      // Purge any stale 'Ticket Portal' from local cache if server didn't return it for this user
+      const validLocalWs = localWs.filter(
+        (w) => w !== 'Ticket Portal' || serverProjects.includes('Ticket Portal')
       )
+      const merged = Array.from(new Set([...serverProjects, ...validLocalWs]))
       setAvailableProjects(merged)
+
+      // Sync cleaned workspaces back to localStorage
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(merged))
+      } catch {
+        // ignore
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error loading data'
       setError(msg)
@@ -364,11 +372,11 @@ export default function Home() {
 
     try {
       const mutation = /* GraphQL */ `
-        mutation CreateWorkspace($name: String!) {
-          createWorkspace(name: $name)
+        mutation CreateWorkspace($name: String!, $userEmail: String) {
+          createWorkspace(name: $name, userEmail: $userEmail)
         }
       `
-      await fetchGraphQL(mutation, { name: trimmed })
+      await fetchGraphQL(mutation, { name: trimmed, userEmail: user?.email })
     } catch (err: unknown) {
       console.warn('Workspace GraphQL notice:', err)
     }
@@ -398,16 +406,15 @@ export default function Home() {
   const handleConfirmDeleteWorkspace = async (workspaceName: string) => {
     try {
       const mutation = /* GraphQL */ `
-        mutation DeleteWorkspace($name: String!) {
-          deleteWorkspace(name: $name)
+        mutation DeleteWorkspace($name: String!, $userEmail: String) {
+          deleteWorkspace(name: $name, userEmail: $userEmail)
         }
       `
-      await fetchGraphQL(mutation, { name: workspaceName })
+      await fetchGraphQL(mutation, { name: workspaceName, userEmail: user?.email })
 
       // Update available workspaces state
       setAvailableProjects((prev) => {
-        const next = prev.filter((p) => p !== workspaceName)
-        const updated = next.length > 0 ? next : ['Ticket Portal']
+        const updated = prev.filter((p) => p !== workspaceName)
         if (user?.email) {
           try {
             const storageKey = `tp_workspaces_${user.email.toLowerCase()}`

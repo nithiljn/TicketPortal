@@ -39,7 +39,7 @@ export function TicketModal({
   const [status, setStatus] = useState<TicketStatus>('TODO')
   const [priority, setPriority] = useState<TicketPriority>('MEDIUM')
   const [category, setCategory] = useState('DEV')
-  const [projectName, setProjectName] = useState('Ticket Portal')
+  const [projectName, setProjectName] = useState(availableProjects[0] || 'General')
   const [author, setAuthor] = useState('James Nithil')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -63,7 +63,7 @@ export function TicketModal({
       setCategory(existingTicket.category || 'DEV')
       setProjectName(
         existingTicket.projectName ||
-          (availableProjects[0] || 'Ticket Portal')
+          (availableProjects[0] || 'General')
       )
       setAuthor(existingTicket.updatedBy || 'James Nithil')
     } else {
@@ -76,7 +76,7 @@ export function TicketModal({
       const defaultProject =
         currentProject && currentProject !== 'ALL'
           ? currentProject
-          : availableProjects[0] || 'Ticket Portal'
+          : availableProjects[0] || 'General'
       setProjectName(defaultProject)
       setAuthor('James Nithil')
     }
@@ -498,11 +498,17 @@ export function TicketModal({
                       onChange={(e) => setProjectName(e.target.value)}
                       className={`w-full h-10 rounded-xl border px-3 py-2 text-xs font-medium focus:outline-none transition cursor-pointer appearance-none ${inputBg}`}
                     >
-                      {availableProjects.map((proj) => (
-                        <option key={proj} value={proj} className={isDark ? 'bg-[#18181b]' : 'bg-white'}>
-                          {proj}
+                      {availableProjects.length === 0 ? (
+                        <option value="General" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>
+                          General
                         </option>
-                      ))}
+                      ) : (
+                        availableProjects.map((proj) => (
+                          <option key={proj} value={proj} className={isDark ? 'bg-[#18181b]' : 'bg-white'}>
+                            {proj}
+                          </option>
+                        ))
+                      )}
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-400">
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

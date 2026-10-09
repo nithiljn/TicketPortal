@@ -86,8 +86,8 @@ const typeDefs = /* GraphQL */ `
     deleteTicket(id: ID!, userEmail: String): Boolean!
     createDailyNote(input: CreateDailyNoteInput!): DailyNote!
     deleteDailyNote(id: ID!, userEmail: String): Boolean!
-    createWorkspace(name: String!): String!
-    deleteWorkspace(name: String!): Boolean!
+    createWorkspace(name: String!, userEmail: String): String!
+    deleteWorkspace(name: String!, userEmail: String): Boolean!
   }
 `
 
@@ -131,7 +131,7 @@ function formatTicket(row: TicketRow) {
     status: row.status,
     priority: row.priority,
     category: row.category,
-    projectName: row.project_name || 'Ticket Portal',
+    projectName: row.project_name || 'General',
     createdBy: displayAuthor,
     updatedBy: formatAuthor(row.updated_by || row.created_by),
     createdAt: row.created_at,
@@ -209,11 +209,11 @@ const resolvers = {
     },
 
     projects: async (_: unknown, args: { userEmail?: string }) => {
-      const projectSet = new Set<string>(['Ticket Portal'])
+      const projectSet = new Set<string>()
 
       // Security: Only return projects if userEmail is provided
       if (!args.userEmail || !args.userEmail.trim()) {
-        return Array.from(projectSet)
+        return []
       }
 
       const userEmail = args.userEmail.trim().toLowerCase()
@@ -239,6 +239,23 @@ const resolvers = {
         }
       } catch {
         // Tickets table error
+      }
+
+      // 2. Also check persisted user-scoped workspaces in Supabase
+      try {
+        const { data: wData, error: wError } = await supabase
+          .from('workspaces')
+          .select('name')
+        if (!wError && wData) {
+          const userPrefix = `${userEmail}:::`
+          wData.forEach((w: { name: string }) => {
+            if (w.name.startsWith(userPrefix)) {
+              projectSet.add(w.name.slice(userPrefix.length))
+            }
+          })
+        }
+      } catch {
+        // Workspaces table error
       }
 
       return Array.from(projectSet)
@@ -324,7 +341,7 @@ const resolvers = {
             status: input.status || 'TODO',
             priority: input.priority || 'MEDIUM',
             category: input.category || 'DEV',
-            project_name: input.projectName || 'Ticket Portal',
+            project_name: input.projectName || 'General',
             created_by: input.createdBy || 'Nithil',
             updated_by: input.createdBy || 'Nithil',
           },
@@ -460,26 +477,57 @@ const resolvers = {
       return true
     },
 
-    createWorkspace: async (_: unknown, { name }: { name: string }) => {
+    createWorkspace: async (
+      _: unknown,
+      { name, userEmail }: { name: string; userEmail?: string }
+    ) => {
       const trimmed = name.trim()
       if (!trimmed) {
         throw new Error('Workspace name cannot be empty')
       }
 
+      const email = userEmail?.trim().toLowerCase()
+      const scopedName = email ? `${email}:::${trimmed}` : trimmed
+
       // Upsert so duplicate names across different users never error
       try {
         await supabase
           .from('workspaces')
-          .upsert({ name: trimmed }, { onConflict: 'name', ignoreDuplicates: true })
+          .upsert({ name: scopedName }, { onConflict: 'name', ignoreDuplicates: true })
       } catch (err) {
         console.warn('Workspaces table insert notice:', err)
       }
       return trimmed
     },
 
-    deleteWorkspace: async (_: unknown, { name }: { name: string }) => {
+    deleteWorkspace: async (
+      _: unknown,
+      { name, userEmail }: { name: string; userEmail?: string }
+    ) => {
+      const email = userEmail?.trim().toLowerCase()
+      const scopedName = email ? `${email}:::${name}` : name
+
       try {
-        await supabase.from('workspaces').delete().eq('name', name)
+        await supabase
+          .from('workspaces')
+          .delete()
+          .or(`name.eq.${scopedName},name.eq.${name}`)
+
+        // Delete tickets belonging to this workspace for this user
+        let tQuery = supabase.from('tickets').delete().eq('project_name', name)
+        if (email) {
+          const prefix = email.split('@')[0]
+          if (email === 'admin@ticketflow.io') {
+            tQuery = tQuery.or(
+              'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+            )
+          } else {
+            tQuery = tQuery.or(
+              `created_by.eq.${email},created_by.eq.@${prefix},created_by.eq.${prefix}`
+            )
+          }
+        }
+        await tQuery
       } catch (err) {
         console.warn('Workspaces table delete notice:', err)
       }

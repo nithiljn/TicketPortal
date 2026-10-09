@@ -97,6 +97,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(extractUser(session.user))
+        if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+          window.history.replaceState({}, document.title, window.location.pathname)
+        }
       } else {
         setUser(null)
       }

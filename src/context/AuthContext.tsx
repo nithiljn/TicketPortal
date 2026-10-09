@@ -172,6 +172,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: 'Username must be at least 3 characters' }
       }
 
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters long')
+        return { success: false, error: 'Password must be at least 8 characters long' }
+      }
+
+      if (!/\d/.test(password)) {
+        setError('Password must contain at least one number')
+        return { success: false, error: 'Password must contain at least one number' }
+      }
+
+      if (!/[!@#$%^&*(),.?":{}|<>_\-+=[\]\\/`~]/.test(password)) {
+        setError('Password must contain at least one special character (!@#$)')
+        return { success: false, error: 'Password must contain at least one special character (!@#$)' }
+      }
+
       // Check username uniqueness
       try {
         const checkRes = await fetch('/api/auth/lookup', {

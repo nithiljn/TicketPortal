@@ -33,6 +33,32 @@ export function DashboardView({
   const medium = tickets.filter((t) => t.priority === 'MEDIUM').length
   const low = tickets.filter((t) => t.priority === 'LOW').length
 
+  // Status Distribution circular donut chart calculations
+  const STATUS_RADIUS = 48
+  const STATUS_CIRCUMFERENCE = 2 * Math.PI * STATUS_RADIUS
+
+  const statusData = [
+    { label: 'Completed', count: done, color: '#10b981', dot: 'bg-emerald-500' },
+    { label: 'In Progress', count: inProgress, color: '#f59e0b', dot: 'bg-amber-400' },
+    { label: 'To Do', count: todo, color: isDark ? '#a1a1aa' : '#71717a', dot: 'bg-zinc-400' },
+    { label: 'Blocked', count: blocked, color: '#f43f5e', dot: 'bg-rose-500' },
+  ]
+
+  let accumulatedStatusOffset = 0
+  const statusSegments = statusData.map((item) => {
+    const fraction = total > 0 ? item.count / total : 0
+    const strokeLength = fraction * STATUS_CIRCUMFERENCE
+    const offset = accumulatedStatusOffset
+    accumulatedStatusOffset += strokeLength
+    const pct = total > 0 ? Math.round(fraction * 100) : 0
+    return {
+      ...item,
+      pct,
+      strokeLength,
+      offset,
+    }
+  })
+
   // Projects distribution
   const projectStats = availableProjects.map((proj) => {
     const count = tickets.filter((t) => t.projectName === proj).length
@@ -104,69 +130,93 @@ export function DashboardView({
 
       {/* 2. Visual Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Chart 1: Workflow Status Distribution */}
+        {/* Chart 1: Workflow Status Distribution (Circular Donut Chart) */}
         <div className={`p-5 rounded-2xl border ${cardBg}`}>
           <div className="flex items-center justify-between pb-3 mb-4 border-b border-inherit">
             <h3 className="text-xs font-semibold uppercase tracking-wider">
               Status Distribution
             </h3>
-            <span className="text-[11px] font-mono text-zinc-500">{total} tickets</span>
+            <span className="text-[11px] font-mono text-zinc-500">Circular Breakdown</span>
           </div>
 
-          {/* Segmented Visual Progress Bar */}
-          <div className="w-full h-3 rounded-full overflow-hidden flex bg-white/[0.04] mb-5">
-            {done > 0 && (
-              <div
-                style={{ width: `${(done / total) * 100}%` }}
-                className="bg-emerald-500 transition-all duration-500"
-                title={`Completed: ${done}`}
-              />
-            )}
-            {inProgress > 0 && (
-              <div
-                style={{ width: `${(inProgress / total) * 100}%` }}
-                className="bg-amber-400 transition-all duration-500"
-                title={`In Progress: ${inProgress}`}
-              />
-            )}
-            {todo > 0 && (
-              <div
-                style={{ width: `${(todo / total) * 100}%` }}
-                className="bg-zinc-400 transition-all duration-500"
-                title={`To Do: ${todo}`}
-              />
-            )}
-            {blocked > 0 && (
-              <div
-                style={{ width: `${(blocked / total) * 100}%` }}
-                className="bg-rose-500 transition-all duration-500"
-                title={`Blocked: ${blocked}`}
-              />
-            )}
-          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-1">
+            {/* Circular Donut Chart SVG */}
+            <div className="relative flex items-center justify-center shrink-0">
+              <svg className="w-36 h-36 transform -rotate-90" viewBox="0 0 120 120">
+                {/* Background Ring */}
+                <circle
+                  cx="60"
+                  cy="60"
+                  r={STATUS_RADIUS}
+                  className={isDark ? 'stroke-white/[0.06]' : 'stroke-zinc-100'}
+                  strokeWidth="13"
+                  fill="none"
+                />
+                {/* Status Segments */}
+                {statusSegments.map((seg) =>
+                  seg.count > 0 ? (
+                    <circle
+                      key={seg.label}
+                      cx="60"
+                      cy="60"
+                      r={STATUS_RADIUS}
+                      stroke={seg.color}
+                      strokeWidth="13"
+                      strokeDasharray={`${seg.strokeLength} ${STATUS_CIRCUMFERENCE}`}
+                      strokeDashoffset={-seg.offset}
+                      fill="none"
+                      className="transition-all duration-700 ease-out"
+                    />
+                  ) : null
+                )}
+              </svg>
 
-          {/* Status Breakdown Legend & Counts */}
-          <div className="space-y-2.5">
-            {[
-              { label: 'Completed', count: done, color: 'bg-emerald-500', text: 'text-emerald-400' },
-              { label: 'In Progress', count: inProgress, color: 'bg-amber-400', text: 'text-amber-400' },
-              { label: 'To Do', count: todo, color: 'bg-zinc-400', text: 'text-zinc-300' },
-              { label: 'Blocked', count: blocked, color: 'bg-rose-500', text: 'text-rose-400' },
-            ].map((item) => {
-              const pct = total > 0 ? Math.round((item.count / total) * 100) : 0
-              return (
-                <div key={item.label} className="flex items-center justify-between text-xs">
+              {/* Donut Center Display */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-center">
+                <span className="text-2xl font-bold font-mono tracking-tight leading-none">
+                  {total}
+                </span>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mt-1">
+                  Tickets
+                </span>
+              </div>
+            </div>
+
+            {/* Status Legend & Breakdown */}
+            <div className="flex-1 w-full space-y-2">
+              {statusSegments.map((item) => (
+                <div
+                  key={item.label}
+                  className={`flex items-center justify-between p-2 rounded-xl text-xs transition border ${
+                    isDark
+                      ? 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.05]'
+                      : 'border-zinc-100 bg-zinc-50/70 hover:bg-zinc-100/70'
+                  }`}
+                >
                   <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${item.color}`} />
-                    <span>{item.label}</span>
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                      {item.label}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-3 font-mono">
-                    <span className="text-zinc-500">{pct}%</span>
-                    <span className="w-8 text-right font-semibold">{item.count}</span>
+                  <div className="flex items-center gap-2.5 font-mono">
+                    <span className="text-[11px] text-zinc-500">{item.pct}%</span>
+                    <span
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-semibold text-right min-w-[28px] border ${
+                        isDark
+                          ? 'bg-white/[0.06] border-white/[0.08] text-zinc-200'
+                          : 'bg-white border-zinc-200 text-zinc-800 shadow-2xs'
+                      }`}
+                    >
+                      {item.count}
+                    </span>
                   </div>
                 </div>
-              )
-            })}
+              ))}
+            </div>
           </div>
         </div>
 

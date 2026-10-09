@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { TicketStatus, TicketPriority, AuthUser } from '@/types'
 
 interface SidebarProps {
@@ -21,6 +21,11 @@ interface SidebarProps {
 
   selectedPriority: TicketPriority | 'ALL'
   onSelectPriority: (p: TicketPriority | 'ALL') => void
+
+  // Category Filter
+  selectedCategory: string | 'ALL'
+  onSelectCategory: (cat: string | 'ALL') => void
+  categoryCounts?: Record<string, number>
 
   // Date Range Filter (From - To)
   fromDate: string
@@ -61,6 +66,9 @@ export function Sidebar({
   onSelectStatus,
   selectedPriority,
   onSelectPriority,
+  selectedCategory,
+  onSelectCategory,
+  categoryCounts,
   fromDate,
   toDate,
   onSelectFromDate,
@@ -103,6 +111,34 @@ export function Sidebar({
   const inputBg = isDark
     ? 'bg-black/40 border-white/[0.08] text-zinc-200'
     : 'bg-zinc-50 border-zinc-200 text-zinc-900'
+
+  const DEFAULT_CATEGORIES: { id: string; label: string; dot: string }[] = [
+    { id: 'ALL', label: 'All', dot: '' },
+    { id: 'BUG', label: 'Bug', dot: 'bg-rose-500' },
+    { id: 'FEATURE', label: 'Feature', dot: 'bg-purple-500' },
+    { id: 'DEV', label: 'Dev', dot: 'bg-sky-500' },
+    { id: 'DATABASE', label: 'Database', dot: 'bg-amber-500' },
+    { id: 'DESIGN', label: 'Design', dot: 'bg-pink-500' },
+  ]
+
+  const displayedCategories = useMemo(() => {
+    const list = [...DEFAULT_CATEGORIES]
+    const existingIds = new Set(list.map((c) => c.id))
+
+    if (categoryCounts) {
+      Object.keys(categoryCounts).forEach((catId) => {
+        if (!existingIds.has(catId) && catId !== 'ALL' && (categoryCounts[catId] > 0 || selectedCategory === catId)) {
+          list.push({
+            id: catId,
+            label: catId.charAt(0) + catId.slice(1).toLowerCase(),
+            dot: 'bg-zinc-400',
+          })
+          existingIds.add(catId)
+        }
+      })
+    }
+    return list
+  }, [categoryCounts, selectedCategory])
 
   return (
     <>
@@ -357,6 +393,47 @@ export function Sidebar({
                     <span>{item.label}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Category Filter Facet */}
+            <div>
+              <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                <span>Category Filter</span>
+                {selectedCategory !== 'ALL' && (
+                  <button
+                    onClick={() => onSelectCategory('ALL')}
+                    className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                {displayedCategories.map((item) => {
+                  const isSelected = selectedCategory === item.id
+                  const count = categoryCounts ? categoryCounts[item.id] : undefined
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        onSelectCategory(item.id)
+                        onClose()
+                      }}
+                      className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition cursor-pointer flex items-center justify-between gap-1 border ${
+                        isSelected ? itemActive : `${inputBg} ${itemHover}`
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 truncate">
+                        {item.dot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.dot}`} />}
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                      {typeof count === 'number' && (
+                        <span className="text-[10px] font-mono opacity-60 ml-0.5 shrink-0">{count}</span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 

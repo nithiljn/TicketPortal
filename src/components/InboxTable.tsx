@@ -10,6 +10,8 @@ interface InboxTableProps {
   onEditTicket: (ticket: Ticket) => void
   onDeleteTicket: (ticket: Ticket) => void
   selectedProject: string
+  selectedCategory?: string
+  onClearCategory?: () => void
   theme?: 'dark' | 'light'
 }
 
@@ -20,6 +22,8 @@ export function InboxTable({
   onEditTicket,
   onDeleteTicket,
   selectedProject,
+  selectedCategory,
+  onClearCategory,
   theme = 'dark',
 }: InboxTableProps) {
   const isDark = theme === 'dark'
@@ -158,12 +162,28 @@ export function InboxTable({
     <div className="flex flex-col flex-1 min-w-0">
       {/* Sub-header inside view */}
       <div className={`px-4 sm:px-6 py-3 border-b flex items-center justify-between text-xs ${subHeaderBorder}`}>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className={subHeaderTitle}>
             {selectedProject === 'ALL' ? 'All Workspaces' : selectedProject}
           </span>
           <span className={isDark ? 'text-zinc-600' : 'text-zinc-300'}>•</span>
           <span className="font-mono text-[11px]">{tickets.length} items</span>
+
+          {selectedCategory && selectedCategory !== 'ALL' && (
+            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono border ${categoryBadge}`}>
+              <span>Category: {selectedCategory}</span>
+              {onClearCategory && (
+                <button
+                  type="button"
+                  onClick={onClearCategory}
+                  className="hover:text-rose-400 transition cursor-pointer font-bold leading-none ml-0.5"
+                  title="Clear category filter"
+                >
+                  ×
+                </button>
+              )}
+            </span>
+          )}
         </div>
       </div>
 

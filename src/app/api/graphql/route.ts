@@ -70,6 +70,7 @@ const typeDefs = /* GraphQL */ `
     tickets(
       status: TicketStatus
       priority: TicketPriority
+      category: String
       projectName: String
       search: String
       userEmail: String
@@ -157,6 +158,7 @@ const resolvers = {
       args: {
         status?: string
         priority?: string
+        category?: string
         projectName?: string
         search?: string
         userEmail?: string
@@ -193,6 +195,9 @@ const resolvers = {
       }
       if (args.priority) {
         query = query.eq('priority', args.priority)
+      }
+      if (args.category && args.category !== 'ALL') {
+        query = query.ilike('category', args.category)
       }
       if (args.search) {
         query = query.or(

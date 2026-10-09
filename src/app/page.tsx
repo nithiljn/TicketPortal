@@ -67,6 +67,7 @@ export default function Home() {
   const [selectedProject, setSelectedProject] = useState<string>('ALL')
   const [selectedStatus, setSelectedStatus] = useState<TicketStatus | 'ALL'>('ALL')
   const [selectedPriority, setSelectedPriority] = useState<TicketPriority | 'ALL'>('ALL')
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
   const [fromDate, setFromDate] = useState<string>('')
   const [toDate, setToDate] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -214,6 +215,12 @@ export default function Home() {
       if (selectedPriority !== 'ALL' && t.priority !== selectedPriority) {
         return false
       }
+      if (
+        selectedCategory !== 'ALL' &&
+        (t.category || 'DEV').toUpperCase() !== selectedCategory.toUpperCase()
+      ) {
+        return false
+      }
       // Date Range Filter
       if (fromDate) {
         const ticketDate = t.createdAt.split('T')[0]
@@ -225,7 +232,7 @@ export default function Home() {
       }
       return true
     })
-  }, [tickets, selectedStatus, selectedPriority, fromDate, toDate])
+  }, [tickets, selectedStatus, selectedPriority, selectedCategory, fromDate, toDate])
 
   // 3. Facet Counts
   const ticketCounts = useMemo(() => {
@@ -235,7 +242,17 @@ export default function Home() {
     const done = tickets.filter((t) => t.status === 'DONE').length
     const blocked = tickets.filter((t) => t.status === 'BLOCKED').length
     const notesCount = dailyNotes.length
-    return { total, todo, inProgress, done, blocked, notesCount }
+
+    // Category counts
+    const categoryCounts: Record<string, number> = {
+      ALL: total,
+    }
+    tickets.forEach((t) => {
+      const cat = (t.category || 'DEV').toUpperCase()
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1
+    })
+
+    return { total, todo, inProgress, done, blocked, notesCount, categoryCounts }
   }, [tickets, dailyNotes])
 
   // 4. GraphQL Mutations
@@ -538,6 +555,9 @@ export default function Home() {
         onSelectStatus={setSelectedStatus}
         selectedPriority={selectedPriority}
         onSelectPriority={setSelectedPriority}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        categoryCounts={ticketCounts.categoryCounts}
         fromDate={fromDate}
         toDate={toDate}
         onSelectFromDate={setFromDate}
@@ -775,6 +795,8 @@ export default function Home() {
                   onEditTicket={handleOpenEditTicket}
                   onDeleteTicket={(ticket) => setTicketToDelete(ticket)}
                   selectedProject={selectedProject}
+                  selectedCategory={selectedCategory}
+                  onClearCategory={() => setSelectedCategory('ALL')}
                   theme={theme}
                 />
               )}

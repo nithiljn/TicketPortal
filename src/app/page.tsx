@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Ticket, DailyNote, TicketStatus, TicketPriority } from '@/types'
 import { fetchGraphQL } from '@/lib/graphql-client'
 import { Sidebar } from '@/components/Sidebar'
@@ -8,6 +8,7 @@ import { InboxTable } from '@/components/InboxTable'
 import { DashboardView } from '@/components/DashboardView'
 import { KanbanBoard } from '@/components/KanbanBoard'
 import { DailyNotes } from '@/components/DailyNotes'
+import { ThemeSpinner } from '@/components/ThemeSpinner'
 import { TicketModal } from '@/components/TicketModal'
 import { WorkspaceModal } from '@/components/WorkspaceModal'
 import { DeleteWorkspaceModal } from '@/components/DeleteWorkspaceModal'
@@ -72,7 +73,100 @@ export default function Home() {
   const [toDate, setToDate] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
 
+  // Loading & Transition States
   const [loading, setLoading] = useState(true)
+  const [isFilterLoading, setIsFilterLoading] = useState(false)
+  const [isTabSwitching, setIsTabSwitching] = useState(false)
+  const [tabSwitchTarget, setTabSwitchTarget] = useState<'inbox' | 'dashboard' | 'board' | 'notes'>('inbox')
+  const filterTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const tabTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const triggerFilterTransition = useCallback(() => {
+    if (filterTimeoutRef.current) clearTimeout(filterTimeoutRef.current)
+    setIsFilterLoading(true)
+    filterTimeoutRef.current = setTimeout(() => {
+      setIsFilterLoading(false)
+    }, 200)
+  }, [])
+
+  const handleTabChange = useCallback(
+    (targetTab: 'inbox' | 'dashboard' | 'board' | 'notes') => {
+      if (targetTab === activeTab && !isTabSwitching) return
+      if (tabTimeoutRef.current) clearTimeout(tabTimeoutRef.current)
+
+      setIsTabSwitching(true)
+      setTabSwitchTarget(targetTab)
+
+      tabTimeoutRef.current = setTimeout(() => {
+        setActiveTab(targetTab)
+        setIsTabSwitching(false)
+      }, 250)
+    },
+    [activeTab, isTabSwitching]
+  )
+
+  const handleSelectWorkspace = useCallback(
+    (workspace: string) => {
+      if (workspace === selectedProject) return
+      setLoading(true)
+      setSelectedProject(workspace)
+    },
+    [selectedProject]
+  )
+
+  const handleSelectStatus = useCallback(
+    (status: TicketStatus | 'ALL') => {
+      setSelectedStatus(status)
+      triggerFilterTransition()
+    },
+    [triggerFilterTransition]
+  )
+
+  const handleSelectPriority = useCallback(
+    (priority: TicketPriority | 'ALL') => {
+      setSelectedPriority(priority)
+      triggerFilterTransition()
+    },
+    [triggerFilterTransition]
+  )
+
+  const handleSelectCategory = useCallback(
+    (category: string | 'ALL') => {
+      setSelectedCategory(category)
+      triggerFilterTransition()
+    },
+    [triggerFilterTransition]
+  )
+
+  const handleSelectFromDate = useCallback(
+    (date: string) => {
+      setFromDate(date)
+      triggerFilterTransition()
+    },
+    [triggerFilterTransition]
+  )
+
+  const handleSelectToDate = useCallback(
+    (date: string) => {
+      setToDate(date)
+      triggerFilterTransition()
+    },
+    [triggerFilterTransition]
+  )
+
+  const handleClearDateRange = useCallback(() => {
+    setFromDate('')
+    setToDate('')
+    triggerFilterTransition()
+  }, [triggerFilterTransition])
+
+  useEffect(() => {
+    return () => {
+      if (filterTimeoutRef.current) clearTimeout(filterTimeoutRef.current)
+      if (tabTimeoutRef.current) clearTimeout(tabTimeoutRef.current)
+    }
+  }, [])
+
   const [error, setError] = useState('')
 
   // Modal State
@@ -550,22 +644,19 @@ export default function Home() {
         onLogout={logout}
         availableProjects={availableProjects}
         selectedProject={selectedProject}
-        onSelectProject={setSelectedProject}
+        onSelectProject={handleSelectWorkspace}
         selectedStatus={selectedStatus}
-        onSelectStatus={setSelectedStatus}
+        onSelectStatus={handleSelectStatus}
         selectedPriority={selectedPriority}
-        onSelectPriority={setSelectedPriority}
+        onSelectPriority={handleSelectPriority}
         selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
+        onSelectCategory={handleSelectCategory}
         categoryCounts={ticketCounts.categoryCounts}
         fromDate={fromDate}
         toDate={toDate}
-        onSelectFromDate={setFromDate}
-        onSelectToDate={setToDate}
-        onClearDateRange={() => {
-          setFromDate('')
-          setToDate('')
-        }}
+        onSelectFromDate={handleSelectFromDate}
+        onSelectToDate={handleSelectToDate}
+        onClearDateRange={handleClearDateRange}
         theme={theme}
         onToggleTheme={handleToggleTheme}
         ticketCounts={ticketCounts}
@@ -656,9 +747,9 @@ export default function Home() {
             >
               {/* 1. Inbox Table */}
               <button
-                onClick={() => setActiveTab('inbox')}
+                onClick={() => handleTabChange('inbox')}
                 className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === 'inbox'
+                  (isTabSwitching ? tabSwitchTarget === 'inbox' : activeTab === 'inbox')
                     ? isDark
                       ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
                       : 'bg-white text-zinc-950 shadow-sm font-semibold'
@@ -676,9 +767,9 @@ export default function Home() {
 
               {/* 2. Dashboard (Charts & Status) */}
               <button
-                onClick={() => setActiveTab('dashboard')}
+                onClick={() => handleTabChange('dashboard')}
                 className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === 'dashboard'
+                  (isTabSwitching ? tabSwitchTarget === 'dashboard' : activeTab === 'dashboard')
                     ? isDark
                       ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
                       : 'bg-white text-zinc-950 shadow-sm font-semibold'
@@ -697,9 +788,9 @@ export default function Home() {
 
               {/* 3. Board (Kanban) */}
               <button
-                onClick={() => setActiveTab('board')}
+                onClick={() => handleTabChange('board')}
                 className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === 'board'
+                  (isTabSwitching ? tabSwitchTarget === 'board' : activeTab === 'board')
                     ? isDark
                       ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
                       : 'bg-white text-zinc-950 shadow-sm font-semibold'
@@ -717,9 +808,9 @@ export default function Home() {
 
               {/* 4. Notes (Daily Standup) */}
               <button
-                onClick={() => setActiveTab('notes')}
+                onClick={() => handleTabChange('notes')}
                 className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === 'notes'
+                  (isTabSwitching ? tabSwitchTarget === 'notes' : activeTab === 'notes')
                     ? isDark
                       ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
                       : 'bg-white text-zinc-950 shadow-sm font-semibold'
@@ -769,23 +860,34 @@ export default function Home() {
 
         {/* Main Display Area */}
         <div className="flex-1 overflow-auto flex flex-col">
-          {loading && tickets.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-zinc-500">
-              <svg
-                className="w-6 h-6 text-zinc-400 animate-spin mb-3"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-              </svg>
-              <p className="text-xs font-mono uppercase tracking-wider text-zinc-400">
-                Loading workspace data...
-              </p>
-            </div>
+          {loading || isFilterLoading || isTabSwitching ? (
+            <ThemeSpinner
+              theme={theme}
+              title={
+                loading
+                  ? selectedProject === 'ALL'
+                    ? 'Loading All Workspaces...'
+                    : `Loading workspace "${selectedProject}"...`
+                  : isTabSwitching
+                  ? tabSwitchTarget === 'dashboard'
+                    ? 'Preparing Dashboard Analytics...'
+                    : tabSwitchTarget === 'board'
+                    ? 'Organizing Kanban Board...'
+                    : tabSwitchTarget === 'notes'
+                    ? 'Loading Daily Standup Notes...'
+                    : 'Loading Inbox & Tickets...'
+                  : 'Updating filtered tickets...'
+              }
+              subtitle={
+                loading
+                  ? 'TicketFlow • Syncing with server'
+                  : isTabSwitching
+                  ? 'TicketFlow • Switching View'
+                  : 'TicketFlow • Applying Filter'
+              }
+            />
           ) : (
-            <>
+            <div className="flex-1 flex flex-col min-w-0 animate-in fade-in duration-150">
               {/* View 1: Inbox (Primary Table View) */}
               {activeTab === 'inbox' && (
                 <InboxTable
@@ -836,7 +938,7 @@ export default function Home() {
                   />
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

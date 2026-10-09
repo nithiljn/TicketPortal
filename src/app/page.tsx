@@ -213,6 +213,7 @@ export default function Home() {
             id
             title
             description
+            commands
             status
             priority
             category
@@ -375,6 +376,7 @@ export default function Home() {
     id?: string
     title: string
     description: string
+    commands?: string
     status: TicketStatus
     priority: TicketPriority
     category: string
@@ -390,6 +392,7 @@ export default function Home() {
             id
             title
             description
+            commands
             status
             priority
             category
@@ -404,6 +407,7 @@ export default function Home() {
         input: {
           title: ticketData.title,
           description: ticketData.description,
+          commands: ticketData.commands,
           status: ticketData.status,
           priority: ticketData.priority,
           category: ticketData.category,
@@ -423,6 +427,7 @@ export default function Home() {
             id
             title
             description
+            commands
             status
             priority
             category
@@ -436,6 +441,7 @@ export default function Home() {
         input: {
           title: ticketData.title,
           description: ticketData.description,
+          commands: ticketData.commands,
           status: ticketData.status,
           priority: ticketData.priority,
           category: ticketData.category,

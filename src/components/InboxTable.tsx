@@ -237,8 +237,26 @@ export function InboxTable({
 
                       {/* Title & Preview */}
                       <td className="py-3 px-4 max-w-xs">
-                        <div className={`font-medium transition truncate ${ticketTitle}`}>
-                          {ticket.title}
+                        <div className="flex items-center gap-2">
+                          <span className={`font-medium transition truncate ${ticketTitle}`}>
+                            {ticket.title}
+                          </span>
+                          {ticket.commands && (
+                            <span
+                              className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono border ${
+                                isDark
+                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              }`}
+                              title="Contains execution commands"
+                            >
+                              <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <polyline points="4 17 10 11 4 5" />
+                                <line x1="12" y1="19" x2="20" y2="19" />
+                              </svg>
+                              <span>commands</span>
+                            </span>
+                          )}
                         </div>
                         {ticket.description && (
                           <div className={`text-[11px] truncate mt-0.5 leading-relaxed ${ticketDesc}`}>
@@ -347,9 +365,26 @@ export function InboxTable({
                   </div>
 
                   <div>
-                    <h3 className={`font-medium text-xs ${ticketTitle}`}>
-                      {ticket.title}
-                    </h3>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className={`font-medium text-xs ${ticketTitle}`}>
+                        {ticket.title}
+                      </h3>
+                      {ticket.commands && (
+                        <span
+                          className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-mono border ${
+                            isDark
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          }`}
+                        >
+                          <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="4 17 10 11 4 5" />
+                            <line x1="12" y1="19" x2="20" y2="19" />
+                          </svg>
+                          <span>commands</span>
+                        </span>
+                      )}
+                    </div>
                     {ticket.description && (
                       <p className={`text-[11px] line-clamp-2 mt-0.5 ${ticketDesc}`}>
                         {ticket.description}

@@ -5,6 +5,7 @@ export interface Ticket {
   id: string
   title: string
   description: string
+  commands?: string
   status: TicketStatus
   priority: TicketPriority
   category: string
@@ -26,6 +27,7 @@ export interface DailyNote {
 export interface CreateTicketInput {
   title: string
   description?: string
+  commands?: string
   status?: TicketStatus
   priority?: TicketPriority
   category?: string
@@ -36,6 +38,7 @@ export interface CreateTicketInput {
 export interface UpdateTicketInput {
   title?: string
   description?: string
+  commands?: string
   status?: TicketStatus
   priority?: TicketPriority
   category?: string

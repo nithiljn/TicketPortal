@@ -10,6 +10,7 @@ interface TicketModalProps {
     id?: string
     title: string
     description: string
+    commands?: string
     status: TicketStatus
     priority: TicketPriority
     category: string
@@ -36,6 +37,8 @@ export function TicketModal({
   const [isEditing, setIsEditing] = useState(initialMode === 'edit' || !existingTicket)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [commands, setCommands] = useState('')
+  const [copiedCommands, setCopiedCommands] = useState(false)
   const [status, setStatus] = useState<TicketStatus>('TODO')
   const [priority, setPriority] = useState<TicketPriority>('MEDIUM')
   const [category, setCategory] = useState('DEV')
@@ -45,6 +48,12 @@ export function TicketModal({
   const [error, setError] = useState('')
 
   const isDark = theme === 'dark'
+
+  const handleCopyCommands = (text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedCommands(true)
+    setTimeout(() => setCopiedCommands(false), 2000)
+  }
 
   useEffect(() => {
     if (!existingTicket) {
@@ -58,6 +67,7 @@ export function TicketModal({
     if (existingTicket) {
       setTitle(existingTicket.title)
       setDescription(existingTicket.description || '')
+      setCommands(existingTicket.commands || '')
       setStatus(existingTicket.status)
       setPriority(existingTicket.priority)
       setCategory(existingTicket.category || 'DEV')
@@ -69,6 +79,7 @@ export function TicketModal({
     } else {
       setTitle('')
       setDescription('')
+      setCommands('')
       setStatus('TODO')
       setPriority('MEDIUM')
       setCategory('DEV')
@@ -120,6 +131,7 @@ export function TicketModal({
         id: existingTicket?.id,
         title: title.trim(),
         description: description.trim(),
+        commands: commands.trim(),
         status,
         priority,
         category,
@@ -354,6 +366,56 @@ export function TicketModal({
                 )}
               </div>
 
+              {/* Commands & Extra Details Display Card (Same clean style like Description) */}
+              <div className={`rounded-xl border p-4 space-y-2 ${
+                isDark ? 'bg-black/30 border-white/[0.08]' : 'bg-zinc-50 border-zinc-200'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                    Commands & Extra Details
+                  </span>
+                  {existingTicket.commands && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopyCommands(existingTicket.commands || '')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-mono flex items-center gap-1 transition cursor-pointer border ${
+                        isDark
+                          ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 border-white/[0.08]'
+                          : 'bg-white hover:bg-zinc-100 text-zinc-700 border-zinc-200 shadow-2xs'
+                      }`}
+                      title="Copy to clipboard"
+                    >
+                      {copiedCommands ? (
+                        <>
+                          <svg className="w-3 h-3 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          <span className="text-emerald-400 font-medium">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {existingTicket.commands ? (
+                  <div className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed text-zinc-800 dark:text-zinc-200 font-mono bg-black/20 dark:bg-black/40 p-3 rounded-lg border border-white/[0.04]">
+                    {existingTicket.commands}
+                  </div>
+                ) : (
+                  <p className="text-xs italic text-zinc-400 font-sans">
+                    No commands or extra details stored for this ticket.
+                  </p>
+                )}
+              </div>
+
               {/* Metadata Details Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className={`p-3 rounded-xl border ${isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/70 border-zinc-200'}`}>
@@ -572,15 +634,32 @@ export function TicketModal({
                   Description & Task Details
                 </label>
                 <textarea
-                  rows={5}
+                  rows={4}
                   placeholder="Describe requirements, implementation notes, API endpoints, or reproduction steps..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className={`w-full rounded-xl border p-3.5 text-xs sm:text-sm focus:outline-none transition resize-y min-h-[120px] leading-relaxed font-sans ${inputBg}`}
+                  className={`w-full rounded-xl border p-3.5 text-xs sm:text-sm focus:outline-none transition resize-y min-h-[100px] leading-relaxed font-sans ${inputBg}`}
                 />
               </div>
 
-              {/* Row 4: Status, Priority, Author */}
+              {/* Row 4: Commands & Extra Details (Same clean styling like Description) */}
+              <div>
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelColor}`}>
+                  Commands & Extra Details
+                </label>
+                <textarea
+                  rows={4}
+                  placeholder="Store commands, execution steps, API queries, notes, or extra details for this ticket..."
+                  value={commands}
+                  onChange={(e) => setCommands(e.target.value)}
+                  className={`w-full rounded-xl border p-3.5 text-xs sm:text-sm focus:outline-none transition resize-y min-h-[100px] leading-relaxed font-mono ${inputBg}`}
+                />
+                <p className="mt-1 text-[10px] text-zinc-500">
+                  Store terminal commands, setup steps, notes, or extra technical details needed for this ticket.
+                </p>
+              </div>
+
+              {/* Row 5: Status, Priority, Author */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelColor}`}>

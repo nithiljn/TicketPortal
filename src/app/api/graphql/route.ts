@@ -21,6 +21,7 @@ const typeDefs = /* GraphQL */ `
     id: ID!
     title: String!
     description: String
+    commands: String
     status: TicketStatus!
     priority: TicketPriority!
     category: String!
@@ -42,6 +43,7 @@ const typeDefs = /* GraphQL */ `
   input CreateTicketInput {
     title: String!
     description: String
+    commands: String
     status: TicketStatus
     priority: TicketPriority
     category: String
@@ -52,6 +54,7 @@ const typeDefs = /* GraphQL */ `
   input UpdateTicketInput {
     title: String
     description: String
+    commands: String
     status: TicketStatus
     priority: TicketPriority
     category: String
@@ -97,6 +100,7 @@ interface TicketRow {
   id: string
   title: string
   description: string | null
+  commands?: string | null
   status: string
   priority: string
   category: string
@@ -105,6 +109,29 @@ interface TicketRow {
   updated_by: string
   created_at: string
   updated_at: string
+}
+
+const COMMANDS_START = '<!-- TICKET_COMMANDS_START -->'
+const COMMANDS_END = '<!-- TICKET_COMMANDS_END -->'
+
+function extractCommands(rawDesc: string | null): { cleanDescription: string; commands: string } {
+  if (!rawDesc) return { cleanDescription: '', commands: '' }
+  const startIdx = rawDesc.indexOf(COMMANDS_START)
+  const endIdx = rawDesc.indexOf(COMMANDS_END)
+  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+    const commands = rawDesc.substring(startIdx + COMMANDS_START.length, endIdx).trim()
+    const cleanDescription = (rawDesc.substring(0, startIdx) + rawDesc.substring(endIdx + COMMANDS_END.length)).trim()
+    return { cleanDescription, commands }
+  }
+  return { cleanDescription: rawDesc, commands: '' }
+}
+
+function packDescription(desc: string | null, commands?: string | null): string | null {
+  const clean = desc ? desc.trim() : ''
+  const cmds = commands ? commands.trim() : ''
+  if (!cmds) return clean || null
+  if (!clean) return `${COMMANDS_START}\n${cmds}\n${COMMANDS_END}`
+  return `${clean}\n\n${COMMANDS_START}\n${cmds}\n${COMMANDS_END}`
 }
 
 interface NoteRow {
@@ -125,10 +152,17 @@ function formatAuthor(raw: string): string {
 
 function formatTicket(row: TicketRow) {
   const displayAuthor = formatAuthor(row.created_by)
+  const { cleanDescription, commands: extractedCmds } = extractCommands(row.description)
+  const finalCommands =
+    row.commands !== undefined && row.commands !== null ? row.commands : extractedCmds
+  const finalDescription =
+    row.commands !== undefined && row.commands !== null ? row.description || '' : cleanDescription
+
   return {
     id: row.id,
     title: row.title,
-    description: row.description || '',
+    description: finalDescription,
+    commands: finalCommands || '',
     status: row.status,
     priority: row.priority,
     category: row.category,
@@ -329,6 +363,7 @@ const resolvers = {
         input: {
           title: string
           description?: string
+          commands?: string
           status?: string
           priority?: string
           category?: string
@@ -337,24 +372,43 @@ const resolvers = {
         }
       }
     ) => {
+      // 1. First attempt to insert with native 'commands' column
+      const basePayload: Record<string, unknown> = {
+        title: input.title,
+        description: input.description || null,
+        commands: input.commands || null,
+        status: input.status || 'TODO',
+        priority: input.priority || 'MEDIUM',
+        category: input.category || 'DEV',
+        project_name: input.projectName || 'General',
+        created_by: input.createdBy || 'Nithil',
+        updated_by: input.createdBy || 'Nithil',
+      }
+
       const { data, error } = await supabase
         .from('tickets')
-        .insert([
-          {
-            title: input.title,
-            description: input.description || null,
-            status: input.status || 'TODO',
-            priority: input.priority || 'MEDIUM',
-            category: input.category || 'DEV',
-            project_name: input.projectName || 'General',
-            created_by: input.createdBy || 'Nithil',
-            updated_by: input.createdBy || 'Nithil',
-          },
-        ])
+        .insert([basePayload])
         .select()
         .single()
 
       if (error) {
+        // Fallback: If commands column doesn't exist yet on Supabase table (PGRST204)
+        if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('commands')) {
+          delete basePayload.commands
+          basePayload.description = packDescription(input.description || null, input.commands || null)
+          const { data: fbData, error: fbError } = await supabase
+            .from('tickets')
+            .insert([basePayload])
+            .select()
+            .single()
+
+          if (fbError) {
+            console.error('Supabase createTicket fallback error:', fbError)
+            throw new Error(fbError.message)
+          }
+          return formatTicket(fbData as TicketRow)
+        }
+
         console.error('Supabase createTicket error:', error)
         throw new Error(error.message)
       }
@@ -371,6 +425,7 @@ const resolvers = {
         input: {
           title?: string
           description?: string
+          commands?: string
           status?: string
           priority?: string
           category?: string
@@ -382,6 +437,7 @@ const resolvers = {
       const updateData: Record<string, unknown> = {}
       if (input.title !== undefined) updateData.title = input.title
       if (input.description !== undefined) updateData.description = input.description
+      if (input.commands !== undefined) updateData.commands = input.commands
       if (input.status !== undefined) updateData.status = input.status
       if (input.priority !== undefined) updateData.priority = input.priority
       if (input.category !== undefined) updateData.category = input.category
@@ -396,6 +452,33 @@ const resolvers = {
         .single()
 
       if (error) {
+        // Fallback: If commands column doesn't exist yet on Supabase table (PGRST204)
+        if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('commands')) {
+          delete updateData.commands
+
+          let baseDesc = input.description
+          if (baseDesc === undefined) {
+            const { data: cur } = await supabase.from('tickets').select('description').eq('id', id).single()
+            const { cleanDescription } = extractCommands(cur?.description || null)
+            baseDesc = cleanDescription
+          }
+
+          updateData.description = packDescription(baseDesc, input.commands)
+
+          const { data: fbData, error: fbError } = await supabase
+            .from('tickets')
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single()
+
+          if (fbError) {
+            console.error('Supabase updateTicket fallback error:', fbError)
+            throw new Error(fbError.message)
+          }
+          return formatTicket(fbData as TicketRow)
+        }
+
         console.error('Supabase updateTicket error:', error)
         throw new Error(error.message)
       }

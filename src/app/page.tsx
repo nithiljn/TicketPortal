@@ -905,6 +905,10 @@ export default function Home() {
                   selectedProject={selectedProject}
                   selectedCategory={selectedCategory}
                   onClearCategory={() => setSelectedCategory('ALL')}
+                  selectedPriority={selectedPriority}
+                  onClearPriority={() => handleSelectPriority('ALL')}
+                  selectedStatus={selectedStatus}
+                  onClearStatus={() => handleSelectStatus('ALL')}
                   theme={theme}
                 />
               )}

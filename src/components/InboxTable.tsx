@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Ticket, TicketStatus } from '@/types'
+import { Ticket, TicketStatus, TicketPriority } from '@/types'
 
 interface InboxTableProps {
   tickets: Ticket[]
@@ -12,6 +12,10 @@ interface InboxTableProps {
   selectedProject: string
   selectedCategory?: string
   onClearCategory?: () => void
+  selectedPriority?: TicketPriority | 'ALL'
+  onClearPriority?: () => void
+  selectedStatus?: TicketStatus | 'ALL'
+  onClearStatus?: () => void
   theme?: 'dark' | 'light'
 }
 
@@ -24,6 +28,10 @@ export function InboxTable({
   selectedProject,
   selectedCategory,
   onClearCategory,
+  selectedPriority,
+  onClearPriority,
+  selectedStatus,
+  onClearStatus,
   theme = 'dark',
 }: InboxTableProps) {
   const isDark = theme === 'dark'
@@ -169,6 +177,7 @@ export function InboxTable({
           <span className={isDark ? 'text-zinc-600' : 'text-zinc-300'}>•</span>
           <span className="font-mono text-[11px]">{tickets.length} items</span>
 
+          {/* Category Filter Pill */}
           {selectedCategory && selectedCategory !== 'ALL' && (
             <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono border ${categoryBadge}`}>
               <span>Category: {selectedCategory}</span>
@@ -178,6 +187,40 @@ export function InboxTable({
                   onClick={onClearCategory}
                   className="hover:text-rose-400 transition cursor-pointer font-bold leading-none ml-0.5"
                   title="Clear category filter"
+                >
+                  ×
+                </button>
+              )}
+            </span>
+          )}
+
+          {/* Priority Filter Pill */}
+          {selectedPriority && selectedPriority !== 'ALL' && (
+            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono border ${categoryBadge}`}>
+              <span>Priority: {selectedPriority}</span>
+              {onClearPriority && (
+                <button
+                  type="button"
+                  onClick={onClearPriority}
+                  className="hover:text-rose-400 transition cursor-pointer font-bold leading-none ml-0.5"
+                  title="Clear priority filter"
+                >
+                  ×
+                </button>
+              )}
+            </span>
+          )}
+
+          {/* Status Filter Pill */}
+          {selectedStatus && selectedStatus !== 'ALL' && (
+            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono border ${categoryBadge}`}>
+              <span>Status: {selectedStatus.replace('_', ' ')}</span>
+              {onClearStatus && (
+                <button
+                  type="button"
+                  onClick={onClearStatus}
+                  className="hover:text-rose-400 transition cursor-pointer font-bold leading-none ml-0.5"
+                  title="Clear status filter"
                 >
                   ×
                 </button>

@@ -335,8 +335,16 @@ export function Sidebar({
 
             {/* Status Filter Facet */}
             <div>
-              <div className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                Status Filter
+              <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                <span>Status Filter</span>
+                {selectedStatus !== 'ALL' && (
+                  <button
+                    onClick={() => onSelectStatus('ALL')}
+                    className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
               </div>
               <div className="space-y-0.5">
                 {[
@@ -368,8 +376,16 @@ export function Sidebar({
 
             {/* Priority Filter Facet */}
             <div>
-              <div className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                Priority Filter
+              <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                <span>Priority Filter</span>
+                {selectedPriority !== 'ALL' && (
+                  <button
+                    onClick={() => onSelectPriority('ALL')}
+                    className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-1">
                 {[

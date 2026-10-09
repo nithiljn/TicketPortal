@@ -49,17 +49,23 @@ export function Toast({
 
   // Styles based on theme
   const toastBg = isDark
-    ? 'bg-[#121215]/95 border-emerald-500/25 text-zinc-100 shadow-2xl shadow-emerald-950/20'
-    : 'bg-white/95 border-emerald-500/30 text-zinc-900 shadow-xl shadow-emerald-500/10'
+    ? 'bg-[#141417]/95 border-white/[0.1] text-zinc-100 shadow-2xl shadow-black/80'
+    : 'bg-white/95 border-zinc-200 text-zinc-900 shadow-xl shadow-zinc-900/10'
 
   return (
-    <div className="fixed top-5 right-5 z-50 max-w-sm w-[calc(100vw-2.5rem)] sm:w-96 select-none animate-in fade-in slide-in-from-top-3 duration-200">
+    <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 max-w-sm w-[calc(100vw-2.5rem)] sm:w-96 select-none animate-in fade-in slide-in-from-bottom-4 duration-200">
       <div
-        className={`relative overflow-hidden rounded-2xl border backdrop-blur-md p-4 transition-all ${toastBg}`}
+        className={`relative overflow-hidden rounded-2xl border backdrop-blur-xl p-4 transition-all ${toastBg}`}
       >
         <div className="flex items-start gap-3">
           {/* Success Checkmark Badge */}
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">
+          <div
+            className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+              isDark
+                ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                : 'bg-emerald-50 border border-emerald-200 text-emerald-600 shadow-2xs'
+            }`}
+          >
             <svg
               className="w-4 h-4"
               viewBox="0 0 24 24"
@@ -75,12 +81,16 @@ export function Toast({
 
           {/* Toast Message */}
           <div className="flex-1 min-w-0 pr-1">
-            <h4 className="text-xs sm:text-sm font-semibold tracking-tight text-emerald-400">
+            <h4
+              className={`text-xs sm:text-sm font-semibold tracking-tight ${
+                isDark ? 'text-zinc-100' : 'text-zinc-900'
+              }`}
+            >
               {title}
             </h4>
             {message && (
               <p
-                className={`mt-0.5 text-xs truncate ${
+                className={`mt-0.5 text-xs truncate leading-relaxed ${
                   isDark ? 'text-zinc-400' : 'text-zinc-600'
                 }`}
               >
@@ -116,7 +126,11 @@ export function Toast({
         </div>
 
         {/* Progress Bar */}
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-800/40">
+        <div
+          className={`absolute bottom-0 left-0 right-0 h-0.5 ${
+            isDark ? 'bg-white/[0.04]' : 'bg-zinc-100'
+          }`}
+        >
           <div
             className="h-full bg-emerald-500 transition-all ease-linear"
             style={{ width: `${progress}%` }}

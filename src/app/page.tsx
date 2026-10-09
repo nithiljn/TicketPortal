@@ -388,8 +388,8 @@ export default function Home() {
     setIsWorkspaceModalOpen(false)
     setToast({
       isOpen: true,
-      title: 'Workspace Created',
-      message: `Workspace "${name}" is ready`,
+      title: 'Workspace Created Successfully',
+      message: `Workspace "${trimmed}" created successfully`,
     })
   }
 

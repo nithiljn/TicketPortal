@@ -57,3 +57,49 @@ export interface AuthUser {
   avatarUrl?: string
 }
 
+export type PaymentMethod =
+  | 'UPI'
+  | 'CREDIT_CARD'
+  | 'DEBIT_CARD'
+  | 'CASH'
+  | 'NET_BANKING'
+  | 'OTHER'
+
+export interface Expense {
+  id: string
+  title: string
+  amount: number
+  currency: string
+  category: string
+  date: string
+  paymentMethod: string
+  projectName: string
+  notes?: string
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateExpenseInput {
+  title: string
+  amount: number
+  currency?: string
+  category: string
+  date?: string
+  paymentMethod?: string
+  projectName?: string
+  notes?: string
+  createdBy?: string
+}
+
+export interface UpdateExpenseInput {
+  title?: string
+  amount?: number
+  currency?: string
+  category?: string
+  date?: string
+  paymentMethod?: string
+  projectName?: string
+  notes?: string
+}
+

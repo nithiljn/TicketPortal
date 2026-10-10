@@ -1,6 +1,82 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { TicketStatus, TicketPriority, AuthUser } from '@/types'
 
+const SIDEBAR_PAYMENT_METHODS: { id: string; label: string }[] = [
+  { id: 'ALL', label: 'All Methods' },
+  { id: 'UPI', label: 'UPI / GPay' },
+  { id: 'CREDIT_CARD', label: 'Credit Card' },
+  { id: 'DEBIT_CARD', label: 'Debit Card' },
+  { id: 'CASH', label: 'Cash' },
+  { id: 'NET_BANKING', label: 'Net Banking' },
+  { id: 'OTHER', label: 'Other' },
+]
+
+function renderPaymentMethodIcon(id: string) {
+  switch (id) {
+    case 'UPI':
+      return (
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      )
+    case 'CREDIT_CARD':
+      return (
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="5" width="20" height="14" rx="2" />
+          <line x1="2" y1="10" x2="22" y2="10" />
+        </svg>
+      )
+    case 'DEBIT_CARD':
+      return (
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="5" width="20" height="14" rx="2" />
+          <circle cx="7" cy="15" r="1.5" />
+          <circle cx="12" cy="15" r="1.5" />
+        </svg>
+      )
+    case 'CASH':
+      return (
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="6" width="20" height="12" rx="2" />
+          <circle cx="12" cy="12" r="2.5" />
+        </svg>
+      )
+    case 'NET_BANKING':
+      return (
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 21h18M3 10h18M5 6l7-4 7 4M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3" />
+        </svg>
+      )
+    case 'OTHER':
+      return (
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 3" />
+        </svg>
+      )
+    case 'ALL':
+    default:
+      return (
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="5" width="20" height="14" rx="2" />
+          <line x1="2" y1="10" x2="22" y2="10" />
+        </svg>
+      )
+  }
+}
+
+const EXPENSE_CATEGORY_DOTS: Record<string, string> = {
+  'Food & Dining': 'bg-emerald-500',
+  'Travel & Transport': 'bg-teal-500',
+  'Software & Subscriptions': 'bg-sky-500',
+  'Office Supplies': 'bg-zinc-400',
+  'Cloud & Hosting': 'bg-indigo-500',
+  'Marketing & Ads': 'bg-amber-500',
+  'Bills & Utilities': 'bg-slate-400',
+  'Personal': 'bg-emerald-600',
+  'Miscellaneous': 'bg-zinc-500',
+}
+
 interface SidebarProps {
   // Mobile drawer state
   isOpen: boolean
@@ -52,6 +128,35 @@ interface SidebarProps {
   onOpenCreateModal: () => void
   onOpenCreateWorkspaceModal?: () => void
   onDeleteWorkspace?: (proj: string) => void
+
+  // Active Tab
+  activeTab?: 'inbox' | 'dashboard' | 'board' | 'notes' | 'expenses'
+
+  // Expense Specific Filters (used when activeTab === 'expenses')
+  expenseCategories?: string[]
+  selectedExpenseCategory?: string | 'ALL'
+  onSelectExpenseCategory?: (cat: string | 'ALL') => void
+  selectedPaymentMethod?: string | 'ALL'
+  onSelectPaymentMethod?: (pm: string | 'ALL') => void
+  onlyHighExpense?: boolean
+  onToggleHighExpense?: () => void
+  expenseMinAmount?: string
+  expenseMaxAmount?: string
+  onMinAmountChange?: (val: string) => void
+  onMaxAmountChange?: (val: string) => void
+  expenseSearchQuery?: string
+  onExpenseSearchChange?: (val: string) => void
+  selectedExpenseMonth?: string
+  onSelectExpenseMonth?: (m: string) => void
+  availableExpenseMonths?: string[]
+  expenseCounts?: {
+    total: number
+    totalAmount: number
+    byCategory: Record<string, number>
+    byMethod: Record<string, number>
+  }
+  onOpenCategoryModal?: () => void
+  onOpenAddExpenseModal?: () => void
 }
 
 export function Sidebar({
@@ -80,6 +185,26 @@ export function Sidebar({
   onOpenCreateModal,
   onOpenCreateWorkspaceModal,
   onDeleteWorkspace,
+  activeTab = 'inbox',
+  expenseCategories,
+  selectedExpenseCategory = 'ALL',
+  onSelectExpenseCategory,
+  selectedPaymentMethod = 'ALL',
+  onSelectPaymentMethod,
+  onlyHighExpense = false,
+  onToggleHighExpense,
+  expenseMinAmount = '',
+  expenseMaxAmount = '',
+  onMinAmountChange,
+  onMaxAmountChange,
+  expenseSearchQuery = '',
+  onExpenseSearchChange,
+  selectedExpenseMonth = 'ALL',
+  onSelectExpenseMonth,
+  availableExpenseMonths = [],
+  expenseCounts,
+  onOpenCategoryModal,
+  onOpenAddExpenseModal,
 }: SidebarProps) {
   const isDark = theme === 'dark'
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -196,11 +321,15 @@ export function Sidebar({
             </button>
           </div>
 
-          {/* Action Button: "+ New Ticket" */}
+          {/* Action Button: "+ New Ticket" or "+ Add Expense" */}
           <div className="p-3">
             <button
               onClick={() => {
-                onOpenCreateModal()
+                if (activeTab === 'expenses' && onOpenAddExpenseModal) {
+                  onOpenAddExpenseModal()
+                } else {
+                  onOpenCreateModal()
+                }
                 onClose()
               }}
               className={`w-full h-9 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-sm ${
@@ -213,7 +342,7 @@ export function Sidebar({
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              <span>New Ticket</span>
+              <span>{activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}</span>
             </button>
           </div>
 
@@ -333,160 +462,385 @@ export function Sidebar({
               </div>
             </div>
 
-            {/* Status Filter Facet */}
-            <div>
-              <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                <span>Status Filter</span>
-                {selectedStatus !== 'ALL' && (
-                  <button
-                    onClick={() => onSelectStatus('ALL')}
-                    className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-              <div className="space-y-0.5">
-                {[
-                  { id: 'ALL', label: 'All Statuses', count: ticketCounts.total },
-                  { id: 'TODO', label: 'To Do', count: ticketCounts.todo, dot: 'bg-zinc-400' },
-                  { id: 'IN_PROGRESS', label: 'In Progress', count: ticketCounts.inProgress, dot: 'bg-amber-400' },
-                  { id: 'DONE', label: 'Completed', count: ticketCounts.done, dot: 'bg-emerald-400' },
-                  { id: 'BLOCKED', label: 'Blocked', count: ticketCounts.blocked, dot: 'bg-rose-400' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      onSelectStatus(item.id as TicketStatus | 'ALL')
-                      onClose()
-                    }}
-                    className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer ${
-                      selectedStatus === item.id ? itemActive : itemHover
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {item.dot && <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} />}
-                      <span>{item.label}</span>
-                    </div>
-                    <span className="text-[10px] font-mono opacity-60">{item.count}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {activeTab === 'expenses' ? (
+              /* Expense Specific Filters */
+              <>
+                {/* 1. Search Expenses */}
+                <div>
+                  <div className="relative">
+                    <svg className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Search expenses..."
+                      value={expenseSearchQuery}
+                      onChange={(e) => onExpenseSearchChange?.(e.target.value)}
+                      className={`w-full pl-8 pr-7 py-1.5 rounded-lg text-xs focus:outline-none border ${inputBg}`}
+                    />
+                    {expenseSearchQuery && (
+                      <button
+                        onClick={() => onExpenseSearchChange?.('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 text-xs cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-            {/* Priority Filter Facet */}
-            <div>
-              <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                <span>Priority Filter</span>
-                {selectedPriority !== 'ALL' && (
-                  <button
-                    onClick={() => onSelectPriority('ALL')}
-                    className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-1">
-                {[
-                  { id: 'ALL', label: 'All' },
-                  { id: 'URGENT', label: 'Urgent', dot: 'bg-rose-500' },
-                  { id: 'HIGH', label: 'High', dot: 'bg-amber-500' },
-                  { id: 'MEDIUM', label: 'Medium', dot: 'bg-zinc-400' },
-                  { id: 'LOW', label: 'Low', dot: 'bg-emerald-500' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      onSelectPriority(item.id as TicketPriority | 'ALL')
-                      onClose()
-                    }}
-                    className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition cursor-pointer flex items-center justify-center gap-1.5 border ${
-                      selectedPriority === item.id ? itemActive : `${inputBg} ${itemHover}`
-                    }`}
-                  >
-                    {item.dot && <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} />}
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Category Filter Facet */}
-            <div>
-              <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                <span>Category Filter</span>
-                {selectedCategory !== 'ALL' && (
-                  <button
-                    onClick={() => onSelectCategory('ALL')}
-                    className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-1">
-                {displayedCategories.map((item) => {
-                  const isSelected = selectedCategory === item.id
-                  const count = categoryCounts ? categoryCounts[item.id] : undefined
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        onSelectCategory(item.id)
+                {/* 2. Month / Period Filter */}
+                <div>
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    <span>Month / Period</span>
+                    {selectedExpenseMonth !== 'ALL' && (
+                      <button
+                        onClick={() => onSelectExpenseMonth?.('ALL')}
+                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                      >
+                        All Time
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <select
+                      value={selectedExpenseMonth || 'ALL'}
+                      onChange={(e) => {
+                        onSelectExpenseMonth?.(e.target.value)
                         onClose()
                       }}
-                      className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition cursor-pointer flex items-center justify-between gap-1 border ${
-                        isSelected ? itemActive : `${inputBg} ${itemHover}`
+                      className={`w-full rounded-lg px-2.5 py-1.5 text-[11px] focus:outline-none font-medium cursor-pointer ${inputBg}`}
+                    >
+                      <option value="ALL">All Time</option>
+                      {availableExpenseMonths?.map((m) => {
+                        const [year, month] = m.split('-')
+                        const dateObj = new Date(Number(year), Number(month) - 1, 1)
+                        const label = dateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                        return (
+                          <option key={m} value={m}>
+                            {label}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </div>
+                </div>
+
+                {/* 3. Expense Categories Filter */}
+                <div>
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    <span>Expense Categories</span>
+                    <div className="flex items-center gap-1.5">
+                      {selectedExpenseCategory !== 'ALL' && (
+                        <button
+                          onClick={() => onSelectExpenseCategory?.('ALL')}
+                          className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      )}
+                      {onOpenCategoryModal && (
+                        <button
+                          onClick={onOpenCategoryModal}
+                          className="p-0.5 rounded hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-100 transition cursor-pointer"
+                          title="Manage Categories"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-0.5 max-h-48 overflow-y-auto pr-0.5">
+                    <button
+                      onClick={() => {
+                        onSelectExpenseCategory?.('ALL')
+                        onClose()
+                      }}
+                      className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer text-left ${
+                        selectedExpenseCategory === 'ALL' ? itemActive : itemHover
                       }`}
                     >
-                      <div className="flex items-center gap-1.5 truncate">
-                        {item.dot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.dot}`} />}
-                        <span className="truncate">{item.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span>All Categories</span>
                       </div>
-                      {typeof count === 'number' && (
-                        <span className="text-[10px] font-mono opacity-60 ml-0.5 shrink-0">{count}</span>
-                      )}
+                      <span className="text-[10px] font-mono opacity-60">
+                        {expenseCounts?.total ?? 0}
+                      </span>
                     </button>
-                  )
-                })}
-              </div>
-            </div>
+                    {expenseCategories?.map((cat) => {
+                      const isSelected = selectedExpenseCategory?.toLowerCase() === cat.toLowerCase()
+                      const count = expenseCounts?.byCategory[cat] ?? 0
+                      const dotColor = EXPENSE_CATEGORY_DOTS[cat] || 'bg-emerald-400'
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => {
+                            onSelectExpenseCategory?.(isSelected ? 'ALL' : cat)
+                            onClose()
+                          }}
+                          className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer text-left ${
+                            isSelected ? itemActive : itemHover
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate pr-1">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
+                            <span className="truncate">{cat}</span>
+                          </div>
+                          <span className="text-[10px] font-mono opacity-60 shrink-0">{count}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
 
-            {/* Date Range Filtration (From - To) */}
-            <div>
-              <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                <span>Date Range Filter</span>
-                {(fromDate || toDate) && (
-                  <button
-                    onClick={onClearDateRange}
-                    className="text-[10px] text-rose-400 hover:underline cursor-pointer"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              <div className="space-y-1.5">
+                {/* 4. Payment Methods Filter */}
                 <div>
-                  <span className="block text-[10px] text-zinc-500 mb-0.5">From Date</span>
-                  <input
-                    type="date"
-                    value={fromDate}
-                    onChange={(e) => onSelectFromDate(e.target.value)}
-                    className={`w-full rounded-lg px-2.5 py-1 text-[11px] focus:outline-none font-mono ${inputBg}`}
-                  />
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    <span>Payment Methods</span>
+                    {selectedPaymentMethod !== 'ALL' && (
+                      <button
+                        onClick={() => onSelectPaymentMethod?.('ALL')}
+                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-0.5">
+                    {SIDEBAR_PAYMENT_METHODS.map((pm) => {
+                      const isSelected = selectedPaymentMethod?.toUpperCase() === pm.id
+                      const count = pm.id === 'ALL' ? expenseCounts?.total : expenseCounts?.byMethod[pm.id] ?? 0
+                      return (
+                        <button
+                          key={pm.id}
+                          onClick={() => {
+                            onSelectPaymentMethod?.(pm.id)
+                            onClose()
+                          }}
+                          className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer text-left ${
+                            isSelected ? itemActive : itemHover
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-zinc-400 shrink-0">{renderPaymentMethodIcon(pm.id)}</span>
+                            <span>{pm.label}</span>
+                          </div>
+                          {typeof count === 'number' && (
+                            <span className="text-[10px] font-mono opacity-60">{count}</span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
+
+                {/* 5. Amount Range Filter */}
                 <div>
-                  <span className="block text-[10px] text-zinc-500 mb-0.5">To Date</span>
-                  <input
-                    type="date"
-                    value={toDate}
-                    onChange={(e) => onSelectToDate(e.target.value)}
-                    className={`w-full rounded-lg px-2.5 py-1 text-[11px] focus:outline-none font-mono ${inputBg}`}
-                  />
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    <span>Amount Range (₹)</span>
+                    {(expenseMinAmount || expenseMaxAmount) && (
+                      <button
+                        onClick={() => {
+                          onMinAmountChange?.('')
+                          onMaxAmountChange?.('')
+                        }}
+                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="relative flex-1">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400">₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Min"
+                        value={expenseMinAmount}
+                        onChange={(e) => onMinAmountChange?.(e.target.value)}
+                        className={`w-full pl-5 pr-2 py-1.5 rounded-lg text-xs font-mono focus:outline-none border ${inputBg}`}
+                      />
+                    </div>
+                    <span className="text-zinc-500 text-xs font-mono">to</span>
+                    <div className="relative flex-1">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400">₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Max"
+                        value={expenseMaxAmount}
+                        onChange={(e) => onMaxAmountChange?.(e.target.value)}
+                        className={`w-full pl-5 pr-2 py-1.5 rounded-lg text-xs font-mono focus:outline-none border ${inputBg}`}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            ) : (
+              /* Ticket Specific Filters (Inbox, Dashboard, Board, Notes) */
+              <>
+                {/* Status Filter Facet */}
+                <div>
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    <span>Status Filter</span>
+                    {selectedStatus !== 'ALL' && (
+                      <button
+                        onClick={() => onSelectStatus('ALL')}
+                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-0.5">
+                    {[
+                      { id: 'ALL', label: 'All Statuses', count: ticketCounts.total },
+                      { id: 'TODO', label: 'To Do', count: ticketCounts.todo, dot: 'bg-zinc-400' },
+                      { id: 'IN_PROGRESS', label: 'In Progress', count: ticketCounts.inProgress, dot: 'bg-amber-400' },
+                      { id: 'DONE', label: 'Completed', count: ticketCounts.done, dot: 'bg-emerald-400' },
+                      { id: 'BLOCKED', label: 'Blocked', count: ticketCounts.blocked, dot: 'bg-rose-400' },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          onSelectStatus(item.id as TicketStatus | 'ALL')
+                          onClose()
+                        }}
+                        className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer ${
+                          selectedStatus === item.id ? itemActive : itemHover
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {item.dot && <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} />}
+                          <span>{item.label}</span>
+                        </div>
+                        <span className="text-[10px] font-mono opacity-60">{item.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Priority Filter Facet */}
+                <div>
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    <span>Priority Filter</span>
+                    {selectedPriority !== 'ALL' && (
+                      <button
+                        onClick={() => onSelectPriority('ALL')}
+                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {[
+                      { id: 'ALL', label: 'All' },
+                      { id: 'URGENT', label: 'Urgent', dot: 'bg-rose-500' },
+                      { id: 'HIGH', label: 'High', dot: 'bg-amber-500' },
+                      { id: 'MEDIUM', label: 'Medium', dot: 'bg-zinc-400' },
+                      { id: 'LOW', label: 'Low', dot: 'bg-emerald-500' },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          onSelectPriority(item.id as TicketPriority | 'ALL')
+                          onClose()
+                        }}
+                        className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition cursor-pointer flex items-center justify-center gap-1.5 border ${
+                          selectedPriority === item.id ? itemActive : `${inputBg} ${itemHover}`
+                        }`}
+                      >
+                        {item.dot && <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} />}
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Category Filter Facet */}
+                <div>
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    <span>Category Filter</span>
+                    {selectedCategory !== 'ALL' && (
+                      <button
+                        onClick={() => onSelectCategory('ALL')}
+                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {displayedCategories.map((item) => {
+                      const isSelected = selectedCategory === item.id
+                      const count = categoryCounts ? categoryCounts[item.id] : undefined
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            onSelectCategory(item.id)
+                            onClose()
+                          }}
+                          className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition cursor-pointer flex items-center justify-between gap-1 border ${
+                            isSelected ? itemActive : `${inputBg} ${itemHover}`
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 truncate">
+                            {item.dot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.dot}`} />}
+                            <span className="truncate">{item.label}</span>
+                          </div>
+                          {typeof count === 'number' && (
+                            <span className="text-[10px] font-mono opacity-60 ml-0.5 shrink-0">{count}</span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Date Range Filtration (From - To) */}
+                <div>
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    <span>Date Range Filter</span>
+                    {(fromDate || toDate) && (
+                      <button
+                        onClick={onClearDateRange}
+                        className="text-[10px] text-rose-400 hover:underline cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <div>
+                      <span className="block text-[10px] text-zinc-500 mb-0.5">From Date</span>
+                      <input
+                        type="date"
+                        value={fromDate}
+                        onChange={(e) => onSelectFromDate(e.target.value)}
+                        className={`w-full rounded-lg px-2.5 py-1 text-[11px] focus:outline-none font-mono ${inputBg}`}
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-zinc-500 mb-0.5">To Date</span>
+                      <input
+                        type="date"
+                        value={toDate}
+                        onChange={(e) => onSelectToDate(e.target.value)}
+                        className={`w-full rounded-lg px-2.5 py-1 text-[11px] focus:outline-none font-mono ${inputBg}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Profile & Settings Footer */}

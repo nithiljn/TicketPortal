@@ -40,6 +40,21 @@ const typeDefs = /* GraphQL */ `
     createdAt: String!
   }
 
+  type Expense {
+    id: ID!
+    title: String!
+    amount: Float!
+    currency: String!
+    category: String!
+    date: String!
+    paymentMethod: String!
+    projectName: String!
+    notes: String
+    createdBy: String!
+    createdAt: String!
+    updatedAt: String!
+  }
+
   input CreateTicketInput {
     title: String!
     description: String
@@ -68,6 +83,29 @@ const typeDefs = /* GraphQL */ `
     createdBy: String
   }
 
+  input CreateExpenseInput {
+    title: String!
+    amount: Float!
+    currency: String
+    category: String!
+    date: String
+    paymentMethod: String
+    projectName: String
+    notes: String
+    createdBy: String
+  }
+
+  input UpdateExpenseInput {
+    title: String
+    amount: Float
+    currency: String
+    category: String
+    date: String
+    paymentMethod: String
+    projectName: String
+    notes: String
+  }
+
   # QUERIES
   type Query {
     tickets(
@@ -81,6 +119,15 @@ const typeDefs = /* GraphQL */ `
     ticket(id: ID!): Ticket
     projects(userEmail: String): [String!]!
     dailyNotes(date: String, userEmail: String): [DailyNote!]!
+    expenses(
+      userEmail: String
+      projectName: String
+      category: String
+      paymentMethod: String
+      month: String
+      search: String
+    ): [Expense!]!
+    expenseCategories(userEmail: String): [String!]!
   }
 
   # MUTATIONS
@@ -92,6 +139,11 @@ const typeDefs = /* GraphQL */ `
     deleteDailyNote(id: ID!, userEmail: String): Boolean!
     createWorkspace(name: String!, userEmail: String): String!
     deleteWorkspace(name: String!, userEmail: String): Boolean!
+    createExpense(input: CreateExpenseInput!): Expense!
+    updateExpense(id: ID!, input: UpdateExpenseInput!, userEmail: String): Expense!
+    deleteExpense(id: ID!, userEmail: String): Boolean!
+    createExpenseCategory(name: String!, userEmail: String): String!
+    deleteExpenseCategory(name: String!, userEmail: String): Boolean!
   }
 `
 
@@ -181,6 +233,71 @@ function formatDailyNote(row: NoteRow) {
     content: row.content,
     createdBy: formatAuthor(row.created_by),
     createdAt: row.created_at,
+  }
+}
+
+interface ExpenseRow {
+  id: string
+  title: string
+  amount: number | string
+  currency?: string | null
+  category: string
+  date: string
+  payment_method?: string | null
+  project_name?: string | null
+  notes?: string | null
+  created_by: string
+  created_at: string
+  updated_at?: string | null
+}
+
+const DEFAULT_EXPENSE_CATEGORIES = [
+  'Food & Dining',
+  'Travel & Transport',
+  'Software & Subscriptions',
+  'Office Supplies',
+  'Cloud & Hosting',
+  'Marketing & Ads',
+  'Bills & Utilities',
+  'Personal',
+  'Miscellaneous',
+]
+
+// In-memory fallback caches ensuring seamless resilience
+let fallbackExpenses: Array<{
+  id: string
+  title: string
+  amount: number
+  currency: string
+  category: string
+  date: string
+  paymentMethod: string
+  projectName: string
+  notes?: string | null
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}> = []
+const fallbackCategories = new Set<string>()
+
+function formatExpense(row: ExpenseRow) {
+  return {
+    id: row.id,
+    title: row.title,
+    amount: Number(row.amount) || 0,
+    currency: row.currency || 'INR',
+    category: row.category || 'Miscellaneous',
+    date: row.date
+      ? typeof row.date === 'string'
+        ? row.date.split('T')[0]
+        : String(row.date)
+      : new Date().toISOString().split('T')[0],
+    paymentMethod: row.payment_method || 'UPI',
+    projectName: row.project_name || 'General',
+    notes: row.notes || null,
+    createdBy: formatAuthor(row.created_by),
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at || row.created_at || new Date().toISOString(),
   }
 }
 
@@ -351,6 +468,180 @@ const resolvers = {
         throw new Error(error.message)
       }
       return ((data as NoteRow[]) || []).map(formatDailyNote)
+    },
+
+    expenses: async (
+      _: unknown,
+      {
+        userEmail,
+        projectName,
+        category,
+        paymentMethod,
+        month,
+        search,
+      }: {
+        userEmail?: string
+        projectName?: string
+        category?: string
+        paymentMethod?: string
+        month?: string
+        search?: string
+      }
+    ) => {
+      if (!userEmail || !userEmail.trim()) {
+        return []
+      }
+
+      const email = userEmail.trim().toLowerCase()
+      const prefix = email.split('@')[0]
+
+      try {
+        let query = supabase
+          .from('expenses')
+          .select('*')
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false })
+
+        if (email === 'admin@ticketflow.io') {
+          query = query.or(
+            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+          )
+        } else {
+          query = query.or(
+            `created_by.eq.${email},created_by.eq.@${prefix},created_by.eq.${prefix}`
+          )
+        }
+
+        if (projectName && projectName !== 'ALL') {
+          query = query.eq('project_name', projectName)
+        }
+
+        if (category && category !== 'ALL') {
+          query = query.eq('category', category)
+        }
+
+        if (paymentMethod && paymentMethod !== 'ALL') {
+          query = query.eq('payment_method', paymentMethod)
+        }
+
+        if (month) {
+          const startDate = `${month}-01`
+          const [y, m] = month.split('-').map(Number)
+          const nextMonth =
+            m === 12
+              ? `${y + 1}-01-01`
+              : `${y}-${String(m + 1).padStart(2, '0')}-01`
+          query = query.gte('date', startDate).lt('date', nextMonth)
+        }
+
+        const { data, error } = await query
+
+        if (error) {
+          console.warn('Supabase expenses query fallback:', error.message)
+          let items = fallbackExpenses.filter((e) => {
+            if (projectName && projectName !== 'ALL' && e.projectName !== projectName)
+              return false
+            if (category && category !== 'ALL' && e.category !== category)
+              return false
+            if (
+              paymentMethod &&
+              paymentMethod !== 'ALL' &&
+              e.paymentMethod !== paymentMethod
+            )
+              return false
+            if (month && !e.date.startsWith(month)) return false
+            return true
+          })
+          if (search && search.trim()) {
+            const q = search.trim().toLowerCase()
+            items = items.filter(
+              (r) =>
+                r.title.toLowerCase().includes(q) ||
+                r.category.toLowerCase().includes(q) ||
+                (r.notes && r.notes.toLowerCase().includes(q))
+            )
+          }
+          return items
+        }
+
+        let results = ((data as ExpenseRow[]) || []).map(formatExpense)
+
+        if (search && search.trim()) {
+          const q = search.trim().toLowerCase()
+          results = results.filter(
+            (r) =>
+              r.title.toLowerCase().includes(q) ||
+              r.category.toLowerCase().includes(q) ||
+              (r.notes && r.notes.toLowerCase().includes(q))
+          )
+        }
+
+        return results
+      } catch (err) {
+        console.warn('Expenses query error:', err)
+        return []
+      }
+    },
+
+    expenseCategories: async (
+      _: unknown,
+      { userEmail }: { userEmail?: string }
+    ) => {
+      const categorySet = new Set<string>(DEFAULT_EXPENSE_CATEGORIES)
+
+      if (!userEmail || !userEmail.trim()) {
+        return Array.from(categorySet)
+      }
+
+      const email = userEmail.trim().toLowerCase()
+      const prefix = email.split('@')[0]
+
+      // 1. Fetch custom categories from expense_categories table
+      try {
+        let q = supabase.from('expense_categories').select('name')
+        if (email === 'admin@ticketflow.io') {
+          q = q.or(
+            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+          )
+        } else {
+          q = q.or(
+            `created_by.eq.${email},created_by.eq.@${prefix},created_by.eq.${prefix}`
+          )
+        }
+        const { data, error } = await q
+        if (!error && data) {
+          data.forEach((r: { name: string }) => {
+            if (r.name && r.name.trim()) categorySet.add(r.name.trim())
+          })
+        }
+      } catch {
+        // Table not ready yet
+      }
+
+      // 2. Fetch distinct categories from expenses table
+      try {
+        let q = supabase.from('expenses').select('category')
+        if (email === 'admin@ticketflow.io') {
+          q = q.or(
+            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+          )
+        } else {
+          q = q.or(
+            `created_by.eq.${email},created_by.eq.@${prefix},created_by.eq.${prefix}`
+          )
+        }
+        const { data, error } = await q
+        if (!error && data) {
+          data.forEach((r: { category: string }) => {
+            if (r.category && r.category.trim()) categorySet.add(r.category.trim())
+          })
+        }
+      } catch {
+        // Table not ready yet
+      }
+
+      fallbackCategories.forEach((c) => categorySet.add(c))
+      return Array.from(categorySet)
     },
   },
 
@@ -619,6 +910,248 @@ const resolvers = {
       } catch (err) {
         console.warn('Workspaces table delete notice:', err)
       }
+      return true
+    },
+
+    createExpense: async (
+      _: unknown,
+      {
+        input,
+      }: {
+        input: {
+          title: string
+          amount: number
+          currency?: string
+          category: string
+          date?: string
+          paymentMethod?: string
+          projectName?: string
+          notes?: string
+          createdBy?: string
+        }
+      }
+    ) => {
+      const today = new Date().toISOString().split('T')[0]
+      const payload = {
+        title: input.title,
+        amount: input.amount,
+        currency: input.currency || 'INR',
+        category: input.category,
+        date: input.date || today,
+        payment_method: input.paymentMethod || 'UPI',
+        project_name: input.projectName || 'General',
+        notes: input.notes || null,
+        created_by: input.createdBy || 'Nithil',
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('expenses')
+          .insert([payload])
+          .select()
+          .single()
+
+        if (error) {
+          console.warn('Supabase createExpense fallback:', error.message)
+          const fallback = {
+            id: `exp-${Date.now()}`,
+            title: input.title,
+            amount: Number(input.amount) || 0,
+            currency: input.currency || 'INR',
+            category: input.category,
+            date: input.date || today,
+            paymentMethod: input.paymentMethod || 'UPI',
+            projectName: input.projectName || 'General',
+            notes: input.notes || null,
+            createdBy: formatAuthor(input.createdBy || 'Nithil'),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+          fallbackExpenses.unshift(fallback)
+          return fallback
+        }
+
+        return formatExpense(data as ExpenseRow)
+      } catch (err) {
+        console.warn('createExpense exception fallback:', err)
+        const fallback = {
+          id: `exp-${Date.now()}`,
+          title: input.title,
+          amount: Number(input.amount) || 0,
+          currency: input.currency || 'INR',
+          category: input.category,
+          date: input.date || today,
+          paymentMethod: input.paymentMethod || 'UPI',
+          projectName: input.projectName || 'General',
+          notes: input.notes || null,
+          createdBy: formatAuthor(input.createdBy || 'Nithil'),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+        fallbackExpenses.unshift(fallback)
+        return fallback
+      }
+    },
+
+    updateExpense: async (
+      _: unknown,
+      {
+        id,
+        input,
+        userEmail,
+      }: {
+        id: string
+        input: {
+          title?: string
+          amount?: number
+          currency?: string
+          category?: string
+          date?: string
+          paymentMethod?: string
+          projectName?: string
+          notes?: string
+        }
+        userEmail?: string
+      }
+    ) => {
+      const updateData: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      }
+      if (input.title !== undefined) updateData.title = input.title
+      if (input.amount !== undefined) updateData.amount = input.amount
+      if (input.currency !== undefined) updateData.currency = input.currency
+      if (input.category !== undefined) updateData.category = input.category
+      if (input.date !== undefined) updateData.date = input.date
+      if (input.paymentMethod !== undefined)
+        updateData.payment_method = input.paymentMethod
+      if (input.projectName !== undefined)
+        updateData.project_name = input.projectName
+      if (input.notes !== undefined) updateData.notes = input.notes
+
+      try {
+        let q = supabase.from('expenses').update(updateData).eq('id', id)
+
+        if (userEmail) {
+          const email = userEmail.trim().toLowerCase()
+          const prefix = email.split('@')[0]
+          if (email === 'admin@ticketflow.io') {
+            q = q.or(
+              'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+            )
+          } else {
+            q = q.or(
+              `created_by.eq.${email},created_by.eq.@${prefix},created_by.eq.${prefix}`
+            )
+          }
+        }
+
+        const { data, error } = await q.select().single()
+        if (error) {
+          console.warn('Supabase updateExpense fallback:', error.message)
+          const idx = fallbackExpenses.findIndex((e) => e.id === id)
+          if (idx !== -1) {
+            fallbackExpenses[idx] = {
+              ...fallbackExpenses[idx],
+              ...input,
+              updatedAt: new Date().toISOString(),
+            }
+            return fallbackExpenses[idx]
+          }
+          throw new Error(error.message)
+        }
+        return formatExpense(data as ExpenseRow)
+      } catch (err) {
+        console.warn('updateExpense exception fallback:', err)
+        const idx = fallbackExpenses.findIndex((e) => e.id === id)
+        if (idx !== -1) {
+          fallbackExpenses[idx] = {
+            ...fallbackExpenses[idx],
+            ...input,
+            updatedAt: new Date().toISOString(),
+          }
+          return fallbackExpenses[idx]
+        }
+        throw new Error('Failed to update expense')
+      }
+    },
+
+    deleteExpense: async (
+      _: unknown,
+      { id, userEmail }: { id: string; userEmail?: string }
+    ) => {
+      if (!userEmail || !userEmail.trim()) {
+        throw new Error('Unauthorized: user email required to delete an expense')
+      }
+      const email = userEmail.trim().toLowerCase()
+      const prefix = email.split('@')[0]
+
+      try {
+        let q = supabase.from('expenses').delete().eq('id', id)
+        if (email === 'admin@ticketflow.io') {
+          q = q.or(
+            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+          )
+        } else {
+          q = q.or(
+            `created_by.eq.${email},created_by.eq.@${prefix},created_by.eq.${prefix}`
+          )
+        }
+        const { error } = await q
+        if (error) {
+          console.warn('deleteExpense fallback:', error.message)
+        }
+        fallbackExpenses = fallbackExpenses.filter((e) => e.id !== id)
+        return true
+      } catch (err) {
+        console.warn('deleteExpense exception fallback:', err)
+        fallbackExpenses = fallbackExpenses.filter((e) => e.id !== id)
+        return true
+      }
+    },
+
+    createExpenseCategory: async (
+      _: unknown,
+      { name, userEmail }: { name: string; userEmail?: string }
+    ) => {
+      const trimmed = name.trim()
+      if (!trimmed) throw new Error('Category name cannot be empty')
+      const email = userEmail?.trim().toLowerCase() || 'nithil'
+
+      try {
+        await supabase
+          .from('expense_categories')
+          .insert([{ name: trimmed, created_by: email }])
+      } catch (err) {
+        console.warn('createExpenseCategory notice:', err)
+      }
+      fallbackCategories.add(trimmed)
+      return trimmed
+    },
+
+    deleteExpenseCategory: async (
+      _: unknown,
+      { name, userEmail }: { name: string; userEmail?: string }
+    ) => {
+      const email = userEmail?.trim().toLowerCase()
+      try {
+        let q = supabase.from('expense_categories').delete().eq('name', name)
+        if (email) {
+          const prefix = email.split('@')[0]
+          if (email === 'admin@ticketflow.io') {
+            q = q.or(
+              'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+            )
+          } else {
+            q = q.or(
+              `created_by.eq.${email},created_by.eq.@${prefix},created_by.eq.${prefix}`
+            )
+          }
+        }
+        await q
+      } catch (err) {
+        console.warn('deleteExpenseCategory notice:', err)
+      }
+      fallbackCategories.delete(name)
       return true
     },
   },

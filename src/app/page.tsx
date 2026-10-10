@@ -1,15 +1,18 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Ticket, DailyNote, TicketStatus, TicketPriority } from '@/types'
+import { Ticket, DailyNote, TicketStatus, TicketPriority, Expense } from '@/types'
 import { fetchGraphQL } from '@/lib/graphql-client'
 import { Sidebar } from '@/components/Sidebar'
 import { InboxTable } from '@/components/InboxTable'
 import { DashboardView } from '@/components/DashboardView'
 import { KanbanBoard } from '@/components/KanbanBoard'
 import { DailyNotes } from '@/components/DailyNotes'
+import { ExpenseTracker } from '@/components/ExpenseTracker'
 import { ThemeSpinner } from '@/components/ThemeSpinner'
 import { TicketModal } from '@/components/TicketModal'
+import { ExpenseModal } from '@/components/ExpenseModal'
+import { ExpenseCategoryModal } from '@/components/ExpenseCategoryModal'
 import { WorkspaceModal } from '@/components/WorkspaceModal'
 import { DeleteWorkspaceModal } from '@/components/DeleteWorkspaceModal'
 import { ConfirmModal } from '@/components/ConfirmModal'
@@ -22,6 +25,12 @@ export default function Home() {
 
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([])
+  const [expenses, setExpenses] = useState<Expense[]>([])
+  const [expenseCategories, setExpenseCategories] = useState<string[]>([])
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
+  const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null)
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [availableProjects, setAvailableProjects] = useState<string[]>([])
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false)
   const [workspaceToDelete, setWorkspaceToDelete] = useState<string | null>(null)
@@ -61,8 +70,8 @@ export default function Home() {
   // Mobile Drawer State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
-  // Views: 'inbox' | 'dashboard' | 'board' | 'notes'
-  const [activeTab, setActiveTab] = useState<'inbox' | 'dashboard' | 'board' | 'notes'>('inbox')
+  // Views: 'inbox' | 'dashboard' | 'board' | 'notes' | 'expenses'
+  const [activeTab, setActiveTab] = useState<'inbox' | 'dashboard' | 'board' | 'notes' | 'expenses'>('inbox')
 
   // Facet Filters
   const [selectedProject, setSelectedProject] = useState<string>('ALL')
@@ -73,11 +82,19 @@ export default function Home() {
   const [toDate, setToDate] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
 
+  // Expense Specific Filters
+  const [selectedExpenseCategory, setSelectedExpenseCategory] = useState<string | 'ALL'>('ALL')
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | 'ALL'>('ALL')
+  const [selectedExpenseMonth, setSelectedExpenseMonth] = useState<string>('ALL')
+  const [expenseMinAmount, setExpenseMinAmount] = useState<string>('')
+  const [expenseMaxAmount, setExpenseMaxAmount] = useState<string>('')
+  const [expenseSearchQuery, setExpenseSearchQuery] = useState<string>('')
+
   // Loading & Transition States
   const [loading, setLoading] = useState(true)
   const [isFilterLoading, setIsFilterLoading] = useState(false)
   const [isTabSwitching, setIsTabSwitching] = useState(false)
-  const [tabSwitchTarget, setTabSwitchTarget] = useState<'inbox' | 'dashboard' | 'board' | 'notes'>('inbox')
+  const [tabSwitchTarget, setTabSwitchTarget] = useState<'inbox' | 'dashboard' | 'board' | 'notes' | 'expenses'>('inbox')
   const filterTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const tabTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -90,7 +107,7 @@ export default function Home() {
   }, [])
 
   const handleTabChange = useCallback(
-    (targetTab: 'inbox' | 'dashboard' | 'board' | 'notes') => {
+    (targetTab: 'inbox' | 'dashboard' | 'board' | 'notes' | 'expenses') => {
       if (targetTab === activeTab && !isTabSwitching) return
       if (tabTimeoutRef.current) clearTimeout(tabTimeoutRef.current)
 
@@ -198,6 +215,8 @@ export default function Home() {
     if (isAuthLoading || !user?.email) {
       setTickets([])
       setDailyNotes([])
+      setExpenses([])
+      setExpenseCategories([])
       setLoading(false)
       return
     }
@@ -230,6 +249,21 @@ export default function Home() {
             createdBy
             createdAt
           }
+          expenses(userEmail: $userEmail) {
+            id
+            title
+            amount
+            currency
+            category
+            date
+            paymentMethod
+            projectName
+            notes
+            createdBy
+            createdAt
+            updatedAt
+          }
+          expenseCategories(userEmail: $userEmail)
         }
       `
 
@@ -237,6 +271,8 @@ export default function Home() {
         projects: string[]
         tickets: Ticket[]
         dailyNotes: DailyNote[]
+        expenses: Expense[]
+        expenseCategories: string[]
       }>(query, {
         projectName: selectedProject !== 'ALL' ? selectedProject : null,
         search: searchTerm.trim() || null,
@@ -245,6 +281,8 @@ export default function Home() {
 
       setTickets(data.tickets || [])
       setDailyNotes(data.dailyNotes || [])
+      setExpenses(data.expenses || [])
+      setExpenseCategories(data.expenseCategories || [])
 
       // Merge with user-specific locally stored workspaces
       let localWs: string[] = []
@@ -349,6 +387,52 @@ export default function Home() {
 
     return { total, todo, inProgress, done, blocked, notesCount, categoryCounts }
   }, [tickets, dailyNotes])
+
+  // Expense available months
+  const availableExpenseMonths = useMemo(() => {
+    const set = new Set<string>()
+    const now = new Date()
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    set.add(currentMonthKey)
+    expenses.forEach((e) => {
+      if (e.date && e.date.length >= 7) {
+        set.add(e.date.slice(0, 7))
+      }
+    })
+    return Array.from(set).sort().reverse()
+  }, [expenses])
+
+  // Expense Counts for Sidebar
+  const expenseCounts = useMemo(() => {
+    let scoped = expenses
+    if (selectedProject !== 'ALL') {
+      scoped = scoped.filter(
+        (e) => (e.projectName || 'General').toLowerCase() === selectedProject.toLowerCase()
+      )
+    }
+    if (selectedExpenseMonth !== 'ALL') {
+      scoped = scoped.filter((e) => e.date && e.date.startsWith(selectedExpenseMonth))
+    }
+
+    const byCategory: Record<string, number> = {}
+    const byMethod: Record<string, number> = {}
+    let totalAmount = 0
+
+    scoped.forEach((e) => {
+      totalAmount += Number(e.amount) || 0
+      const cat = e.category || 'Miscellaneous'
+      byCategory[cat] = (byCategory[cat] || 0) + 1
+      const pm = (e.paymentMethod || 'OTHER').toUpperCase()
+      byMethod[pm] = (byMethod[pm] || 0) + 1
+    })
+
+    return {
+      total: scoped.length,
+      totalAmount,
+      byCategory,
+      byMethod,
+    }
+  }, [expenses, selectedProject, selectedExpenseMonth])
 
   // 4. GraphQL Mutations
   const handleStatusChange = async (id: string, newStatus: TicketStatus) => {
@@ -609,6 +693,151 @@ export default function Home() {
     }
   }
 
+  // Expense Handlers
+  const handleOpenAddExpense = () => {
+    setExpenseToEdit(null)
+    setIsExpenseModalOpen(true)
+  }
+
+  const handleOpenEditExpense = (exp: Expense) => {
+    setExpenseToEdit(exp)
+    setIsExpenseModalOpen(true)
+  }
+
+  const handleSaveExpense = async (
+    expenseData: {
+      title: string
+      amount: number
+      currency: string
+      category: string
+      date: string
+      paymentMethod: string
+      projectName: string
+      notes?: string
+    },
+    id?: string
+  ) => {
+    if (id) {
+      const mutation = /* GraphQL */ `
+        mutation UpdateExpense($id: ID!, $input: UpdateExpenseInput!, $userEmail: String) {
+          updateExpense(id: $id, input: $input, userEmail: $userEmail) {
+            id
+            title
+            amount
+            currency
+            category
+            date
+            paymentMethod
+            projectName
+            notes
+            updatedAt
+          }
+        }
+      `
+      await fetchGraphQL(mutation, {
+        id,
+        input: expenseData,
+        userEmail: user?.email,
+      })
+      setToast({
+        isOpen: true,
+        title: 'Expense Updated',
+        message: `Changes saved for "${expenseData.title}"`,
+      })
+    } else {
+      const mutation = /* GraphQL */ `
+        mutation CreateExpense($input: CreateExpenseInput!) {
+          createExpense(input: $input) {
+            id
+            title
+            amount
+            currency
+            category
+            date
+            paymentMethod
+            projectName
+            notes
+            createdAt
+          }
+        }
+      `
+      await fetchGraphQL(mutation, {
+        input: {
+          ...expenseData,
+          createdBy: user?.email || user?.name || 'User',
+        },
+      })
+      setToast({
+        isOpen: true,
+        title: 'Expense Recorded',
+        message: `Added ₹${expenseData.amount.toLocaleString()} for "${expenseData.title}"`,
+      })
+    }
+    loadData()
+  }
+
+  const handleConfirmDeleteExpense = async () => {
+    if (!expenseToDelete) return
+    const deletedTitle = expenseToDelete.title
+    setIsDeleting(true)
+    try {
+      const mutation = /* GraphQL */ `
+        mutation DeleteExpense($id: ID!, $userEmail: String) {
+          deleteExpense(id: $id, userEmail: $userEmail)
+        }
+      `
+      await fetchGraphQL(mutation, { id: expenseToDelete.id, userEmail: user?.email })
+      setExpenses((prev) => prev.filter((e) => e.id !== expenseToDelete.id))
+      setExpenseToDelete(null)
+      setToast({
+        isOpen: true,
+        title: 'Expense Deleted',
+        message: `"${deletedTitle}" was deleted successfully`,
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete expense'
+      setToast({
+        isOpen: true,
+        title: 'Error',
+        message: msg,
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleCreateExpenseCategory = async (catName: string) => {
+    const mutation = /* GraphQL */ `
+      mutation CreateCategory($name: String!, $userEmail: String) {
+        createExpenseCategory(name: $name, userEmail: $userEmail)
+      }
+    `
+    await fetchGraphQL(mutation, { name: catName, userEmail: user?.email })
+    setExpenseCategories((prev) =>
+      prev.includes(catName) ? prev : [...prev, catName]
+    )
+    setToast({
+      isOpen: true,
+      title: 'Category Created',
+      message: `Category "${catName}" added successfully`,
+    })
+  }
+
+  const handleDeleteExpenseCategory = async (catName: string) => {
+    const mutation = /* GraphQL */ `
+      mutation DeleteCategory($name: String!, $userEmail: String) {
+        deleteExpenseCategory(name: $name, userEmail: $userEmail)
+      }
+    `
+    await fetchGraphQL(mutation, { name: catName, userEmail: user?.email })
+    setExpenseCategories((prev) => prev.filter((c) => c !== catName))
+    setToast({
+      isOpen: true,
+      title: 'Category Removed',
+      message: `Category "${catName}" deleted`,
+    })
+  }
+
   const isDark = theme === 'dark'
 
   if (isAuthLoading) {
@@ -669,6 +898,24 @@ export default function Home() {
         onOpenCreateModal={handleOpenCreateTicket}
         onOpenCreateWorkspaceModal={() => setIsWorkspaceModalOpen(true)}
         onDeleteWorkspace={(proj) => setWorkspaceToDelete(proj)}
+        activeTab={activeTab}
+        expenseCategories={expenseCategories}
+        selectedExpenseCategory={selectedExpenseCategory}
+        onSelectExpenseCategory={setSelectedExpenseCategory}
+        selectedPaymentMethod={selectedPaymentMethod}
+        onSelectPaymentMethod={setSelectedPaymentMethod}
+        expenseMinAmount={expenseMinAmount}
+        expenseMaxAmount={expenseMaxAmount}
+        onMinAmountChange={setExpenseMinAmount}
+        onMaxAmountChange={setExpenseMaxAmount}
+        expenseSearchQuery={expenseSearchQuery}
+        onExpenseSearchChange={setExpenseSearchQuery}
+        selectedExpenseMonth={selectedExpenseMonth}
+        onSelectExpenseMonth={setSelectedExpenseMonth}
+        availableExpenseMonths={availableExpenseMonths}
+        expenseCounts={expenseCounts}
+        onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
+        onOpenAddExpenseModal={handleOpenAddExpense}
       />
 
       {/* 2. Main Content Canvas */}
@@ -718,18 +965,30 @@ export default function Home() {
               </svg>
               <input
                 type="text"
-                placeholder="Search tickets..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder={activeTab === 'expenses' ? 'Search expenses...' : 'Search tickets...'}
+                value={activeTab === 'expenses' ? expenseSearchQuery : searchTerm}
+                onChange={(e) => {
+                  if (activeTab === 'expenses') {
+                    setExpenseSearchQuery(e.target.value)
+                  } else {
+                    setSearchTerm(e.target.value)
+                  }
+                }}
                 className={`w-full rounded-lg border pl-8 pr-8 py-1.5 text-xs focus:outline-none transition ${
                   isDark
                     ? 'bg-white/[0.04] border-white/[0.06] text-zinc-100 placeholder-zinc-500 focus:border-white/[0.2]'
                     : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400'
                 }`}
               />
-              {searchTerm && (
+              {(activeTab === 'expenses' ? expenseSearchQuery : searchTerm) && (
                 <button
-                  onClick={() => setSearchTerm('')}
+                  onClick={() => {
+                    if (activeTab === 'expenses') {
+                      setExpenseSearchQuery('')
+                    } else {
+                      setSearchTerm('')
+                    }
+                  }}
                   className="absolute right-2.5 top-2 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer"
                 >
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -831,11 +1090,32 @@ export default function Home() {
                 </svg>
                 <span className="hidden sm:inline">Notes</span>
               </button>
+
+              {/* 5. Expenses (Expense Tracker) */}
+              <button
+                onClick={() => handleTabChange('expenses')}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                  (isTabSwitching ? tabSwitchTarget === 'expenses' : activeTab === 'expenses')
+                    ? isDark
+                      ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                      : 'bg-white text-zinc-950 shadow-sm font-semibold'
+                    : isDark
+                    ? 'text-zinc-400 hover:text-zinc-200'
+                    : 'text-zinc-500 hover:text-zinc-900'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                  <line x1="6" y1="15" x2="10" y2="15" />
+                </svg>
+                <span className="hidden sm:inline">Expenses</span>
+              </button>
             </div>
 
-            {/* Quick Create Ticket Button */}
+            {/* Quick Action Button */}
             <button
-              onClick={handleOpenCreateTicket}
+              onClick={activeTab === 'expenses' ? handleOpenAddExpense : handleOpenCreateTicket}
               className={`hidden sm:flex h-8 px-3 rounded-lg border text-xs font-medium items-center gap-1.5 transition cursor-pointer ${
                 isDark
                   ? 'bg-white/[0.1] hover:bg-white/[0.16] border-white/[0.1] text-zinc-100 hover:text-white'
@@ -846,7 +1126,7 @@ export default function Home() {
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              <span>Create</span>
+              <span>{activeTab === 'expenses' ? 'Add Expense' : 'Create'}</span>
             </button>
           </div>
         </header>
@@ -881,6 +1161,8 @@ export default function Home() {
                     ? 'Organizing Kanban Board...'
                     : tabSwitchTarget === 'notes'
                     ? 'Loading Daily Standup Notes...'
+                    : tabSwitchTarget === 'expenses'
+                    ? 'Loading Expense Tracker & Analytics...'
                     : 'Loading Inbox & Tickets...'
                   : 'Updating filtered tickets...'
               }
@@ -947,6 +1229,31 @@ export default function Home() {
                     theme={theme}
                   />
                 </div>
+              )}
+
+              {/* View 5: Expense Tracker */}
+              {activeTab === 'expenses' && (
+                <ExpenseTracker
+                  expenses={expenses}
+                  availableProjects={availableProjects}
+                  selectedProject={selectedProject}
+                  categories={expenseCategories}
+                  onAddExpense={handleOpenAddExpense}
+                  onEditExpense={handleOpenEditExpense}
+                  onDeleteExpense={(exp) => setExpenseToDelete(exp)}
+                  onOpenCategoryManager={() => setIsCategoryModalOpen(true)}
+                  theme={theme}
+                  selectedCategory={selectedExpenseCategory}
+                  onSelectCategory={setSelectedExpenseCategory}
+                  selectedPaymentMethod={selectedPaymentMethod}
+                  onSelectPaymentMethod={setSelectedPaymentMethod}
+                  selectedMonth={selectedExpenseMonth}
+                  onSelectMonth={setSelectedExpenseMonth}
+                  minAmount={expenseMinAmount}
+                  maxAmount={expenseMaxAmount}
+                  searchQuery={expenseSearchQuery}
+                  onSelectWorkspace={setSelectedProject}
+                />
               )}
             </div>
           )}
@@ -1022,6 +1329,49 @@ export default function Home() {
           theme={theme}
         />
       )}
+
+      {/* Expense Modal (Create & Edit) */}
+      <ExpenseModal
+        isOpen={isExpenseModalOpen}
+        onClose={() => {
+          setIsExpenseModalOpen(false)
+          setExpenseToEdit(null)
+        }}
+        onSave={handleSaveExpense}
+        expense={expenseToEdit}
+        categories={expenseCategories}
+        availableProjects={availableProjects}
+        currentWorkspace={selectedProject}
+        onCreateCategory={handleCreateExpenseCategory}
+        theme={theme}
+      />
+
+      {/* Expense Category Manager Modal */}
+      <ExpenseCategoryModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        onCreateCategory={handleCreateExpenseCategory}
+        onDeleteCategory={handleDeleteExpenseCategory}
+        existingCategories={expenseCategories}
+        theme={theme}
+      />
+
+      {/* Confirm Delete Expense Modal */}
+      <ConfirmModal
+        isOpen={Boolean(expenseToDelete)}
+        onClose={() => setExpenseToDelete(null)}
+        onConfirm={handleConfirmDeleteExpense}
+        title="Delete Expense Record"
+        message={
+          expenseToDelete
+            ? `Are you sure you want to delete "${expenseToDelete.title}" (₹${Number(expenseToDelete.amount).toLocaleString()})? This action cannot be undone.`
+            : 'Are you sure you want to delete this expense?'
+        }
+        confirmText="Delete Expense"
+        cancelText="Cancel"
+        theme={theme}
+        loading={isDeleting}
+      />
 
       {/* Floating Success / Action Toast Notification */}
       <Toast

@@ -846,55 +846,62 @@ export function Sidebar({
 
           {/* Profile & Settings Footer */}
           <div className={`p-3 border-t ${headerBorder} relative`} ref={settingsRef}>
-            {/* Settings Popover Dropdown Menu (Anchored above the profile card) */}
+            {/* Settings Popover Dropdown Menu */}
             {isSettingsOpen && (
               <div
-                className={`absolute bottom-full left-3 right-3 mb-2.5 p-2 rounded-2xl border shadow-2xl z-50 transition-all ${
+                className={`absolute bottom-full left-3 right-3 mb-2 p-1.5 rounded-xl border shadow-xl z-50 transition-all ${
                   isDark
                     ? 'bg-[#151518] border-white/[0.12] text-zinc-200 shadow-black/80'
                     : 'bg-white border-zinc-200 text-zinc-900 shadow-zinc-500/20'
                 }`}
               >
-                <div className="px-2 pt-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                  Settings & Preferences
+                <div className="px-2 pt-1 pb-1.5 text-[10px] font-mono font-medium uppercase tracking-wider text-zinc-500">
+                  Settings
                 </div>
 
                 {/* Appearance Theme Switcher */}
-                <div className={`flex items-center justify-between p-2 rounded-xl transition ${
-                  isDark ? 'hover:bg-white/[0.04]' : 'hover:bg-zinc-50'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    {isDark ? (
-                      <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg">
+                  <span className="text-xs font-medium">Appearance</span>
+                  <div className={`inline-flex p-0.5 rounded-lg border ${
+                    isDark ? 'bg-zinc-900 border-white/[0.08]' : 'bg-zinc-100 border-zinc-200'
+                  }`}>
+                    <button
+                      type="button"
+                      onClick={() => isDark && onToggleTheme()}
+                      className={`px-2 py-1 text-[11px] font-medium rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                        !isDark
+                          ? 'bg-white text-zinc-900 shadow-xs'
+                          : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <circle cx="12" cy="12" r="5" />
                         <line x1="12" y1="1" x2="12" y2="3" />
                         <line x1="12" y1="21" x2="12" y2="23" />
                         <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
                         <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
                         <line x1="1" y1="12" x2="3" y2="12" />
-                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="23" />
                         <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
                         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
                       </svg>
-                    ) : (
-                      <svg className="w-3.5 h-3.5 text-zinc-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <span>Light</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => !isDark && onToggleTheme()}
+                      className={`px-2 py-1 text-[11px] font-medium rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                        isDark
+                          ? 'bg-zinc-800 text-white shadow-xs'
+                          : 'text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                       </svg>
-                    )}
-                    <span className="text-xs font-medium">Appearance</span>
+                      <span>Dark</span>
+                    </button>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={onToggleTheme}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition cursor-pointer ${
-                      isDark
-                        ? 'bg-white/[0.08] border-white/[0.12] text-zinc-200 hover:bg-white/[0.12]'
-                        : 'bg-zinc-100 border-zinc-300 text-zinc-800 hover:bg-zinc-200'
-                    }`}
-                  >
-                    <span>{isDark ? 'Dark' : 'Light'}</span>
-                  </button>
                 </div>
 
                 <div className={`my-1 border-t ${isDark ? 'border-white/[0.08]' : 'border-zinc-100'}`} />
@@ -907,13 +914,13 @@ export function Sidebar({
                       setIsSettingsOpen(false)
                       onLogout()
                     }}
-                    className={`w-full flex items-center gap-2 p-2 rounded-xl text-xs font-medium transition cursor-pointer text-left ${
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer text-left ${
                       isDark
-                        ? 'hover:bg-rose-500/10 text-rose-400 hover:text-rose-300'
-                        : 'hover:bg-rose-50 text-rose-700'
+                        ? 'text-zinc-300 hover:text-red-400 hover:bg-white/[0.06]'
+                        : 'text-zinc-700 hover:text-red-600 hover:bg-zinc-100'
                     }`}
                   >
-                    <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg className="w-3.5 h-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                       <polyline points="16 17 21 12 16 7" />
                       <line x1="21" y1="12" x2="9" y2="12" />
@@ -929,30 +936,31 @@ export function Sidebar({
               isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50 border-zinc-200'
             }`}>
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                {user?.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt=""
-                    className="w-8 h-8 rounded-lg object-cover shrink-0 border border-white/[0.08]"
+                <div className="relative shrink-0">
+                  {user?.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt=""
+                      className="w-8 h-8 rounded-lg object-cover shrink-0 border border-white/[0.08]"
+                    />
+                  ) : (
+                    <div className={`w-8 h-8 rounded-lg font-semibold text-xs flex items-center justify-center shrink-0 uppercase ${
+                      isDark ? 'bg-white/[0.08] text-zinc-200' : 'bg-zinc-200 text-zinc-800'
+                    }`}>
+                      {user?.name ? user.name.slice(0, 2) : 'US'}
+                    </div>
+                  )}
+                  <span
+                    className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ${
+                      isDark ? 'ring-zinc-900' : 'ring-zinc-50'
+                    }`}
                   />
-                ) : (
-                  <div className={`w-8 h-8 rounded-lg font-semibold text-xs flex items-center justify-center shrink-0 uppercase ${
-                    isDark ? 'bg-white/[0.08] text-zinc-200' : 'bg-zinc-200 text-zinc-800'
-                  }`}>
-                    {user?.name ? user.name.slice(0, 2) : 'US'}
-                  </div>
-                )}
+                </div>
                 <div className="truncate min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`block text-xs font-semibold truncate ${textPrimary}`}>
-                      {user?.name || 'User'}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.2 rounded border font-semibold bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                      Active
-                    </span>
-                  </div>
-                  <span className="block text-[10px] text-zinc-500 truncate">
+                  <span className={`block text-xs font-semibold truncate ${textPrimary}`}>
+                    {user?.name || 'User'}
+                  </span>
+                  <span className="block text-[11px] text-zinc-500 truncate">
                     {user?.email || (user?.username ? `@${user.username}` : 'authenticated')}
                   </span>
                 </div>

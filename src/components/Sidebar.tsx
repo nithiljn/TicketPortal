@@ -93,14 +93,17 @@ interface SidebarProps {
   onSelectProject: (proj: string) => void
 
   // Status & Priority Filters
-  selectedStatus: TicketStatus | 'ALL'
+  selectedStatus?: TicketStatus | 'ALL'
+  selectedStatuses?: TicketStatus[]
   onSelectStatus: (status: TicketStatus | 'ALL') => void
 
-  selectedPriority: TicketPriority | 'ALL'
+  selectedPriority?: TicketPriority | 'ALL'
+  selectedPriorities?: TicketPriority[]
   onSelectPriority: (p: TicketPriority | 'ALL') => void
 
   // Category Filter
-  selectedCategory: string | 'ALL'
+  selectedCategory?: string | 'ALL'
+  selectedCategories?: string[]
   onSelectCategory: (cat: string | 'ALL') => void
   categoryCounts?: Record<string, number>
 
@@ -169,10 +172,13 @@ export function Sidebar({
   selectedProject,
   onSelectProject,
   selectedStatus,
+  selectedStatuses,
   onSelectStatus,
   selectedPriority,
+  selectedPriorities,
   onSelectPriority,
   selectedCategory,
+  selectedCategories,
   onSelectCategory,
   categoryCounts,
   fromDate,
@@ -238,6 +244,10 @@ export function Sidebar({
     ? 'bg-black/40 border-white/[0.08] text-zinc-200'
     : 'bg-zinc-50 border-zinc-200 text-zinc-900'
 
+  const activeStatuses = selectedStatuses ?? (selectedStatus && selectedStatus !== 'ALL' ? [selectedStatus] : [])
+  const activePriorities = selectedPriorities ?? (selectedPriority && selectedPriority !== 'ALL' ? [selectedPriority] : [])
+  const activeCategories = selectedCategories ?? (selectedCategory && selectedCategory !== 'ALL' ? [selectedCategory] : [])
+
   const DEFAULT_CATEGORIES: { id: string; label: string }[] = [
     { id: 'ALL', label: 'All' },
     { id: 'BUG', label: 'Bug' },
@@ -253,7 +263,8 @@ export function Sidebar({
 
     if (categoryCounts) {
       Object.keys(categoryCounts).forEach((catId) => {
-        if (!existingIds.has(catId) && catId !== 'ALL' && (categoryCounts[catId] > 0 || selectedCategory === catId)) {
+        const isSelected = activeCategories.some((c) => c.toUpperCase() === catId.toUpperCase())
+        if (!existingIds.has(catId) && catId !== 'ALL' && (categoryCounts[catId] > 0 || isSelected)) {
           list.push({
             id: catId,
             label: catId.charAt(0) + catId.slice(1).toLowerCase(),
@@ -263,7 +274,7 @@ export function Sidebar({
       })
     }
     return list
-  }, [categoryCounts, selectedCategory])
+  }, [categoryCounts, activeCategories])
 
   return (
     <>
@@ -696,7 +707,7 @@ export function Sidebar({
                 <div>
                   <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     <span>Status Filter</span>
-                    {selectedStatus !== 'ALL' && (
+                    {activeStatuses.length > 0 && (
                       <button
                         onClick={() => onSelectStatus('ALL')}
                         className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
@@ -713,13 +724,14 @@ export function Sidebar({
                       { id: 'DONE', label: 'Completed', count: ticketCounts.done },
                       { id: 'BLOCKED', label: 'Blocked', count: ticketCounts.blocked },
                     ].map((item) => {
-                      const isSelected = selectedStatus === item.id
+                      const isSelected = item.id === 'ALL'
+                        ? activeStatuses.length === 0
+                        : activeStatuses.includes(item.id as TicketStatus)
                       return (
                         <button
                           key={item.id}
                           onClick={() => {
                             onSelectStatus(item.id as TicketStatus | 'ALL')
-                            onClose()
                           }}
                           className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
                             isSelected ? itemActive : itemHover
@@ -745,7 +757,7 @@ export function Sidebar({
                 <div>
                   <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     <span>Priority Filter</span>
-                    {selectedPriority !== 'ALL' && (
+                    {activePriorities.length > 0 && (
                       <button
                         onClick={() => onSelectPriority('ALL')}
                         className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
@@ -762,13 +774,14 @@ export function Sidebar({
                       { id: 'MEDIUM', label: 'Medium' },
                       { id: 'LOW', label: 'Low' },
                     ].map((item) => {
-                      const isSelected = selectedPriority === item.id
+                      const isSelected = item.id === 'ALL'
+                        ? activePriorities.length === 0
+                        : activePriorities.includes(item.id as TicketPriority)
                       return (
                         <button
                           key={item.id}
                           onClick={() => {
                             onSelectPriority(item.id as TicketPriority | 'ALL')
-                            onClose()
                           }}
                           className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center border active:scale-[0.98] ${
                             item.fullWidth ? 'col-span-2' : ''
@@ -791,7 +804,7 @@ export function Sidebar({
                 <div>
                   <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     <span>Category Filter</span>
-                    {selectedCategory !== 'ALL' && (
+                    {activeCategories.length > 0 && (
                       <button
                         onClick={() => onSelectCategory('ALL')}
                         className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
@@ -802,15 +815,16 @@ export function Sidebar({
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
                     {displayedCategories.map((item) => {
-                      const isSelected = selectedCategory === item.id
                       const count = categoryCounts ? categoryCounts[item.id] : undefined
                       const isAll = item.id === 'ALL'
+                      const isSelected = isAll
+                        ? activeCategories.length === 0
+                        : activeCategories.some((c) => c.toUpperCase() === item.id.toUpperCase())
                       return (
                         <button
                           key={item.id}
                           onClick={() => {
                             onSelectCategory(item.id)
-                            onClose()
                           }}
                           className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-between gap-1 border active:scale-[0.98] ${
                             isAll ? 'col-span-2' : ''

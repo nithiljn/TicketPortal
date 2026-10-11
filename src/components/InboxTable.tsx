@@ -11,11 +11,21 @@ interface InboxTableProps {
   onDeleteTicket: (ticket: Ticket) => void
   selectedProject: string
   selectedCategory?: string
+  selectedCategories?: string[]
   onClearCategory?: () => void
+  onRemoveCategory?: (category: string) => void
+  onClearAllCategories?: () => void
   selectedPriority?: TicketPriority | 'ALL'
+  selectedPriorities?: TicketPriority[]
   onClearPriority?: () => void
+  onRemovePriority?: (priority: TicketPriority) => void
+  onClearAllPriorities?: () => void
   selectedStatus?: TicketStatus | 'ALL'
+  selectedStatuses?: TicketStatus[]
   onClearStatus?: () => void
+  onRemoveStatus?: (status: TicketStatus) => void
+  onClearAllStatuses?: () => void
+  onClearAllFilters?: () => void
   theme?: 'dark' | 'light'
 }
 
@@ -27,14 +37,29 @@ export function InboxTable({
   onDeleteTicket,
   selectedProject,
   selectedCategory,
+  selectedCategories,
   onClearCategory,
+  onRemoveCategory,
+  onClearAllCategories,
   selectedPriority,
+  selectedPriorities,
   onClearPriority,
+  onRemovePriority,
+  onClearAllPriorities,
   selectedStatus,
+  selectedStatuses,
   onClearStatus,
+  onRemoveStatus,
+  onClearAllStatuses,
+  onClearAllFilters,
   theme = 'dark',
 }: InboxTableProps) {
   const isDark = theme === 'dark'
+
+  const activeStatuses = selectedStatuses ?? (selectedStatus && selectedStatus !== 'ALL' ? [selectedStatus] : [])
+  const activePriorities = selectedPriorities ?? (selectedPriority && selectedPriority !== 'ALL' ? [selectedPriority] : [])
+  const activeCategories = selectedCategories ?? (selectedCategory && selectedCategory !== 'ALL' ? [selectedCategory] : [])
+  const totalActiveFilters = activeStatuses.length + activePriorities.length + activeCategories.length
 
   const getStatusBadge = (status: TicketStatus) => {
     switch (status) {
@@ -177,55 +202,89 @@ export function InboxTable({
           <span className={isDark ? 'text-zinc-600' : 'text-zinc-300'}>•</span>
           <span className="font-mono text-[11px]">{tickets.length} items</span>
 
-          {/* Category Filter Pill */}
-          {selectedCategory && selectedCategory !== 'ALL' && (
-            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono border ${categoryBadge}`}>
-              <span>Category: {selectedCategory}</span>
-              {onClearCategory && (
-                <button
-                  type="button"
-                  onClick={onClearCategory}
-                  className="hover:text-rose-400 transition cursor-pointer font-bold leading-none ml-0.5"
-                  title="Clear category filter"
-                >
-                  ×
-                </button>
-              )}
+          {/* Active Status Filter Chips */}
+          {activeStatuses.map((status) => (
+            <span
+              key={status}
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+            >
+              <span className="text-zinc-500 text-[11px]">Status:</span>
+              <span>{status.replace('_', ' ')}</span>
+              <button
+                type="button"
+                onClick={() => onRemoveStatus ? onRemoveStatus(status) : onClearStatus?.()}
+                className={`p-0.5 rounded transition cursor-pointer ${
+                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                }`}
+                title={`Remove ${status.replace('_', ' ')} filter`}
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </span>
-          )}
+          ))}
 
-          {/* Priority Filter Pill */}
-          {selectedPriority && selectedPriority !== 'ALL' && (
-            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono border ${categoryBadge}`}>
-              <span>Priority: {selectedPriority}</span>
-              {onClearPriority && (
-                <button
-                  type="button"
-                  onClick={onClearPriority}
-                  className="hover:text-rose-400 transition cursor-pointer font-bold leading-none ml-0.5"
-                  title="Clear priority filter"
-                >
-                  ×
-                </button>
-              )}
+          {/* Active Priority Filter Chips */}
+          {activePriorities.map((priority) => (
+            <span
+              key={priority}
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+            >
+              <span className="text-zinc-500 text-[11px]">Priority:</span>
+              <span>{priority}</span>
+              <button
+                type="button"
+                onClick={() => onRemovePriority ? onRemovePriority(priority) : onClearPriority?.()}
+                className={`p-0.5 rounded transition cursor-pointer ${
+                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                }`}
+                title={`Remove ${priority} filter`}
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </span>
-          )}
+          ))}
 
-          {/* Status Filter Pill */}
-          {selectedStatus && selectedStatus !== 'ALL' && (
-            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono border ${categoryBadge}`}>
-              <span>Status: {selectedStatus.replace('_', ' ')}</span>
-              {onClearStatus && (
-                <button
-                  type="button"
-                  onClick={onClearStatus}
-                  className="hover:text-rose-400 transition cursor-pointer font-bold leading-none ml-0.5"
-                  title="Clear status filter"
-                >
-                  ×
-                </button>
-              )}
+          {/* Active Category Filter Chips */}
+          {activeCategories.map((category) => (
+            <span
+              key={category}
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+            >
+              <span className="text-zinc-500 text-[11px]">Category:</span>
+              <span>{category}</span>
+              <button
+                type="button"
+                onClick={() => onRemoveCategory ? onRemoveCategory(category) : onClearCategory?.()}
+                className={`p-0.5 rounded transition cursor-pointer ${
+                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                }`}
+                title={`Remove ${category} filter`}
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </span>
+          ))}
+
+          {/* Clear All Filters */}
+          {totalActiveFilters > 1 && onClearAllFilters && (
+            <button
+              type="button"
+              onClick={onClearAllFilters}
+              className={`text-[11px] font-medium transition cursor-pointer underline ml-1 ${
+                isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-800'
+              }`}
+            >
+              Clear all
+            </button>
           )}
         </div>
       </div>

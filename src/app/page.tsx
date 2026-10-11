@@ -76,9 +76,9 @@ export default function Home() {
 
   // Facet Filters
   const [selectedProject, setSelectedProject] = useState<string>('ALL')
-  const [selectedStatus, setSelectedStatus] = useState<TicketStatus | 'ALL'>('ALL')
-  const [selectedPriority, setSelectedPriority] = useState<TicketPriority | 'ALL'>('ALL')
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
+  const [selectedStatuses, setSelectedStatuses] = useState<TicketStatus[]>([])
+  const [selectedPriorities, setSelectedPriorities] = useState<TicketPriority[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [fromDate, setFromDate] = useState<string>('')
   const [toDate, setToDate] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -134,7 +134,13 @@ export default function Home() {
 
   const handleSelectStatus = useCallback(
     (status: TicketStatus | 'ALL') => {
-      setSelectedStatus(status)
+      if (status === 'ALL') {
+        setSelectedStatuses([])
+      } else {
+        setSelectedStatuses((prev) =>
+          prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+        )
+      }
       triggerFilterTransition()
     },
     [triggerFilterTransition]
@@ -142,7 +148,13 @@ export default function Home() {
 
   const handleSelectPriority = useCallback(
     (priority: TicketPriority | 'ALL') => {
-      setSelectedPriority(priority)
+      if (priority === 'ALL') {
+        setSelectedPriorities([])
+      } else {
+        setSelectedPriorities((prev) =>
+          prev.includes(priority) ? prev.filter((p) => p !== priority) : [...prev, priority]
+        )
+      }
       triggerFilterTransition()
     },
     [triggerFilterTransition]
@@ -150,7 +162,15 @@ export default function Home() {
 
   const handleSelectCategory = useCallback(
     (category: string | 'ALL') => {
-      setSelectedCategory(category)
+      if (category === 'ALL') {
+        setSelectedCategories([])
+      } else {
+        setSelectedCategories((prev) =>
+          prev.some((c) => c.toUpperCase() === category.toUpperCase())
+            ? prev.filter((c) => c.toUpperCase() !== category.toUpperCase())
+            : [...prev, category]
+        )
+      }
       triggerFilterTransition()
     },
     [triggerFilterTransition]
@@ -343,15 +363,17 @@ export default function Home() {
   // 2. Filtered Tickets based on Facets + Date Range (From - To)
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
-      if (selectedStatus !== 'ALL' && t.status !== selectedStatus) {
+      if (selectedStatuses.length > 0 && !selectedStatuses.includes(t.status)) {
         return false
       }
-      if (selectedPriority !== 'ALL' && t.priority !== selectedPriority) {
+      if (selectedPriorities.length > 0 && !selectedPriorities.includes(t.priority)) {
         return false
       }
       if (
-        selectedCategory !== 'ALL' &&
-        (t.category || 'DEV').toUpperCase() !== selectedCategory.toUpperCase()
+        selectedCategories.length > 0 &&
+        !selectedCategories.some(
+          (c) => c.toUpperCase() === (t.category || 'DEV').toUpperCase()
+        )
       ) {
         return false
       }
@@ -366,7 +388,7 @@ export default function Home() {
       }
       return true
     })
-  }, [tickets, selectedStatus, selectedPriority, selectedCategory, fromDate, toDate])
+  }, [tickets, selectedStatuses, selectedPriorities, selectedCategories, fromDate, toDate])
 
   // 3. Facet Counts
   const ticketCounts = useMemo(() => {
@@ -881,11 +903,11 @@ export default function Home() {
         availableProjects={availableProjects}
         selectedProject={selectedProject}
         onSelectProject={handleSelectWorkspace}
-        selectedStatus={selectedStatus}
+        selectedStatuses={selectedStatuses}
         onSelectStatus={handleSelectStatus}
-        selectedPriority={selectedPriority}
+        selectedPriorities={selectedPriorities}
         onSelectPriority={handleSelectPriority}
-        selectedCategory={selectedCategory}
+        selectedCategories={selectedCategories}
         onSelectCategory={handleSelectCategory}
         categoryCounts={ticketCounts.categoryCounts}
         fromDate={fromDate}
@@ -1186,12 +1208,20 @@ export default function Home() {
                   onEditTicket={handleOpenEditTicket}
                   onDeleteTicket={(ticket) => setTicketToDelete(ticket)}
                   selectedProject={selectedProject}
-                  selectedCategory={selectedCategory}
-                  onClearCategory={() => setSelectedCategory('ALL')}
-                  selectedPriority={selectedPriority}
-                  onClearPriority={() => handleSelectPriority('ALL')}
-                  selectedStatus={selectedStatus}
-                  onClearStatus={() => handleSelectStatus('ALL')}
+                  selectedCategories={selectedCategories}
+                  onRemoveCategory={(cat) => handleSelectCategory(cat)}
+                  onClearAllCategories={() => setSelectedCategories([])}
+                  selectedPriorities={selectedPriorities}
+                  onRemovePriority={(pr) => handleSelectPriority(pr)}
+                  onClearAllPriorities={() => setSelectedPriorities([])}
+                  selectedStatuses={selectedStatuses}
+                  onRemoveStatus={(st) => handleSelectStatus(st)}
+                  onClearAllStatuses={() => setSelectedStatuses([])}
+                  onClearAllFilters={() => {
+                    setSelectedStatuses([])
+                    setSelectedPriorities([])
+                    setSelectedCategories([])
+                  }}
                   theme={theme}
                 />
               )}

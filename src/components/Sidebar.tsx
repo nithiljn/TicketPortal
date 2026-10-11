@@ -238,13 +238,13 @@ export function Sidebar({
     ? 'bg-black/40 border-white/[0.08] text-zinc-200'
     : 'bg-zinc-50 border-zinc-200 text-zinc-900'
 
-  const DEFAULT_CATEGORIES: { id: string; label: string; dot: string }[] = [
-    { id: 'ALL', label: 'All', dot: '' },
-    { id: 'BUG', label: 'Bug', dot: 'bg-rose-500' },
-    { id: 'FEATURE', label: 'Feature', dot: 'bg-purple-500' },
-    { id: 'DEV', label: 'Dev', dot: 'bg-sky-500' },
-    { id: 'DATABASE', label: 'Database', dot: 'bg-amber-500' },
-    { id: 'DESIGN', label: 'Design', dot: 'bg-pink-500' },
+  const DEFAULT_CATEGORIES: { id: string; label: string }[] = [
+    { id: 'ALL', label: 'All' },
+    { id: 'BUG', label: 'Bug' },
+    { id: 'FEATURE', label: 'Feature' },
+    { id: 'DEV', label: 'Dev' },
+    { id: 'DATABASE', label: 'Database' },
+    { id: 'DESIGN', label: 'Design' },
   ]
 
   const displayedCategories = useMemo(() => {
@@ -257,7 +257,6 @@ export function Sidebar({
           list.push({
             id: catId,
             label: catId.charAt(0) + catId.slice(1).toLowerCase(),
-            dot: 'bg-zinc-400',
           })
           existingIds.add(catId)
         }
@@ -561,22 +560,24 @@ export function Sidebar({
                         onSelectExpenseCategory?.('ALL')
                         onClose()
                       }}
-                      className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer text-left ${
+                      className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
                         selectedExpenseCategory === 'ALL' ? itemActive : itemHover
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        <span>All Categories</span>
-                      </div>
-                      <span className="text-[10px] font-mono opacity-60">
+                      <span className={selectedExpenseCategory === 'ALL' ? 'font-medium' : 'text-zinc-600 dark:text-zinc-400'}>
+                        All Categories
+                      </span>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition ${
+                        selectedExpenseCategory === 'ALL'
+                          ? isDark ? 'bg-white/10 text-white font-medium' : 'bg-zinc-200 text-zinc-900 font-medium'
+                          : isDark ? 'bg-white/[0.04] text-zinc-400' : 'bg-zinc-100 text-zinc-600'
+                      }`}>
                         {expenseCounts?.total ?? 0}
                       </span>
                     </button>
                     {expenseCategories?.map((cat) => {
                       const isSelected = selectedExpenseCategory?.toLowerCase() === cat.toLowerCase()
                       const count = expenseCounts?.byCategory[cat] ?? 0
-                      const dotColor = EXPENSE_CATEGORY_DOTS[cat] || 'bg-emerald-400'
                       return (
                         <button
                           key={cat}
@@ -584,15 +585,20 @@ export function Sidebar({
                             onSelectExpenseCategory?.(isSelected ? 'ALL' : cat)
                             onClose()
                           }}
-                          className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer text-left ${
+                          className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
                             isSelected ? itemActive : itemHover
                           }`}
                         >
-                          <div className="flex items-center gap-2 truncate pr-1">
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-                            <span className="truncate">{cat}</span>
-                          </div>
-                          <span className="text-[10px] font-mono opacity-60 shrink-0">{count}</span>
+                          <span className={`truncate pr-1 ${isSelected ? 'font-medium' : 'text-zinc-600 dark:text-zinc-400'}`}>
+                            {cat}
+                          </span>
+                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 transition ${
+                            isSelected
+                              ? isDark ? 'bg-white/10 text-white font-medium' : 'bg-zinc-200 text-zinc-900 font-medium'
+                              : isDark ? 'bg-white/[0.04] text-zinc-400' : 'bg-zinc-100 text-zinc-600'
+                          }`}>
+                            {count}
+                          </span>
                         </button>
                       )
                     })}
@@ -686,7 +692,7 @@ export function Sidebar({
             ) : (
               /* Ticket Specific Filters (Inbox, Dashboard, Board, Notes) */
               <>
-                {/* Status Filter Facet */}
+                {/* Status Filter */}
                 <div>
                   <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     <span>Status Filter</span>
@@ -699,35 +705,43 @@ export function Sidebar({
                       </button>
                     )}
                   </div>
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     {[
                       { id: 'ALL', label: 'All Statuses', count: ticketCounts.total },
-                      { id: 'TODO', label: 'To Do', count: ticketCounts.todo, dot: 'bg-zinc-400' },
-                      { id: 'IN_PROGRESS', label: 'In Progress', count: ticketCounts.inProgress, dot: 'bg-amber-400' },
-                      { id: 'DONE', label: 'Completed', count: ticketCounts.done, dot: 'bg-emerald-400' },
-                      { id: 'BLOCKED', label: 'Blocked', count: ticketCounts.blocked, dot: 'bg-rose-400' },
-                    ].map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          onSelectStatus(item.id as TicketStatus | 'ALL')
-                          onClose()
-                        }}
-                        className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer ${
-                          selectedStatus === item.id ? itemActive : itemHover
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {item.dot && <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} />}
-                          <span>{item.label}</span>
-                        </div>
-                        <span className="text-[10px] font-mono opacity-60">{item.count}</span>
-                      </button>
-                    ))}
+                      { id: 'TODO', label: 'To Do', count: ticketCounts.todo },
+                      { id: 'IN_PROGRESS', label: 'In Progress', count: ticketCounts.inProgress },
+                      { id: 'DONE', label: 'Completed', count: ticketCounts.done },
+                      { id: 'BLOCKED', label: 'Blocked', count: ticketCounts.blocked },
+                    ].map((item) => {
+                      const isSelected = selectedStatus === item.id
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            onSelectStatus(item.id as TicketStatus | 'ALL')
+                            onClose()
+                          }}
+                          className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
+                            isSelected ? itemActive : itemHover
+                          }`}
+                        >
+                          <span className={isSelected ? 'font-medium' : 'text-zinc-600 dark:text-zinc-400'}>
+                            {item.label}
+                          </span>
+                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition ${
+                            isSelected
+                              ? isDark ? 'bg-white/10 text-white font-medium' : 'bg-zinc-200 text-zinc-900 font-medium'
+                              : isDark ? 'bg-white/[0.04] text-zinc-400' : 'bg-zinc-100 text-zinc-600'
+                          }`}>
+                            {item.count}
+                          </span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
-                {/* Priority Filter Facet */}
+                {/* Priority Filter */}
                 <div>
                   <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     <span>Priority Filter</span>
@@ -740,32 +754,40 @@ export function Sidebar({
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-1">
+                  <div className="grid grid-cols-2 gap-1.5">
                     {[
-                      { id: 'ALL', label: 'All' },
-                      { id: 'URGENT', label: 'Urgent', dot: 'bg-rose-500' },
-                      { id: 'HIGH', label: 'High', dot: 'bg-amber-500' },
-                      { id: 'MEDIUM', label: 'Medium', dot: 'bg-zinc-400' },
-                      { id: 'LOW', label: 'Low', dot: 'bg-emerald-500' },
-                    ].map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          onSelectPriority(item.id as TicketPriority | 'ALL')
-                          onClose()
-                        }}
-                        className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition cursor-pointer flex items-center justify-center gap-1.5 border ${
-                          selectedPriority === item.id ? itemActive : `${inputBg} ${itemHover}`
-                        }`}
-                      >
-                        {item.dot && <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} />}
-                        <span>{item.label}</span>
-                      </button>
-                    ))}
+                      { id: 'ALL', label: 'All Priorities', fullWidth: true },
+                      { id: 'URGENT', label: 'Urgent' },
+                      { id: 'HIGH', label: 'High' },
+                      { id: 'MEDIUM', label: 'Medium' },
+                      { id: 'LOW', label: 'Low' },
+                    ].map((item) => {
+                      const isSelected = selectedPriority === item.id
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            onSelectPriority(item.id as TicketPriority | 'ALL')
+                            onClose()
+                          }}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center border active:scale-[0.98] ${
+                            item.fullWidth ? 'col-span-2' : ''
+                          } ${
+                            isSelected
+                              ? itemActive
+                              : isDark
+                              ? 'bg-zinc-900/60 border-white/[0.06] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] hover:border-white/[0.1]'
+                              : 'bg-zinc-50 border-zinc-200/80 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 hover:border-zinc-300'
+                          }`}
+                        >
+                          <span>{item.label}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
-                {/* Category Filter Facet */}
+                {/* Category Filter */}
                 <div>
                   <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     <span>Category Filter</span>
@@ -778,10 +800,11 @@ export function Sidebar({
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-1">
+                  <div className="grid grid-cols-2 gap-1.5">
                     {displayedCategories.map((item) => {
                       const isSelected = selectedCategory === item.id
                       const count = categoryCounts ? categoryCounts[item.id] : undefined
+                      const isAll = item.id === 'ALL'
                       return (
                         <button
                           key={item.id}
@@ -789,16 +812,25 @@ export function Sidebar({
                             onSelectCategory(item.id)
                             onClose()
                           }}
-                          className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition cursor-pointer flex items-center justify-between gap-1 border ${
-                            isSelected ? itemActive : `${inputBg} ${itemHover}`
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-between gap-1 border active:scale-[0.98] ${
+                            isAll ? 'col-span-2' : ''
+                          } ${
+                            isSelected
+                              ? itemActive
+                              : isDark
+                              ? 'bg-zinc-900/60 border-white/[0.06] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] hover:border-white/[0.1]'
+                              : 'bg-zinc-50 border-zinc-200/80 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 hover:border-zinc-300'
                           }`}
                         >
-                          <div className="flex items-center gap-1.5 truncate">
-                            {item.dot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.dot}`} />}
-                            <span className="truncate">{item.label}</span>
-                          </div>
+                          <span className="truncate">{isAll ? 'All Categories' : item.label}</span>
                           {typeof count === 'number' && (
-                            <span className="text-[10px] font-mono opacity-60 ml-0.5 shrink-0">{count}</span>
+                            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded shrink-0 transition ${
+                              isSelected
+                                ? isDark ? 'bg-white/10 text-white font-medium' : 'bg-zinc-200 text-zinc-900 font-medium'
+                                : isDark ? 'bg-white/[0.04] text-zinc-400' : 'bg-zinc-200/60 text-zinc-600'
+                            }`}>
+                              {count}
+                            </span>
                           )}
                         </button>
                       )

@@ -28,6 +28,7 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
   const passwordHasNumber = /\d/.test(password)
   const passwordHasSpecial = /[!@#$%^&*(),.?":{}|<>_\-+=[\]\\/`~]/.test(password)
   const isPasswordStrong = passwordHasMinLen && passwordHasNumber && passwordHasSpecial
+  const passwordStrengthScore = [passwordHasMinLen, passwordHasNumber, passwordHasSpecial].filter(Boolean).length
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -283,22 +284,33 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
           {errorMsg && (
             <div
               role="alert"
-              className={`p-3 rounded-xl text-xs flex items-center gap-2.5 border transition-all animate-in fade-in duration-150 ${
+              className={`px-3 py-2.5 rounded-lg text-xs flex items-center justify-between gap-2.5 border border-l-[3px] border-l-red-500 transition-all animate-in fade-in duration-150 ${
                 isDark
-                  ? 'bg-rose-950/40 border-rose-800/40 text-rose-300'
-                  : 'bg-rose-50 border-rose-200 text-rose-800'
+                  ? 'bg-zinc-900 border-zinc-800 text-zinc-200'
+                  : 'bg-zinc-50 border-zinc-200 text-zinc-800'
               }`}
             >
-              <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${
-                isDark ? 'bg-rose-500/20 text-rose-400' : 'bg-rose-100 text-rose-700'
-              }`}>
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <svg className="w-4 h-4 text-red-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="12" y1="8" x2="12" y2="12" />
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
+                <span className="text-[12px] leading-snug font-medium">{errorMsg}</span>
               </div>
-              <span className="font-medium flex-1 text-[12px] leading-snug">{errorMsg}</span>
+              <button
+                type="button"
+                onClick={() => setErrorMsg('')}
+                className={`p-1 rounded transition cursor-pointer shrink-0 ${
+                  isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800' : 'text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200/60'
+                }`}
+                aria-label="Dismiss error"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
           )}
 
@@ -369,121 +381,30 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
             )}
 
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className={`block text-[11px] font-mono font-medium uppercase ${
+              <label className={`block text-[11px] font-mono font-medium mb-1 uppercase ${
                   isDark ? 'text-zinc-400' : 'text-zinc-600'
                 }`}>
                   Password
                 </label>
-                {mode === 'signup' && password.length > 0 && (
-                  <span className={`text-[10px] font-mono font-medium ${
-                    isPasswordStrong ? 'text-emerald-500' : 'text-amber-500'
-                  }`}>
-                    {isPasswordStrong ? '✓ Strong password' : 'Weak password'}
-                  </span>
-                )}
-              </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full pl-3.5 pr-10 py-2.5 text-xs rounded-xl border outline-none transition ${inputBg}`}
-                />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => setShowPassword(!showPassword)}
-                  className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg transition cursor-pointer ${
-                    isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'
-                  }`}
-                  title={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? (
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-
-              {/* Password Requirements hint in Create Account mode */}
-              {mode === 'signup' && (
-                <div className="space-y-1.5 pt-2">
-                  <div className="flex items-center gap-3 text-[10px] font-mono flex-wrap">
-                    <span className={`inline-flex items-center gap-1 transition ${
-                      passwordHasMinLen ? 'text-emerald-500 font-medium' : isDark ? 'text-zinc-500' : 'text-zinc-400'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${passwordHasMinLen ? 'bg-emerald-500' : isDark ? 'bg-zinc-600' : 'bg-zinc-300'}`} />
-                      8+ chars
-                    </span>
-                    <span className={`inline-flex items-center gap-1 transition ${
-                      passwordHasNumber ? 'text-emerald-500 font-medium' : isDark ? 'text-zinc-500' : 'text-zinc-400'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${passwordHasNumber ? 'bg-emerald-500' : isDark ? 'bg-zinc-600' : 'bg-zinc-300'}`} />
-                      1+ number (0-9)
-                    </span>
-                    <span className={`inline-flex items-center gap-1 transition ${
-                      passwordHasSpecial ? 'text-emerald-500 font-medium' : isDark ? 'text-zinc-500' : 'text-zinc-400'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${passwordHasSpecial ? 'bg-emerald-500' : isDark ? 'bg-zinc-600' : 'bg-zinc-300'}`} />
-                      1+ special char (!@#$)
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Confirm Password in Create Account mode */}
-            {mode === 'signup' && (
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className={`block text-[11px] font-mono font-medium uppercase ${
-                    isDark ? 'text-zinc-400' : 'text-zinc-600'
-                  }`}>
-                    Confirm Password
-                  </label>
-                  {confirmPassword.length > 0 && (
-                    <span className={`text-[10px] font-mono font-medium ${
-                      passwordsMatch ? 'text-emerald-500' : 'text-rose-500'
-                    }`}>
-                      {passwordsMatch ? '✓ Passwords match' : '✗ Passwords do not match'}
-                    </span>
-                  )}
-                </div>
                 <div className="relative">
                   <input
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    type={showPassword ? 'text' : 'password'}
                     required
                     placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className={`w-full pl-3.5 pr-10 py-2.5 text-xs rounded-xl border outline-none transition ${inputBg} ${
-                      confirmPassword.length > 0 && !passwordsMatch
-                        ? 'border-rose-500/60 focus:border-rose-500'
-                        : confirmPassword.length > 0 && passwordsMatch
-                        ? 'border-emerald-500/60 focus:border-emerald-500'
-                        : ''
-                    }`}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`w-full pl-3.5 pr-10 py-2.5 text-xs rounded-xl border outline-none transition ${inputBg}`}
                   />
                   <button
                     type="button"
                     tabIndex={-1}
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    onClick={() => setShowPassword(!showPassword)}
                     className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg transition cursor-pointer ${
                       isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'
                     }`}
-                    title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    title={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showConfirmPassword ? (
+                    {showPassword ? (
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                         <line x1="1" y1="1" x2="23" y2="23" />
@@ -496,8 +417,163 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
                     )}
                   </button>
                 </div>
+
+                {/* Password strength and requirements */}
+                {mode === 'signup' && (
+                  <div className="space-y-2.5 pt-2">
+                    {password.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className={isDark ? 'text-zinc-400' : 'text-zinc-500'}>
+                            Password strength
+                          </span>
+                          <span className={`font-medium ${
+                            isPasswordStrong
+                              ? 'text-emerald-500'
+                              : isDark ? 'text-zinc-400' : 'text-zinc-500'
+                          }`}>
+                            {isPasswordStrong ? 'Strong' : passwordStrengthScore === 2 ? 'Medium' : 'Weak'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5 h-1">
+                          <div
+                            className={`h-full rounded-full transition-all duration-200 ${
+                              passwordStrengthScore >= 1
+                                ? 'bg-emerald-500'
+                                : isDark ? 'bg-zinc-800' : 'bg-zinc-200'
+                            }`}
+                          />
+                          <div
+                            className={`h-full rounded-full transition-all duration-200 ${
+                              passwordStrengthScore >= 2
+                                ? 'bg-emerald-500'
+                                : isDark ? 'bg-zinc-800' : 'bg-zinc-200'
+                            }`}
+                          />
+                          <div
+                            className={`h-full rounded-full transition-all duration-200 ${
+                              passwordStrengthScore >= 3
+                                ? 'bg-emerald-500'
+                                : isDark ? 'bg-zinc-800' : 'bg-zinc-200'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-1 pt-0.5">
+                      <div className={`flex items-center gap-2 text-[11px] transition ${
+                        passwordHasMinLen
+                          ? 'text-emerald-500 font-medium'
+                          : isDark ? 'text-zinc-500' : 'text-zinc-400'
+                      }`}>
+                        {passwordHasMinLen ? (
+                          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <span className={`w-1.5 h-1.5 ml-1 mr-1 rounded-full ${isDark ? 'bg-zinc-700' : 'bg-zinc-300'}`} />
+                        )}
+                        <span>At least 8 characters</span>
+                      </div>
+
+                      <div className={`flex items-center gap-2 text-[11px] transition ${
+                        passwordHasNumber
+                          ? 'text-emerald-500 font-medium'
+                          : isDark ? 'text-zinc-500' : 'text-zinc-400'
+                      }`}>
+                        {passwordHasNumber ? (
+                          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <span className={`w-1.5 h-1.5 ml-1 mr-1 rounded-full ${isDark ? 'bg-zinc-700' : 'bg-zinc-300'}`} />
+                        )}
+                        <span>At least 1 number (0-9)</span>
+                      </div>
+
+                      <div className={`flex items-center gap-2 text-[11px] transition ${
+                        passwordHasSpecial
+                          ? 'text-emerald-500 font-medium'
+                          : isDark ? 'text-zinc-500' : 'text-zinc-400'
+                      }`}>
+                        {passwordHasSpecial ? (
+                          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <span className={`w-1.5 h-1.5 ml-1 mr-1 rounded-full ${isDark ? 'bg-zinc-700' : 'bg-zinc-300'}`} />
+                        )}
+                        <span>At least 1 special character (!@#$)</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* Confirm Password in Create Account mode */}
+              {mode === 'signup' && (
+                <div>
+                  <label className={`block text-[11px] font-mono font-medium mb-1 uppercase ${
+                    isDark ? 'text-zinc-400' : 'text-zinc-600'
+                  }`}>
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className={`w-full pl-3.5 pr-10 py-2.5 text-xs rounded-xl border outline-none transition ${inputBg} ${
+                        confirmPassword.length > 0 && passwordsMatch
+                          ? 'border-emerald-500/60 focus:border-emerald-500'
+                          : ''
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg transition cursor-pointer ${
+                        isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'
+                      }`}
+                      title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showConfirmPassword ? (
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {confirmPassword.length > 0 && (
+                    <p className={`mt-1.5 text-[11px] flex items-center gap-1.5 transition ${
+                      passwordsMatch
+                        ? 'text-emerald-500 font-medium'
+                        : isDark ? 'text-zinc-500' : 'text-zinc-400'
+                    }`}>
+                      {passwordsMatch ? (
+                        <>
+                          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          <span>Passwords match</span>
+                        </>
+                      ) : (
+                        <span>Passwords do not match yet</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+              )}
 
             <button
               type="submit"

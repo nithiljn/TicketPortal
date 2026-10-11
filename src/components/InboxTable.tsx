@@ -29,6 +29,20 @@ interface InboxTableProps {
   theme?: 'dark' | 'light'
 }
 
+const STATUS_LABELS: Record<TicketStatus, string> = {
+  TODO: 'To Do',
+  IN_PROGRESS: 'In Progress',
+  DONE: 'Completed',
+  BLOCKED: 'Blocked',
+}
+
+const PRIORITY_LABELS: Record<TicketPriority, string> = {
+  URGENT: 'Urgent',
+  HIGH: 'High',
+  MEDIUM: 'Medium',
+  LOW: 'Low',
+}
+
 export function InboxTable({
   tickets,
   onStatusChange,
@@ -203,52 +217,58 @@ export function InboxTable({
           <span className="font-mono text-[11px]">{tickets.length} items</span>
 
           {/* Active Status Filter Chips */}
-          {activeStatuses.map((status) => (
-            <span
-              key={status}
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
-            >
-              <span className="text-zinc-500 text-[11px]">Status:</span>
-              <span>{status.replace('_', ' ')}</span>
-              <button
-                type="button"
-                onClick={() => onRemoveStatus ? onRemoveStatus(status) : onClearStatus?.()}
-                className={`p-0.5 rounded transition cursor-pointer ${
-                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
-                }`}
-                title={`Remove ${status.replace('_', ' ')} filter`}
+          {activeStatuses.map((status) => {
+            const label = STATUS_LABELS[status] || status
+            return (
+              <span
+                key={status}
+                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
               >
-                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </span>
-          ))}
+                <span className="text-zinc-500 text-[11px]">Status:</span>
+                <span>{label}</span>
+                <button
+                  type="button"
+                  onClick={() => onRemoveStatus ? onRemoveStatus(status) : onClearStatus?.()}
+                  className={`p-0.5 rounded transition cursor-pointer ${
+                    isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                  }`}
+                  title={`Remove ${label} filter`}
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </span>
+            )
+          })}
 
           {/* Active Priority Filter Chips */}
-          {activePriorities.map((priority) => (
-            <span
-              key={priority}
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
-            >
-              <span className="text-zinc-500 text-[11px]">Priority:</span>
-              <span>{priority}</span>
-              <button
-                type="button"
-                onClick={() => onRemovePriority ? onRemovePriority(priority) : onClearPriority?.()}
-                className={`p-0.5 rounded transition cursor-pointer ${
-                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
-                }`}
-                title={`Remove ${priority} filter`}
+          {activePriorities.map((priority) => {
+            const label = PRIORITY_LABELS[priority] || priority
+            return (
+              <span
+                key={priority}
+                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
               >
-                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </span>
-          ))}
+                <span className="text-zinc-500 text-[11px]">Priority:</span>
+                <span>{label}</span>
+                <button
+                  type="button"
+                  onClick={() => onRemovePriority ? onRemovePriority(priority) : onClearPriority?.()}
+                  className={`p-0.5 rounded transition cursor-pointer ${
+                    isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                  }`}
+                  title={`Remove ${label} filter`}
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </span>
+            )
+          })}
 
           {/* Active Category Filter Chips */}
           {activeCategories.map((category) => (

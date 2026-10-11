@@ -337,6 +337,7 @@ export function Sidebar({
             <Button
               variant="ticket"
               size="md"
+              theme={theme}
               onClick={() => {
                 if (activeTab === 'expenses' && onOpenAddExpenseModal) {
                   onOpenAddExpenseModal()

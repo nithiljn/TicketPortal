@@ -60,6 +60,15 @@ export default function Home() {
     }
   }, [])
 
+  // Sync theme with root document element class for class-based styling
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [theme])
+
   const handleToggleTheme = () => {
     setTheme((prev) => {
       const next = prev === 'dark' ? 'light' : 'dark'
@@ -949,14 +958,14 @@ export default function Home() {
       >
         {/* Top Header Bar: Search on Left + Views Switcher (Inbox, Dashboard, Board, Notes) on Right */}
         <header
-          className={`h-14 px-4 sm:px-6 border-b flex items-center justify-between gap-3 shrink-0 ${
+          className={`h-14 px-3 sm:px-6 border-b flex items-center justify-between gap-2 sm:gap-3 shrink-0 ${
             isDark
               ? 'border-white/[0.06] bg-[#09090b]'
               : 'border-zinc-200 bg-white'
           }`}
         >
           {/* Left: Mobile Hamburger + Search Input */}
-          <div className="flex items-center gap-2.5 flex-1 max-w-sm">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0 max-w-xs sm:max-w-sm">
             {/* Mobile Hamburger Button */}
             <button
               onClick={() => setIsSidebarOpen(true)}
@@ -975,7 +984,7 @@ export default function Home() {
             </button>
 
             {/* Search Input */}
-            <div className="relative w-full">
+            <div className="relative w-full min-w-0">
               <svg
                 className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400"
                 viewBox="0 0 24 24"
@@ -1024,7 +1033,7 @@ export default function Home() {
           </div>
 
           {/* Right: Views Switcher (Inbox, Dashboard, Board, Notes) + Action Button */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* View Switcher Segmented Pill */}
             <div
               className={`flex items-center p-0.5 rounded-lg border ${
@@ -1036,7 +1045,7 @@ export default function Home() {
               {/* 1. Inbox Table */}
               <button
                 onClick={() => handleTabChange('inbox')}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                   (isTabSwitching ? tabSwitchTarget === 'inbox' : activeTab === 'inbox')
                     ? isDark
                       ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
@@ -1045,18 +1054,19 @@ export default function Home() {
                     ? 'text-zinc-400 hover:text-zinc-200'
                     : 'text-zinc-500 hover:text-zinc-900'
                 }`}
+                title="Inbox"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
                   <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
                 </svg>
-                <span className="hidden sm:inline">Inbox</span>
+                <span className="hidden md:inline">Inbox</span>
               </button>
 
               {/* 2. Dashboard (Charts & Status) */}
               <button
                 onClick={() => handleTabChange('dashboard')}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                   (isTabSwitching ? tabSwitchTarget === 'dashboard' : activeTab === 'dashboard')
                     ? isDark
                       ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
@@ -1065,19 +1075,20 @@ export default function Home() {
                     ? 'text-zinc-400 hover:text-zinc-200'
                     : 'text-zinc-500 hover:text-zinc-900'
                 }`}
+                title="Dashboard"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="20" x2="18" y2="10" />
                   <line x1="12" y1="20" x2="12" y2="4" />
                   <line x1="6" y1="20" x2="6" y2="14" />
                 </svg>
-                <span className="hidden sm:inline">Dashboard</span>
+                <span className="hidden md:inline">Dashboard</span>
               </button>
 
               {/* 3. Board (Kanban) */}
               <button
                 onClick={() => handleTabChange('board')}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                   (isTabSwitching ? tabSwitchTarget === 'board' : activeTab === 'board')
                     ? isDark
                       ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
@@ -1086,18 +1097,19 @@ export default function Home() {
                     ? 'text-zinc-400 hover:text-zinc-200'
                     : 'text-zinc-500 hover:text-zinc-900'
                 }`}
+                title="Board"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="7" height="18" rx="1" />
                   <rect x="14" y="3" width="7" height="18" rx="1" />
                 </svg>
-                <span className="hidden sm:inline">Board</span>
+                <span className="hidden md:inline">Board</span>
               </button>
 
               {/* 4. Notes (Daily Standup) */}
               <button
                 onClick={() => handleTabChange('notes')}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                   (isTabSwitching ? tabSwitchTarget === 'notes' : activeTab === 'notes')
                     ? isDark
                       ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
@@ -1106,18 +1118,19 @@ export default function Home() {
                     ? 'text-zinc-400 hover:text-zinc-200'
                     : 'text-zinc-500 hover:text-zinc-900'
                 }`}
+                title="Notes"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                   <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                 </svg>
-                <span className="hidden sm:inline">Notes</span>
+                <span className="hidden md:inline">Notes</span>
               </button>
 
               {/* 5. Expenses (Expense Tracker) */}
               <button
                 onClick={() => handleTabChange('expenses')}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                   (isTabSwitching ? tabSwitchTarget === 'expenses' : activeTab === 'expenses')
                     ? isDark
                       ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
@@ -1126,13 +1139,14 @@ export default function Home() {
                     ? 'text-zinc-400 hover:text-zinc-200'
                     : 'text-zinc-500 hover:text-zinc-900'
                 }`}
+                title="Expenses"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="2" y="4" width="20" height="16" rx="2" />
                   <line x1="2" y1="10" x2="22" y2="10" />
                   <line x1="6" y1="15" x2="10" y2="15" />
                 </svg>
-                <span className="hidden sm:inline">Expenses</span>
+                <span className="hidden md:inline">Expenses</span>
               </button>
             </div>
 
@@ -1140,16 +1154,21 @@ export default function Home() {
             <Button
               variant="ticket"
               size="sm"
+              theme={theme}
               onClick={activeTab === 'expenses' ? handleOpenAddExpense : handleOpenCreateTicket}
-              className="hidden sm:inline-flex"
+              className="shrink-0 px-2 sm:px-2.5"
+              title={activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+              aria-label={activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
               leftIcon={
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
               }
             >
-              {activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+              <span className="hidden sm:inline">
+                {activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+              </span>
             </Button>
           </div>
         </header>

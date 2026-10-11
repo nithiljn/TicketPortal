@@ -53,6 +53,43 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         'bg-transparent text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 border-transparent dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-white/[0.06]',
     }
 
+    // Resolve styles based on explicit theme when passed
+    const getVariantClasses = (v: ButtonVariant): string => {
+      if (theme === 'light') {
+        switch (v) {
+          case 'primary':
+            return 'bg-zinc-900 text-white hover:bg-zinc-800 border-zinc-900 shadow-xs'
+          case 'secondary':
+            return 'bg-zinc-100 text-zinc-800 hover:bg-zinc-200 border-zinc-200/80 shadow-xs'
+          case 'outline':
+            return 'bg-white text-zinc-700 hover:bg-zinc-50 border-zinc-300 shadow-xs'
+          case 'ticket':
+            return 'bg-zinc-900 text-white hover:bg-zinc-800 border-zinc-800 shadow-xs font-semibold'
+          case 'danger':
+            return 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200 shadow-xs font-medium'
+          case 'ghost':
+            return 'bg-transparent text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 border-transparent'
+        }
+      }
+      if (theme === 'dark') {
+        switch (v) {
+          case 'primary':
+            return 'bg-zinc-100 text-zinc-950 hover:bg-zinc-200 border-zinc-100 shadow-xs'
+          case 'secondary':
+            return 'bg-white/[0.08] text-zinc-200 hover:bg-white/[0.12] border-white/[0.1] shadow-xs'
+          case 'outline':
+            return 'bg-[#121215] text-zinc-300 hover:bg-white/[0.04] border-white/[0.1] shadow-xs'
+          case 'ticket':
+            return 'bg-white text-zinc-900 hover:bg-zinc-100 border-white shadow-xs font-semibold'
+          case 'danger':
+            return 'bg-rose-950/40 text-rose-300 hover:bg-rose-900/40 border-rose-900/50 shadow-xs font-medium'
+          case 'ghost':
+            return 'bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] border-transparent'
+        }
+      }
+      return variantClasses[v]
+    }
+
     const isDisabled = disabled || isLoading
 
     return (
@@ -65,7 +102,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-600 focus-visible:ring-offset-2
           ${sizeClasses[size]}
-          ${variantClasses[variant]}
+          ${getVariantClasses(variant)}
           ${className}
         `}
         {...props}

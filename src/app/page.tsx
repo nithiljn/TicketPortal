@@ -1114,7 +1114,7 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Quick Action Button */}
+            {/* Create button */}
             <Button
               variant="ticket"
               size="sm"

@@ -322,7 +322,7 @@ export function Sidebar({
             </button>
           </div>
 
-          {/* Action Button: "+ New Ticket" or "+ Add Expense" */}
+          {/* New item button */}
           <div className="p-3">
             <Button
               variant="ticket"

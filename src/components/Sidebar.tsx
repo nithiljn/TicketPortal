@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { TicketStatus, TicketPriority, AuthUser } from '@/types'
+import { Button } from '@/components/Button'
 
 const SIDEBAR_PAYMENT_METHODS: { id: string; label: string }[] = [
   { id: 'ALL', label: 'All Methods' },
@@ -323,7 +324,9 @@ export function Sidebar({
 
           {/* Action Button: "+ New Ticket" or "+ Add Expense" */}
           <div className="p-3">
-            <button
+            <Button
+              variant="ticket"
+              size="md"
               onClick={() => {
                 if (activeTab === 'expenses' && onOpenAddExpenseModal) {
                   onOpenAddExpenseModal()
@@ -332,18 +335,16 @@ export function Sidebar({
                 }
                 onClose()
               }}
-              className={`w-full h-9 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-sm ${
-                isDark
-                  ? 'bg-white hover:bg-zinc-200 border-white text-zinc-950'
-                  : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-900 text-white'
-              }`}
+              className="w-full justify-center shadow-xs"
+              leftIcon={
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              }
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span>{activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}</span>
-            </button>
+              {activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+            </Button>
           </div>
 
           {/* Scrollable Navigation & Facets */}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Expense, PaymentMethod } from '@/types'
+import { Button } from '@/components/Button'
 
 interface ExpenseModalProps {
   isOpen: boolean
@@ -383,35 +384,23 @@ export function ExpenseModal({
 
           {/* Footer Actions */}
           <div className={`pt-3 border-t ${borderBottom} flex items-center justify-end gap-2.5`}>
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={onClose}
               disabled={loading}
-              className={`px-3.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
-                isDark
-                  ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.04]'
-                  : 'border-zinc-200 text-zinc-600 hover:bg-zinc-100'
-              }`}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={loading}
-              className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              variant="ticket"
+              size="sm"
+              isLoading={loading}
             >
-              {loading ? (
-                <>
-                  <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <span>{expense ? 'Update Expense' : 'Add Expense'}</span>
-              )}
-            </button>
+              {expense ? 'Update Expense' : 'Add Expense'}
+            </Button>
           </div>
         </form>
       </div>

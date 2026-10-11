@@ -18,6 +18,7 @@ import { DeleteWorkspaceModal } from '@/components/DeleteWorkspaceModal'
 import { ConfirmModal } from '@/components/ConfirmModal'
 import { Toast } from '@/components/Toast'
 import { LoginScreen } from '@/components/LoginScreen'
+import { Button } from '@/components/Button'
 import { useAuth } from '@/context/AuthContext'
 
 export default function Home() {
@@ -1114,20 +1115,20 @@ export default function Home() {
             </div>
 
             {/* Quick Action Button */}
-            <button
+            <Button
+              variant="ticket"
+              size="sm"
               onClick={activeTab === 'expenses' ? handleOpenAddExpense : handleOpenCreateTicket}
-              className={`hidden sm:flex h-8 px-3 rounded-lg border text-xs font-medium items-center gap-1.5 transition cursor-pointer ${
-                isDark
-                  ? 'bg-white/[0.1] hover:bg-white/[0.16] border-white/[0.1] text-zinc-100 hover:text-white'
-                  : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-900 text-white'
-              }`}
+              className="hidden sm:inline-flex"
+              leftIcon={
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              }
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span>{activeTab === 'expenses' ? 'Add Expense' : 'Create'}</span>
-            </button>
+              {activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+            </Button>
           </div>
         </header>
 

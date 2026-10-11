@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Ticket, TicketStatus, TicketPriority } from '@/types'
+import { Button } from '@/components/Button'
 
 interface TicketModalProps {
   isOpen: boolean
@@ -731,8 +732,10 @@ export function TicketModal({
                 </div>
 
                 <div className="flex items-center justify-end gap-2.5">
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="md"
                     onClick={() => {
                       if (existingTicket) {
                         setIsEditing(false)
@@ -740,30 +743,22 @@ export function TicketModal({
                         onClose()
                       }
                     }}
-                    className={`px-4 py-2 text-xs font-medium rounded-xl transition cursor-pointer ${cancelBtn}`}
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    disabled={loading}
-                    className={`px-5 py-2 text-xs font-semibold rounded-xl shadow-sm transition active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center gap-2 ${
-                      isDark
-                        ? 'bg-white hover:bg-zinc-200 text-zinc-950'
-                        : 'bg-zinc-900 hover:bg-zinc-800 text-white'
-                    }`}
+                    variant="ticket"
+                    size="md"
+                    isLoading={loading}
+                    leftIcon={
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    }
                   >
-                    {loading ? (
-                      <span>Saving...</span>
-                    ) : (
-                      <>
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        <span>{existingTicket ? 'Save Changes' : 'Create Ticket'}</span>
-                      </>
-                    )}
-                  </button>
+                    {existingTicket ? 'Save Changes' : 'Create Ticket'}
+                  </Button>
                 </div>
               </div>
             </form>

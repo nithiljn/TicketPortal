@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { Button } from '@/components/Button'
 
 interface DeleteWorkspaceModalProps {
   isOpen: boolean
@@ -196,47 +197,30 @@ export function DeleteWorkspaceModal({
 
           {/* Action Buttons */}
           <div className={`flex justify-end items-center gap-2.5 pt-3.5 border-t ${borderDivider}`}>
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="md"
               onClick={onClose}
               disabled={loading}
-              className={`px-4 py-2 text-xs font-semibold rounded-xl border transition cursor-pointer disabled:opacity-50 ${
-                isDark
-                  ? 'bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 border-white/[0.08]'
-                  : 'bg-white hover:bg-zinc-100 text-zinc-700 border-zinc-200 shadow-xs'
-              }`}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="danger"
+              size="md"
               disabled={!isMatch || loading}
-              className={`px-4 py-2 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 ${
-                isMatch && !loading
-                  ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs cursor-pointer active:scale-[0.99]'
-                  : isDark
-                  ? 'bg-white/[0.04] text-zinc-500 border border-white/[0.06] cursor-not-allowed'
-                  : 'bg-zinc-100 text-zinc-400 border border-zinc-200 cursor-not-allowed'
-              }`}
+              isLoading={loading}
+              leftIcon={
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              }
             >
-              {loading ? (
-                <>
-                  <svg className="w-3.5 h-3.5 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-                    <path d="M12 2a10 10 0 0 1 10 10" />
-                  </svg>
-                  <span>Deleting...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                  </svg>
-                  <span>Delete Workspace</span>
-                </>
-              )}
-            </button>
+              Delete Workspace
+            </Button>
           </div>
         </form>
       </div>

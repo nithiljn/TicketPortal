@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect } from 'react'
+import { Button } from '@/components/Button'
 
 interface ConfirmModalProps {
   isOpen: boolean
@@ -93,38 +94,36 @@ export function ConfirmModal({
 
         {/* Action Buttons */}
         <div className="mt-6 flex items-center justify-end gap-2.5 pt-4 border-t border-inherit">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="md"
             onClick={onClose}
             disabled={loading}
-            className={`px-4 py-2 text-xs font-medium rounded-xl transition cursor-pointer disabled:opacity-50 ${cancelBtn}`}
           >
             {cancelText}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="danger"
+            size="md"
             onClick={onConfirm}
-            disabled={loading}
-            className="px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-500 text-white shadow-sm shadow-rose-600/20 transition active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+            isLoading={loading}
+            leftIcon={
+              <svg
+                className="w-3.5 h-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            }
           >
-            {loading ? (
-              <span>Deleting...</span>
-            ) : (
-              <>
-                <svg
-                  className="w-3.5 h-3.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
-                <span>{confirmText}</span>
-              </>
-            )}
-          </button>
+            {confirmText}
+          </Button>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { Button } from '@/components/Button'
 
 interface WorkspaceModalProps {
   isOpen: boolean
@@ -233,44 +234,29 @@ export function WorkspaceModal({
 
           {/* Actions */}
           <div className={`flex justify-end gap-2.5 pt-3.5 border-t ${borderDivider}`}>
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="md"
               onClick={onClose}
-              className={`px-3.5 py-2 text-xs font-semibold rounded-xl border transition cursor-pointer ${
-                isDark
-                  ? 'bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 border-white/[0.08]'
-                  : 'bg-white hover:bg-zinc-100 text-zinc-700 border-zinc-200 shadow-xs'
-              }`}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="ticket"
+              size="md"
               disabled={loading || !workspaceName.trim()}
-              className={`px-4 py-2 text-xs font-semibold rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5 ${
-                isDark
-                  ? 'bg-white hover:bg-zinc-200 text-zinc-950'
-                  : 'bg-zinc-900 hover:bg-zinc-800 text-white'
-              }`}
+              isLoading={loading}
+              leftIcon={
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              }
             >
-              {loading ? (
-                <>
-                  <svg className="w-3.5 h-3.5 animate-spin text-inherit" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-                    <path d="M12 2a10 10 0 0 1 10 10" />
-                  </svg>
-                  <span>Creating...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                  <span>Create Workspace</span>
-                </>
-              )}
-            </button>
+              Create Workspace
+            </Button>
           </div>
         </form>
       </div>

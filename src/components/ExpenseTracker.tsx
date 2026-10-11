@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import { Expense, PaymentMethod } from '@/types'
+import { Button } from '@/components/Button'
 
 interface ExpenseTrackerProps {
   expenses: Expense[]
@@ -417,22 +418,21 @@ export function ExpenseTracker({
 
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Manage Categories Button */}
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onOpenCategoryManager}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-              isDark
-                ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.06]'
-                : 'border-zinc-200 text-zinc-700 hover:bg-zinc-100'
-            }`}
+            leftIcon={
+              <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                <rect x="3" y="14" width="7" height="7" rx="1.5" />
+              </svg>
+            }
           >
-            <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="7" height="7" rx="1.5" />
-              <rect x="14" y="3" width="7" height="7" rx="1.5" />
-              <rect x="14" y="14" width="7" height="7" rx="1.5" />
-              <rect x="3" y="14" width="7" height="7" rx="1.5" />
-            </svg>
-            <span>Categories</span>
-          </button>
+            Categories
+          </Button>
         </div>
       </div>
 

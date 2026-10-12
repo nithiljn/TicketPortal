@@ -20,13 +20,16 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://ticketflow.local'),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://ticketflow-hub.vercel.app')
+  ),
   title: {
-    default: 'TicketFlow - Engineering Task & Expense Portal',
+    default: 'TicketFlow for Engineering Teams',
     template: '%s | TicketFlow',
   },
   description:
-    'All-in-one developer workspace for engineering ticket management, consistency activity heatmaps, daily standup logs, and financial expense tracking.',
+    'A unified workspace to manage engineering tickets, track daily standup notes, and monitor project expenses.',
   keywords: [
     'ticket portal',
     'expense tracker',
@@ -38,34 +41,36 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'TicketFlow' }],
   openGraph: {
-    title: 'TicketFlow - Engineering Task & Expense Portal',
+    title: 'TicketFlow for Engineering Teams',
     description:
-      'Track engineering tickets, consistency activity heatmaps, daily standup notes, and project expenses seamlessly.',
+      'A unified workspace to manage engineering tickets, track daily standup notes, and monitor project expenses.',
     siteName: 'TicketFlow',
     type: 'website',
     locale: 'en_US',
     images: [
       {
-        url: '/ticket-icon.svg',
+        url: '/ticket-icon.png',
         width: 512,
         height: 512,
         alt: 'TicketFlow Logo',
+        type: 'image/png',
       },
     ],
   },
   twitter: {
     card: 'summary',
-    title: 'TicketFlow - Engineering Task & Expense Portal',
-    description: 'Track engineering tickets, consistency heatmaps, and project expenses.',
-    images: ['/ticket-icon.svg'],
+    title: 'TicketFlow for Engineering Teams',
+    description:
+      'A unified workspace to manage engineering tickets, track daily standup notes, and monitor project expenses.',
+    images: ['/ticket-icon.png'],
   },
   icons: {
     icon: [
-      { url: '/ticket-icon.svg', type: 'image/svg+xml' },
+      { url: '/ticket-icon.png', sizes: '512x512', type: 'image/png' },
       { url: '/icon.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: '32x32' },
     ],
-    apple: [{ url: '/ticket-icon.svg' }],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
 }
 

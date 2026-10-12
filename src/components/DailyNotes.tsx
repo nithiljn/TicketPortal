@@ -258,7 +258,7 @@ export function DailyNotes({
                 type="button"
                 onClick={() => handleAddPlan()}
                 disabled={!newPlanText.trim()}
-                className={`h-9 px-4 rounded-lg border text-xs font-semibold transition disabled:opacity-40 cursor-pointer shrink-0 ${
+                className={`h-9 px-4 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] disabled:opacity-40 cursor-pointer shrink-0 ${
                   isDark
                     ? 'bg-white/[0.08] hover:bg-white/[0.14] text-zinc-200 border-white/[0.1]'
                     : 'bg-zinc-900 hover:bg-zinc-800 text-white border-zinc-900 shadow-2xs'
@@ -309,13 +309,18 @@ export function DailyNotes({
                     <button
                       type="button"
                       onClick={() => handleRemovePlan(p.id)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer shrink-0"
+                      className={`h-8 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                        isDark
+                          ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-200'
+                          : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 hover:text-zinc-950 shadow-2xs'
+                      }`}
                       title="Remove task"
                     >
-                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
                       </svg>
+                      <span>Remove</span>
                     </button>
                   </div>
                 ))}
@@ -329,7 +334,7 @@ export function DailyNotes({
                       key={suggestion}
                       type="button"
                       onClick={() => handleAddPlan(suggestion)}
-                      className={`h-7 px-3 text-xs font-medium rounded-lg border transition cursor-pointer flex items-center justify-center ${
+                      className={`h-8 px-3.5 text-xs font-medium rounded-lg border transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center justify-center ${
                         isDark
                           ? 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300'
                           : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700'
@@ -360,7 +365,7 @@ export function DailyNotes({
           <button
             type="submit"
             disabled={loading || (plans.length === 0 && !additionalNotes.trim())}
-            className={`w-full h-10 rounded-xl font-semibold text-xs transition disabled:opacity-50 cursor-pointer shadow-sm flex items-center justify-center gap-2 ${
+            className={`w-full h-10 rounded-xl font-medium text-xs transition-all duration-150 active:scale-[0.99] disabled:opacity-50 cursor-pointer shadow-sm flex items-center justify-center gap-2 ${
               isDark
                 ? 'bg-white hover:bg-zinc-200 text-zinc-950'
                 : 'bg-zinc-900 hover:bg-zinc-800 text-white'
@@ -402,7 +407,7 @@ export function DailyNotes({
             {filterDate && (
               <button
                 onClick={() => setFilterDate('')}
-                className={`h-8.5 px-3.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+                className={`h-8.5 px-3.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
                   isDark
                     ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.06]'
                     : 'border-zinc-200 text-zinc-700 hover:bg-zinc-100 bg-white shadow-2xs'
@@ -473,19 +478,18 @@ export function DailyNotes({
                       </span>
                       <button
                         onClick={() => onDeleteNote(note)}
-                        className="w-7 h-7 rounded-lg border border-transparent hover:border-rose-500/30 flex items-center justify-center text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
+                        className={`h-8 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center gap-1.5 ${
+                          isDark
+                            ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-200'
+                            : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 hover:text-zinc-950 shadow-2xs'
+                        }`}
                         title="Delete log"
                       >
-                        <svg
-                          className="w-3.5 h-3.5"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
+                        <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="3 6 5 6 21 6" />
                           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                         </svg>
+                        <span>Delete</span>
                       </button>
                     </div>
                   </div>
@@ -590,7 +594,7 @@ export function DailyNotes({
                         type="button"
                         onClick={() => handleInlineAddTask(note.id, note.content)}
                         disabled={!(timelineNewTaskText[note.id] || '').trim()}
-                        className={`h-8.5 px-4 rounded-lg border text-xs font-semibold transition disabled:opacity-40 cursor-pointer ${
+                        className={`h-8.5 px-4 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] disabled:opacity-40 cursor-pointer ${
                           isDark
                             ? 'bg-white/[0.08] hover:bg-white/[0.14] text-zinc-200 border-white/[0.1]'
                             : 'bg-zinc-900 hover:bg-zinc-800 text-white border-zinc-900 shadow-2xs'
@@ -677,7 +681,7 @@ export function DailyNotes({
                 type="button"
                 onClick={() => setConfirmingTask(null)}
                 disabled={isConfirming}
-                className={`h-9 px-4 rounded-lg border text-xs font-medium transition cursor-pointer ${
+                className={`h-9 px-4 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
                   isDark
                     ? 'border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300'
                     : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 shadow-2xs'
@@ -690,7 +694,7 @@ export function DailyNotes({
                 type="button"
                 onClick={handleConfirmTaskCompletion}
                 disabled={isConfirming}
-                className={`h-9 px-4 rounded-lg text-xs font-semibold transition cursor-pointer shadow-sm flex items-center gap-1.5 ${
+                className={`h-9 px-4 rounded-lg text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer shadow-sm flex items-center gap-1.5 ${
                   isDark
                     ? 'bg-white hover:bg-zinc-200 text-zinc-950'
                     : 'bg-zinc-900 hover:bg-zinc-800 text-white'

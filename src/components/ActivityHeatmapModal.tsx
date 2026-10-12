@@ -247,10 +247,10 @@ export function ActivityHeatmapModal({
                 <rect x="14" y="14" width="7" height="7" rx="1" />
                 <rect x="3" y="14" width="7" height="7" rx="1" />
               </svg>
-              <span>Activity Consistency Heatmap</span>
+              <span>TicketFlow Consistency Matrix</span>
             </h2>
             <p className={`text-[11px] ${labelColor} mt-0.5`}>
-              GitHub style annual activity matrix based on daily task completion
+              Track your daily work logs and task consistency throughout the year
             </p>
           </div>
           <button

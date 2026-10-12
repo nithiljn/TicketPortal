@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import { Button } from '@/components/Button'
 
 interface ConfirmModalProps {
   isOpen: boolean
@@ -48,23 +47,19 @@ export function ConfirmModal({
     ? 'bg-[#121215] border-white/[0.08] text-zinc-100'
     : 'bg-white border-zinc-200 text-zinc-900'
 
-  const iconBg = isDark
-    ? 'bg-white/[0.04] border-white/[0.08] text-rose-400'
-    : 'bg-zinc-100 border-zinc-200 text-rose-600'
-
-  const cancelBtn = isDark
-    ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 border border-white/[0.08]'
-    : 'bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 shadow-xs'
+  const iconBox = isDark
+    ? 'bg-white/[0.04] border-white/[0.08] text-zinc-300'
+    : 'bg-zinc-100 border-zinc-200 text-zinc-800'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-150 select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in duration-150 select-none">
       <div
-        className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl transition-all ${modalBg}`}
+        className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl transition-all duration-150 ${modalBg}`}
       >
         <div className="flex items-start gap-4">
-          {/* Danger Warning Icon */}
+          {/* Neutral Clean Icon Box */}
           <div
-            className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}
+            className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${iconBox}`}
           >
             <svg
               className="w-5 h-5"
@@ -86,7 +81,7 @@ export function ConfirmModal({
             <h3 className="text-sm sm:text-base font-semibold tracking-tight">
               {title}
             </h3>
-            <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-400 leading-relaxed break-words">
+            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed break-words">
               {message}
             </p>
           </div>
@@ -94,36 +89,46 @@ export function ConfirmModal({
 
         {/* Action Buttons */}
         <div className="mt-6 flex items-center justify-end gap-2.5 pt-4 border-t border-inherit">
-          <Button
+          <button
             type="button"
-            variant="secondary"
-            size="md"
             onClick={onClose}
             disabled={loading}
+            className={`h-9 px-4 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer disabled:opacity-50 ${
+              isDark
+                ? 'border-white/[0.08] hover:border-white/[0.16] bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300'
+                : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-700 shadow-2xs'
+            }`}
           >
             {cancelText}
-          </Button>
-          <Button
+          </button>
+          <button
             type="button"
-            variant="danger"
-            size="md"
             onClick={onConfirm}
-            isLoading={loading}
-            leftIcon={
-              <svg
-                className="w-3.5 h-3.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-            }
+            disabled={loading}
+            className={`h-9 px-4 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-50 ${
+              isDark
+                ? 'bg-white hover:bg-zinc-200 text-zinc-950 border-white'
+                : 'bg-zinc-900 hover:bg-zinc-800 text-white border-zinc-900'
+            }`}
           >
-            {confirmText}
-          </Button>
+            {loading ? (
+              <span>Deleting...</span>
+            ) : (
+              <>
+                <svg
+                  className="w-3.5 h-3.5 shrink-0 opacity-80"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                <span>{confirmText}</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

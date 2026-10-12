@@ -352,6 +352,7 @@ export function InboxTable({
               <table className="w-full text-left text-xs border-collapse">
                 <thead className={`border-b text-[10px] uppercase tracking-wider font-semibold select-none ${tableThead}`}>
                   <tr>
+                    <th className="py-2.5 px-4 w-20 font-mono">ID</th>
                     <th className="py-2.5 px-4 w-32">Status</th>
                     <th className="py-2.5 px-4">Title & Details</th>
                     <th className="py-2.5 px-4">Workspace</th>
@@ -369,6 +370,11 @@ export function InboxTable({
                       onDoubleClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
                       onClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
                     >
+                      {/* ID */}
+                      <td className="py-3 px-4 whitespace-nowrap font-mono text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                        #{ticket.ticketId || ticket.id.slice(0, 4)}
+                      </td>
+
                       {/* Status */}
                       <td className="py-3 px-4">
                         {getStatusBadge(ticket.status)}
@@ -494,12 +500,17 @@ export function InboxTable({
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-mono ${workspaceBadge}`}>
-                      <svg className="w-2.5 h-2.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                      </svg>
-                      {ticket.projectName}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-[10px] font-semibold text-zinc-500 dark:text-zinc-400">
+                        #{ticket.ticketId || ticket.id.slice(0, 4)}
+                      </span>
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-mono ${workspaceBadge}`}>
+                        <svg className="w-2.5 h-2.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                        </svg>
+                        {ticket.projectName}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-1.5">
                       {getPriorityBadge(ticket.priority)}
                     </div>

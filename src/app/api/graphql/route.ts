@@ -19,6 +19,7 @@ const typeDefs = /* GraphQL */ `
 
   type Ticket {
     id: ID!
+    ticketId: String
     title: String!
     description: String
     commands: String
@@ -57,6 +58,7 @@ const typeDefs = /* GraphQL */ `
 
   input CreateTicketInput {
     title: String!
+    ticketId: String
     description: String
     commands: String
     status: TicketStatus
@@ -68,6 +70,7 @@ const typeDefs = /* GraphQL */ `
 
   input UpdateTicketInput {
     title: String
+    ticketId: String
     description: String
     commands: String
     status: TicketStatus
@@ -116,7 +119,7 @@ const typeDefs = /* GraphQL */ `
       search: String
       userEmail: String
     ): [Ticket!]!
-    ticket(id: ID!): Ticket
+    ticket(id: ID, ticketId: String): Ticket
     projects(userEmail: String): [String!]!
     dailyNotes(date: String, userEmail: String): [DailyNote!]!
     expenses(
@@ -151,6 +154,7 @@ const typeDefs = /* GraphQL */ `
 // Helper: Database snake_case columns -> GraphQL camelCase fields
 interface TicketRow {
   id: string
+  ticket_id?: string | number | null
   title: string
   description: string | null
   commands?: string | null
@@ -166,6 +170,28 @@ interface TicketRow {
 
 const COMMANDS_START = '<!-- TICKET_COMMANDS_START -->'
 const COMMANDS_END = '<!-- TICKET_COMMANDS_END -->'
+
+const TICKET_REF_START = '<!-- TICKET_REF_ID:'
+const TICKET_REF_END = ' -->'
+
+function extractTicketRefId(rawDesc: string | null): string | null {
+  if (!rawDesc) return null
+  const sIdx = rawDesc.indexOf(TICKET_REF_START)
+  if (sIdx !== -1) {
+    const eIdx = rawDesc.indexOf(TICKET_REF_END, sIdx)
+    if (eIdx !== -1) {
+      return rawDesc.substring(sIdx + TICKET_REF_START.length, eIdx).trim()
+    }
+  }
+  return null
+}
+
+function packTicketRefId(desc: string | null, ticketId: string | null): string | null {
+  if (!ticketId) return desc
+  const clean = desc ? desc.replace(/<!-- TICKET_REF_ID:.*? -->/g, '').trim() : ''
+  const tag = `${TICKET_REF_START}${ticketId}${TICKET_REF_END}`
+  return clean ? `${clean}\n\n${tag}` : tag
+}
 
 function extractCommands(rawDesc: string | null): { cleanDescription: string; commands: string } {
   if (!rawDesc) return { cleanDescription: '', commands: '' }
@@ -203,16 +229,39 @@ function formatAuthor(raw: string): string {
   return raw.startsWith('@') ? raw : `@${raw}`
 }
 
-function formatTicket(row: TicketRow) {
+function formatTicket(row: TicketRow, fallbackSeq?: number) {
   const displayAuthor = formatAuthor(row.created_by)
-  const { cleanDescription, commands: extractedCmds } = extractCommands(row.description)
+  const { cleanDescription: rawCleanDesc, commands: extractedCmds } = extractCommands(row.description)
+  const embeddedId = extractTicketRefId(rawCleanDesc)
+  const cleanDescription = rawCleanDesc
+    ? rawCleanDesc.replace(/<!-- TICKET_REF_ID:.*? -->/g, '').trim()
+    : ''
+
   const finalCommands =
     row.commands !== undefined && row.commands !== null ? row.commands : extractedCmds
   const finalDescription =
-    row.commands !== undefined && row.commands !== null ? row.description || '' : cleanDescription
+    row.commands !== undefined && row.commands !== null ? cleanDescription || '' : cleanDescription
+
+  // Resolve 4-digit Ticket ID
+  let resolvedTicketId = ''
+  if (row.ticket_id !== undefined && row.ticket_id !== null && String(row.ticket_id).trim() !== '') {
+    resolvedTicketId = String(row.ticket_id).trim()
+  } else if (embeddedId) {
+    resolvedTicketId = embeddedId
+  } else if (fallbackSeq !== undefined && fallbackSeq > 0) {
+    resolvedTicketId = String(1000 + fallbackSeq)
+  } else {
+    // Deterministic 4-digit fallback from UUID
+    let hash = 0
+    for (let i = 0; i < (row.id || '').length; i++) {
+      hash = (hash * 31 + row.id.charCodeAt(i)) >>> 0
+    }
+    resolvedTicketId = String(1000 + (hash % 9000))
+  }
 
   return {
     id: row.id,
+    ticketId: resolvedTicketId,
     title: row.title,
     description: finalDescription,
     commands: finalCommands || '',
@@ -362,7 +411,17 @@ const resolvers = {
         console.error('Supabase tickets query error:', error)
         throw new Error(error.message)
       }
-      return ((data as TicketRow[]) || []).map(formatTicket)
+      const rawRows = (data as TicketRow[]) || []
+      // Build chronological index map so existing tickets get sequential fallback 1001, 1002, etc.
+      const chronological = [...rawRows].sort((a, b) => {
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      })
+      const seqMap = new Map<string, number>()
+      chronological.forEach((r, idx) => {
+        seqMap.set(r.id, idx + 1)
+      })
+
+      return rawRows.map((r) => formatTicket(r, seqMap.get(r.id)))
     },
 
     projects: async (_: unknown, args: { userEmail?: string }) => {
@@ -418,18 +477,60 @@ const resolvers = {
       return Array.from(projectSet)
     },
 
-    ticket: async (_: unknown, { id }: { id: string }) => {
-      const { data, error } = await supabase
-        .from('tickets')
-        .select('*')
-        .eq('id', id)
-        .single()
+    ticket: async (
+      _: unknown,
+      { id, ticketId }: { id?: string; ticketId?: string }
+    ) => {
+      if (id) {
+        const { data, error } = await supabase
+          .from('tickets')
+          .select('*')
+          .eq('id', id)
+          .single()
 
-      if (error) {
-        console.error('Supabase ticket query error:', error)
-        return null
+        if (!error && data) {
+          return formatTicket(data as TicketRow)
+        }
       }
-      return formatTicket(data as TicketRow)
+
+      if (ticketId) {
+        const cleanId = ticketId.replace(/^#/, '').trim()
+        try {
+          const { data, error } = await supabase
+            .from('tickets')
+            .select('*')
+            .eq('ticket_id', cleanId)
+            .single()
+
+          if (!error && data) {
+            return formatTicket(data as TicketRow)
+          }
+        } catch {
+          // Column might not exist yet
+        }
+
+        const { data: all } = await supabase
+          .from('tickets')
+          .select('*')
+          .order('created_at', { ascending: true })
+
+        if (all) {
+          const rows = all as TicketRow[]
+          const found = rows.find((r, idx) => {
+            const formatted = formatTicket(r, idx + 1)
+            return (
+              formatted.ticketId === cleanId ||
+              formatted.id === cleanId
+            )
+          })
+          if (found) {
+            const idx = rows.indexOf(found)
+            return formatTicket(found, idx + 1)
+          }
+        }
+      }
+
+      return null
     },
 
     dailyNotes: async (
@@ -654,6 +755,7 @@ const resolvers = {
       }: {
         input: {
           title: string
+          ticketId?: string
           description?: string
           commands?: string
           status?: string
@@ -664,8 +766,38 @@ const resolvers = {
         }
       }
     ) => {
-      // 1. First attempt to insert with native 'commands' column
+      // Determine unique 4-digit ticketId
+      let nextSeq = 1001
+      try {
+        const { data: existing } = await supabase
+          .from('tickets')
+          .select('id, created_at, ticket_id, description')
+          .order('created_at', { ascending: false })
+          .limit(100)
+        if (existing && existing.length > 0) {
+          let maxNum = 1000
+          for (const item of existing) {
+            const raw = item.ticket_id || extractTicketRefId(item.description)
+            const num = raw ? parseInt(String(raw), 10) : NaN
+            if (!isNaN(num) && num >= 1000 && num > maxNum) {
+              maxNum = num
+            }
+          }
+          if (maxNum >= 1000) {
+            nextSeq = maxNum + 1
+          } else {
+            nextSeq = 1000 + existing.length + 1
+          }
+        }
+      } catch {
+        nextSeq = 1000 + Math.floor(Math.random() * 8999) + 1
+      }
+
+      const assignedTicketId = (input.ticketId && input.ticketId.trim()) || String(nextSeq)
+
+      // 1. First attempt to insert with native 'ticket_id' and 'commands' columns
       const basePayload: Record<string, unknown> = {
+        ticket_id: assignedTicketId,
         title: input.title,
         description: input.description || null,
         commands: input.commands || null,
@@ -684,25 +816,27 @@ const resolvers = {
         .single()
 
       if (error) {
-        // Fallback: If commands column doesn't exist yet on Supabase table (PGRST204)
+        // Fallback: If ticket_id or commands column doesn't exist yet on Supabase table (PGRST204)
+        delete basePayload.ticket_id
         if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('commands')) {
           delete basePayload.commands
-          basePayload.description = packDescription(input.description || null, input.commands || null)
-          const { data: fbData, error: fbError } = await supabase
-            .from('tickets')
-            .insert([basePayload])
-            .select()
-            .single()
-
-          if (fbError) {
-            console.error('Supabase createTicket fallback error:', fbError)
-            throw new Error(fbError.message)
-          }
-          return formatTicket(fbData as TicketRow)
         }
 
-        console.error('Supabase createTicket error:', error)
-        throw new Error(error.message)
+        let packed = packDescription(input.description || null, input.commands || null)
+        packed = packTicketRefId(packed, assignedTicketId)
+        basePayload.description = packed
+
+        const { data: fbData, error: fbError } = await supabase
+          .from('tickets')
+          .insert([basePayload])
+          .select()
+          .single()
+
+        if (fbError) {
+          console.error('Supabase createTicket fallback error:', fbError)
+          throw new Error(fbError.message)
+        }
+        return formatTicket(fbData as TicketRow)
       }
       return formatTicket(data as TicketRow)
     },
@@ -716,6 +850,7 @@ const resolvers = {
         id: string
         input: {
           title?: string
+          ticketId?: string
           description?: string
           commands?: string
           status?: string
@@ -728,6 +863,7 @@ const resolvers = {
     ) => {
       const updateData: Record<string, unknown> = {}
       if (input.title !== undefined) updateData.title = input.title
+      if (input.ticketId !== undefined) updateData.ticket_id = input.ticketId
       if (input.description !== undefined) updateData.description = input.description
       if (input.commands !== undefined) updateData.commands = input.commands
       if (input.status !== undefined) updateData.status = input.status
@@ -744,19 +880,24 @@ const resolvers = {
         .single()
 
       if (error) {
-        // Fallback: If commands column doesn't exist yet on Supabase table (PGRST204)
+        let shouldRetry = false
+        if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('ticket_id')) {
+          delete updateData.ticket_id
+          shouldRetry = true
+        }
         if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('commands')) {
           delete updateData.commands
-
           let baseDesc = input.description
           if (baseDesc === undefined) {
             const { data: cur } = await supabase.from('tickets').select('description').eq('id', id).single()
             const { cleanDescription } = extractCommands(cur?.description || null)
             baseDesc = cleanDescription
           }
-
           updateData.description = packDescription(baseDesc, input.commands)
+          shouldRetry = true
+        }
 
+        if (shouldRetry) {
           const { data: fbData, error: fbError } = await supabase
             .from('tickets')
             .update(updateData)
@@ -764,11 +905,9 @@ const resolvers = {
             .select()
             .single()
 
-          if (fbError) {
-            console.error('Supabase updateTicket fallback error:', fbError)
-            throw new Error(fbError.message)
+          if (!fbError && fbData) {
+            return formatTicket(fbData as TicketRow)
           }
-          return formatTicket(fbData as TicketRow)
         }
 
         console.error('Supabase updateTicket error:', error)

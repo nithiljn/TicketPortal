@@ -110,6 +110,7 @@ export default function Home() {
   const [tabSwitchTarget, setTabSwitchTarget] = useState<'inbox' | 'dashboard' | 'board' | 'notes' | 'expenses'>('inbox')
   const filterTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const tabTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const openedTicketFromUrlRef = useRef<string | null>(null)
 
   const triggerFilterTransition = useCallback(() => {
     if (filterTimeoutRef.current) clearTimeout(filterTimeoutRef.current)
@@ -234,12 +235,36 @@ export default function Home() {
     setEditingTicket(ticket)
     setModalMode('view')
     setIsModalOpen(true)
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('ticket', ticket.ticketId || ticket.id)
+      window.history.replaceState(null, '', url.toString())
+    }
   }
 
   const handleOpenEditTicket = (ticket: Ticket) => {
     setEditingTicket(ticket)
     setModalMode('edit')
     setIsModalOpen(true)
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('ticket', ticket.ticketId || ticket.id)
+      window.history.replaceState(null, '', url.toString())
+    }
+  }
+
+  const handleCloseTicketModal = () => {
+    setIsModalOpen(false)
+    setEditingTicket(null)
+    openedTicketFromUrlRef.current = null
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      if (url.searchParams.has('ticket') || url.searchParams.has('ticketId')) {
+        url.searchParams.delete('ticket')
+        url.searchParams.delete('ticketId')
+        window.history.replaceState(null, '', url.toString())
+      }
+    }
   }
 
   // 1. Fetch Data from GraphQL
@@ -263,6 +288,7 @@ export default function Home() {
           projects(userEmail: $userEmail)
           tickets(projectName: $projectName, search: $search, userEmail: $userEmail) {
             id
+            ticketId
             title
             description
             commands
@@ -358,6 +384,62 @@ export default function Home() {
       loadData()
     }
   }, [loadData, isAuthLoading, user?.email])
+
+  // Open ticket modal if ticket or ticketId query param is present in URL
+  useEffect(() => {
+    if (typeof window === 'undefined' || loading) return
+    const params = new URLSearchParams(window.location.search)
+    const targetId = params.get('ticket') || params.get('ticketId')
+    if (!targetId || openedTicketFromUrlRef.current === targetId) return
+
+    const match = tickets.find(
+      (t) =>
+        String(t.ticketId || '').toLowerCase() === targetId.toLowerCase() ||
+        t.id.toLowerCase() === targetId.toLowerCase() ||
+        t.id.slice(0, 4).toLowerCase() === targetId.toLowerCase()
+    )
+
+    if (match) {
+      openedTicketFromUrlRef.current = targetId
+      setEditingTicket(match)
+      setModalMode('view')
+      setIsModalOpen(true)
+    } else {
+      fetchGraphQL<{ ticket: Ticket | null }>(
+        /* GraphQL */ `
+          query GetSingleTicket($ticketId: String, $id: ID) {
+            ticket(ticketId: $ticketId, id: $id) {
+              id
+              ticketId
+              title
+              description
+              commands
+              status
+              priority
+              category
+              projectName
+              createdBy
+              updatedBy
+              createdAt
+              updatedAt
+            }
+          }
+        `,
+        { ticketId: targetId, id: targetId }
+      )
+        .then((res) => {
+          if (res?.ticket) {
+            openedTicketFromUrlRef.current = targetId
+            setEditingTicket(res.ticket)
+            setModalMode('view')
+            setIsModalOpen(true)
+          }
+        })
+        .catch(() => {
+          // ignore when ticket is not found
+        })
+    }
+  }, [tickets, loading])
 
   // Keyboard shortcut Ctrl+N / Cmd+N
   useEffect(() => {
@@ -509,6 +591,7 @@ export default function Home() {
         mutation UpdateTicket($id: ID!, $input: UpdateTicketInput!) {
           updateTicket(id: $id, input: $input) {
             id
+            ticketId
             title
             description
             commands
@@ -544,6 +627,7 @@ export default function Home() {
         mutation CreateTicket($input: CreateTicketInput!) {
           createTicket(input: $input) {
             id
+            ticketId
             title
             description
             commands
@@ -1367,10 +1451,7 @@ export default function Home() {
       {/* Ticket Modal */}
       <TicketModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setEditingTicket(null)
-        }}
+        onClose={handleCloseTicketModal}
         onSave={handleSaveTicket}
         existingTicket={editingTicket}
         initialMode={modalMode}

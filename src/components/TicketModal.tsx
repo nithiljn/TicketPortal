@@ -299,6 +299,11 @@ export function TicketModal({
                     <h2 className="text-base sm:text-lg font-semibold tracking-tight">
                       Ticket Details
                     </h2>
+                    {(existingTicket.ticketId || existingTicket.id) && (
+                      <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md border bg-zinc-100 dark:bg-white/[0.06] text-zinc-700 dark:text-zinc-200 border-zinc-200 dark:border-white/[0.08]">
+                        #{existingTicket.ticketId || existingTicket.id.slice(0, 4)}
+                      </span>
+                    )}
                     <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md border font-semibold ${
                       isDark ? 'bg-white/[0.04] text-zinc-400 border-white/[0.08]' : 'bg-zinc-100 text-zinc-600 border-zinc-200'
                     }`}>
@@ -530,9 +535,16 @@ export function TicketModal({
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-base sm:text-lg font-semibold tracking-tight">
-                    {existingTicket ? 'Edit Ticket' : 'Create New Ticket'}
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-semibold tracking-tight">
+                      {existingTicket ? 'Edit Ticket' : 'Create New Ticket'}
+                    </h2>
+                    {existingTicket && (existingTicket.ticketId || existingTicket.id) && (
+                      <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md border bg-zinc-100 dark:bg-white/[0.06] text-zinc-700 dark:text-zinc-200 border-zinc-200 dark:border-white/[0.08]">
+                        #{existingTicket.ticketId || existingTicket.id.slice(0, 4)}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-zinc-500 mt-0.5">
                     {existingTicket
                       ? 'Update ticket details and maintain your project status'

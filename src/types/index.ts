@@ -3,6 +3,7 @@ export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 
 export interface Ticket {
   id: string
+  ticketId?: string
   title: string
   description: string
   commands?: string
@@ -26,6 +27,7 @@ export interface DailyNote {
 
 export interface CreateTicketInput {
   title: string
+  ticketId?: string
   description?: string
   commands?: string
   status?: TicketStatus
@@ -37,6 +39,7 @@ export interface CreateTicketInput {
 
 export interface UpdateTicketInput {
   title?: string
+  ticketId?: string
   description?: string
   commands?: string
   status?: TicketStatus

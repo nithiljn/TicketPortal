@@ -389,8 +389,9 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === 'undefined' || loading) return
     const params = new URLSearchParams(window.location.search)
-    const targetId = params.get('ticket') || params.get('ticketId')
-    if (!targetId || openedTicketFromUrlRef.current === targetId) return
+    const rawTargetId = params.get('ticket') || params.get('ticketId')
+    if (!rawTargetId || openedTicketFromUrlRef.current === rawTargetId) return
+    const targetId = rawTargetId.replace(/^#/, '').trim()
 
     const match = tickets.find(
       (t) =>
@@ -400,7 +401,7 @@ export default function Home() {
     )
 
     if (match) {
-      openedTicketFromUrlRef.current = targetId
+      openedTicketFromUrlRef.current = rawTargetId
       setEditingTicket(match)
       setModalMode('view')
       setIsModalOpen(true)
@@ -429,7 +430,7 @@ export default function Home() {
       )
         .then((res) => {
           if (res?.ticket) {
-            openedTicketFromUrlRef.current = targetId
+            openedTicketFromUrlRef.current = rawTargetId
             setEditingTicket(res.ticket)
             setModalMode('view')
             setIsModalOpen(true)

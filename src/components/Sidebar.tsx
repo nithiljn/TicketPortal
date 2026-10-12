@@ -132,6 +132,7 @@ interface SidebarProps {
   onOpenCreateModal: () => void
   onOpenCreateWorkspaceModal?: () => void
   onDeleteWorkspace?: (proj: string) => void
+  onOpenActivityModal?: () => void
 
   // Active Tab
   activeTab?: 'inbox' | 'dashboard' | 'board' | 'notes' | 'expenses'
@@ -212,6 +213,7 @@ export function Sidebar({
   expenseCounts,
   onOpenCategoryModal,
   onOpenAddExpenseModal,
+  onOpenActivityModal,
 }: SidebarProps) {
   const isDark = theme === 'dark'
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -356,6 +358,31 @@ export function Sidebar({
             >
               {activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
             </Button>
+
+            {/* Activity Heatmap button below New Ticket */}
+            {onOpenActivityModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenActivityModal()
+                  onClose()
+                }}
+                className={`w-full mt-2 py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  isDark
+                    ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.04]'
+                    : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50 shadow-2xs'
+                }`}
+                title="View consistency activity heatmap"
+              >
+                <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                </svg>
+                <span>Activity Heatmap</span>
+              </button>
+            )}
           </div>
 
           {/* Scrollable Navigation & Facets */}

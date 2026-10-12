@@ -16,6 +16,7 @@ import { ExpenseCategoryModal } from '@/components/ExpenseCategoryModal'
 import { WorkspaceModal } from '@/components/WorkspaceModal'
 import { DeleteWorkspaceModal } from '@/components/DeleteWorkspaceModal'
 import { ConfirmModal } from '@/components/ConfirmModal'
+import { ActivityHeatmapModal } from '@/components/ActivityHeatmapModal'
 import { Toast } from '@/components/Toast'
 import { LoginScreen } from '@/components/LoginScreen'
 import { Button } from '@/components/Button'
@@ -37,6 +38,8 @@ export default function Home() {
   const [workspaceToDelete, setWorkspaceToDelete] = useState<string | null>(null)
   const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null)
   const [noteToDelete, setNoteToDelete] = useState<DailyNote | null>(null)
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false)
+  const [notesFilterDate, setNotesFilterDate] = useState<string>('')
   const [isDeleting, setIsDeleting] = useState(false)
   const [toast, setToast] = useState<{
     isOpen: boolean
@@ -706,6 +709,24 @@ export default function Home() {
     loadData()
   }
 
+  const handleUpdateDailyNote = async (id: string, content: string) => {
+    setDailyNotes((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, content } : n))
+    )
+    const mutation = /* GraphQL */ `
+      mutation UpdateNote($id: ID!, $content: String!, $userEmail: String) {
+        updateDailyNote(id: $id, content: $content, userEmail: $userEmail) {
+          id
+          date
+          content
+          createdBy
+          createdAt
+        }
+      }
+    `
+    await fetchGraphQL(mutation, { id, content, userEmail: user?.email })
+  }
+
   const handleConfirmDeleteDailyNote = async () => {
     if (!noteToDelete) return
     setIsDeleting(true)
@@ -948,6 +969,7 @@ export default function Home() {
         expenseCounts={expenseCounts}
         onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
         onOpenAddExpenseModal={handleOpenAddExpense}
+        onOpenActivityModal={() => setIsActivityModalOpen(true)}
       />
 
       {/* 2. Main Content Canvas */}
@@ -1150,6 +1172,27 @@ export default function Home() {
               </button>
             </div>
 
+            {/* Activity Heatmap Header Companion Button */}
+            <button
+              type="button"
+              onClick={() => setIsActivityModalOpen(true)}
+              className={`p-2 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
+                isDark
+                  ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.06]'
+                  : 'border-zinc-200 text-zinc-700 hover:bg-zinc-100 bg-white shadow-2xs'
+              }`}
+              title="Activity Heatmap"
+              aria-label="Activity Heatmap"
+            >
+              <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+              </svg>
+              <span className="hidden sm:inline">Heatmap</span>
+            </button>
+
             {/* Create button */}
             <Button
               variant="ticket"
@@ -1275,8 +1318,10 @@ export default function Home() {
                   <DailyNotes
                     notes={dailyNotes}
                     onAddNote={handleAddDailyNote}
+                    onUpdateNote={handleUpdateDailyNote}
                     onDeleteNote={(note) => setNoteToDelete(note)}
                     theme={theme}
+                    initialFilterDate={notesFilterDate}
                   />
                 </div>
               )}
@@ -1421,6 +1466,18 @@ export default function Home() {
         cancelText="Cancel"
         theme={theme}
         loading={isDeleting}
+      />
+
+      {/* Activity Heatmap Modal */}
+      <ActivityHeatmapModal
+        isOpen={isActivityModalOpen}
+        onClose={() => setIsActivityModalOpen(false)}
+        notes={dailyNotes}
+        theme={theme}
+        onSelectDate={(date) => {
+          setNotesFilterDate(date)
+          handleTabChange('notes')
+        }}
       />
 
       {/* Floating Success / Action Toast Notification */}

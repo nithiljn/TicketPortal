@@ -136,6 +136,7 @@ const typeDefs = /* GraphQL */ `
     updateTicket(id: ID!, input: UpdateTicketInput!): Ticket!
     deleteTicket(id: ID!, userEmail: String): Boolean!
     createDailyNote(input: CreateDailyNoteInput!): DailyNote!
+    updateDailyNote(id: ID!, content: String!, userEmail: String): DailyNote!
     deleteDailyNote(id: ID!, userEmail: String): Boolean!
     createWorkspace(name: String!, userEmail: String): String!
     deleteWorkspace(name: String!, userEmail: String): Boolean!
@@ -823,6 +824,24 @@ const resolvers = {
 
       if (error) {
         console.error('Supabase createDailyNote error:', error)
+        throw new Error(error.message)
+      }
+      return formatDailyNote(data as NoteRow)
+    },
+
+    updateDailyNote: async (
+      _: unknown,
+      { id, content }: { id: string; content: string; userEmail?: string }
+    ) => {
+      const { data, error } = await supabase
+        .from('daily_notes')
+        .update({ content })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Supabase updateDailyNote error:', error)
         throw new Error(error.message)
       }
       return formatDailyNote(data as NoteRow)

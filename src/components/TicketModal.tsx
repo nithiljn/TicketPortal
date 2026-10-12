@@ -161,34 +161,45 @@ export function TicketModal({
     ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 border border-white/[0.08]'
     : 'bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 shadow-xs'
   const getStatusBadge = (st: TicketStatus) => {
+    const pill = isDark
+      ? 'bg-white/[0.04] text-zinc-200 border-white/[0.08]'
+      : 'bg-zinc-100/80 text-zinc-800 border-zinc-200'
+
     switch (st) {
       case 'TODO':
         return (
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${
-            isDark ? 'bg-zinc-800 text-zinc-300 border-white/[0.08]' : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-          }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill}`}>
+            <svg className="w-3 h-3 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="3 3">
+              <circle cx="12" cy="12" r="9" />
+            </svg>
             To Do
           </span>
         )
       case 'IN_PROGRESS':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border bg-amber-500/10 text-amber-500 border-amber-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill}`}>
+            <svg className="w-3 h-3 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="12" cy="12" r="9" strokeDasharray="14 14" />
+            </svg>
             In Progress
           </span>
         )
       case 'DONE':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill}`}>
+            <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
             Completed
           </span>
         )
       case 'BLOCKED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border bg-rose-500/10 text-rose-400 border-rose-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill}`}>
+            <svg className="w-3 h-3 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <circle cx="12" cy="12" r="9" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
             Blocked
           </span>
         )
@@ -196,34 +207,44 @@ export function TicketModal({
   }
 
   const getPriorityBadge = (pr: TicketPriority) => {
+    const pill = isDark
+      ? 'bg-white/[0.04] border-white/[0.08]'
+      : 'bg-zinc-100/80 border-zinc-200'
+
     switch (pr) {
       case 'URGENT':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border bg-rose-500/10 text-rose-500 border-rose-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill} text-rose-600 dark:text-rose-400`}>
+            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 3v13M12 20v1" strokeLinecap="round" />
+            </svg>
             Urgent
           </span>
         )
       case 'HIGH':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border bg-amber-500/10 text-amber-500 border-amber-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill} text-amber-600 dark:text-amber-400`}>
+            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="18 15 12 9 6 15" />
+            </svg>
             High
           </span>
         )
       case 'MEDIUM':
         return (
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${
-            isDark ? 'bg-zinc-800 text-zinc-300 border-white/[0.08]' : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-          }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill} text-zinc-600 dark:text-zinc-400`}>
+            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
             Medium
           </span>
         )
       case 'LOW':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill} text-zinc-500 dark:text-zinc-400`}>
+            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
             Low
           </span>
         )
@@ -278,7 +299,7 @@ export function TicketModal({
                     <h2 className="text-base sm:text-lg font-semibold tracking-tight">
                       Ticket Details
                     </h2>
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md border font-semibold ${
                       isDark ? 'bg-white/[0.04] text-zinc-400 border-white/[0.08]' : 'bg-zinc-100 text-zinc-600 border-zinc-200'
                     }`}>
                       View Only
@@ -327,15 +348,19 @@ export function TicketModal({
               <div className="flex items-center gap-2 flex-wrap">
                 {getStatusBadge(existingTicket.status)}
                 {getPriorityBadge(existingTicket.priority)}
-                <span className={`px-2.5 py-1 rounded-md text-[11px] font-mono border ${
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border ${
                   isDark ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]' : 'bg-zinc-100 text-zinc-700 border-zinc-200'
                 }`}>
+                  <svg className="w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                    <line x1="7" y1="7" x2="7.01" y2="7" />
+                  </svg>
                   {existingTicket.category || 'DEV'}
                 </span>
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border ${
-                  isDark ? 'bg-white/[0.06] text-zinc-200 border-white/[0.1]' : 'bg-zinc-100 text-zinc-800 border-zinc-200 font-medium'
+                  isDark ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]' : 'bg-zinc-100 text-zinc-700 border-zinc-200'
                 }`}>
-                  <svg className="w-3 h-3 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                   </svg>
                   <span>{existingTicket.projectName}</span>
@@ -451,7 +476,10 @@ export function TicketModal({
             {/* View Mode Footer */}
             <div className={`flex items-center justify-between pt-4 mt-6 border-t ${headerBorder}`}>
               <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
                 <span>View mode • Editing disabled until Edit is clicked</span>
               </div>
 
@@ -538,8 +566,8 @@ export function TicketModal({
             </div>
 
             {error && (
-              <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
-                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="mt-4 p-3 rounded-xl bg-zinc-100 dark:bg-white/[0.04] border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
+                <svg className="w-4 h-4 shrink-0 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="12" y1="8" x2="12" y2="12" />
                   <line x1="12" y1="16" x2="12.01" y2="16" />

@@ -465,8 +465,8 @@ export function Sidebar({
                             }}
                             className={`p-1 rounded transition cursor-pointer sm:opacity-0 group-hover/ws:opacity-100 focus:opacity-100 ${
                               isDark
-                                ? 'text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10'
-                                : 'text-zinc-400 hover:text-rose-600 hover:bg-rose-50'
+                                ? 'text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.08]'
+                                : 'text-zinc-400 hover:text-zinc-800 hover:bg-zinc-200/60'
                             }`}
                             title={`Delete workspace "${proj}"`}
                           >
@@ -521,9 +521,13 @@ export function Sidebar({
                     {expenseSearchQuery && (
                       <button
                         onClick={() => onExpenseSearchChange?.('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 text-xs cursor-pointer"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 cursor-pointer p-0.5"
+                        title="Clear search"
                       >
-                        ✕
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
                       </button>
                     )}
                   </div>

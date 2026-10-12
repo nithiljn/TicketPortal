@@ -156,7 +156,7 @@ export function TableView({
                     onClick={() => {
                       if (confirm('Delete ticket?')) onDeleteTicket(ticket.id)
                     }}
-                    className="p-1.5 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                    className="p-1.5 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
                     title="Delete ticket"
                   >
                     <svg

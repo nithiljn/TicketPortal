@@ -774,37 +774,39 @@ export function ExpenseTracker({
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             {/* Edit Button */}
                             <button
                               onClick={() => onEditExpense(exp)}
-                              className={`p-1.5 rounded-lg border text-zinc-400 hover:text-zinc-200 transition cursor-pointer ${
+                              className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
                                 isDark
-                                  ? 'border-white/[0.06] hover:bg-white/[0.06]'
-                                  : 'border-zinc-200 hover:bg-zinc-100 hover:text-zinc-800'
+                                  ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-300 hover:text-white'
+                                  : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 hover:text-zinc-950 shadow-2xs'
                               }`}
                               title="Edit Expense"
                             >
-                              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M12 20h9" />
                                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                               </svg>
+                              <span>Edit</span>
                             </button>
 
                             {/* Delete Button */}
                             <button
                               onClick={() => onDeleteExpense(exp)}
-                              className={`p-1.5 rounded-lg border text-zinc-400 hover:text-rose-600 hover:bg-rose-50/80 dark:hover:text-rose-400 dark:hover:bg-rose-950/30 transition cursor-pointer ${
+                              className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
                                 isDark
-                                  ? 'border-white/[0.06] hover:border-rose-900/40'
-                                  : 'border-zinc-200 hover:border-rose-200'
+                                  ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-200'
+                                  : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-600 hover:text-zinc-950 shadow-2xs'
                               }`}
                               title="Delete Expense"
                             >
-                              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <polyline points="3 6 5 6 21 6" />
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                               </svg>
+                              <span>Delete</span>
                             </button>
                           </div>
                         </div>

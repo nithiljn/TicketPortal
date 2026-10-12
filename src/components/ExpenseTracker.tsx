@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react'
 import { Expense, PaymentMethod } from '@/types'
 import { Button } from '@/components/Button'
+import { generateExpensePdf } from '@/lib/generateExpensePdf'
 
 interface ExpenseTrackerProps {
   expenses: Expense[]
@@ -381,6 +382,45 @@ export function ExpenseTracker({
     return dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   }
 
+  // Download PDF Report Handler
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+
+  const handleDownloadPdf = async () => {
+    if (filteredExpenses.length === 0 || isGeneratingPdf) return
+    setIsGeneratingPdf(true)
+    try {
+      const categoryBreakdown = Object.entries(stats.categoryTotals)
+        .sort((a, b) => b[1] - a[1])
+        .map(([category, amount], idx) => ({
+          category,
+          amount,
+          percentage: stats.totalAmount > 0 ? Math.round((amount / stats.totalAmount) * 100) : 0,
+          color: getCategoryColor(category, idx),
+        }))
+
+      await new Promise((resolve) => setTimeout(resolve, 60))
+
+      generateExpensePdf({
+        expenses: filteredExpenses,
+        activeMonth,
+        selectedProject,
+        activeCategory,
+        activePaymentMethod,
+        minAmount,
+        maxAmount,
+        searchQuery,
+        stats,
+        categoryBreakdown,
+        dailyTrend: dailySpendData,
+      })
+    } catch (err) {
+      console.error('Failed to generate expense PDF report:', err)
+      alert('Unable to generate PDF report. Please try again.')
+    } finally {
+      setIsGeneratingPdf(false)
+    }
+  }
+
   // Styles
   const cardBg = isDark
     ? 'bg-[#111114] border-white/[0.06] text-zinc-100'
@@ -417,6 +457,36 @@ export function ExpenseTracker({
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Download PDF Report Button (Left side of Categories) */}
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={isGeneratingPdf || filteredExpenses.length === 0}
+            className={`h-8 px-3 rounded-xl border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
+              isDark
+                ? 'bg-zinc-900 border-zinc-800 text-zinc-200 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 disabled:opacity-50'
+                : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300 shadow-2xs disabled:opacity-50'
+            }`}
+            title={
+              filteredExpenses.length === 0
+                ? 'No expenses to export'
+                : `Download ${activeMonth !== 'ALL' ? formatMonthName(activeMonth) : 'current'} expense report as PDF`
+            }
+          >
+            {isGeneratingPdf ? (
+              <svg className="w-3.5 h-3.5 animate-spin text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="16" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            )}
+            <span>{isGeneratingPdf ? 'Generating...' : 'Download PDF'}</span>
+          </button>
+
           {/* Manage Categories Button */}
           <Button
             variant="outline"

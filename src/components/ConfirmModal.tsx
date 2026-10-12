@@ -49,8 +49,8 @@ export function ConfirmModal({
     : 'bg-white border-zinc-200 text-zinc-900'
 
   const iconBg = isDark
-    ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-    : 'bg-rose-50 border-rose-200 text-rose-600'
+    ? 'bg-white/[0.04] border-white/[0.08] text-rose-400'
+    : 'bg-zinc-100 border-zinc-200 text-rose-600'
 
   const cancelBtn = isDark
     ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 border border-white/[0.08]'

@@ -80,52 +80,61 @@ export function InboxTable({
       case 'TODO':
         return (
           <span
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${
+            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border ${
               isDark
-                ? 'bg-zinc-800/80 text-zinc-300 border-white/[0.08]'
-                : 'bg-zinc-100 text-zinc-700 border-zinc-200'
+                ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]'
+                : 'bg-zinc-100/80 text-zinc-700 border-zinc-200'
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+            <svg className="w-3 h-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="9" strokeDasharray="3 3" />
+            </svg>
             To Do
           </span>
         )
       case 'IN_PROGRESS':
         return (
           <span
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${
+            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border ${
               isDark
-                ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
-                : 'bg-amber-50 text-amber-700 border-amber-200'
+                ? 'bg-white/[0.04] text-zinc-200 border-white/[0.08]'
+                : 'bg-zinc-100/80 text-zinc-800 border-zinc-200'
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <svg className="w-3 h-3 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="12" cy="12" r="9" strokeDasharray="14 14" />
+            </svg>
             In Progress
           </span>
         )
       case 'DONE':
         return (
           <span
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${
+            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border ${
               isDark
-                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                ? 'bg-white/[0.04] text-zinc-200 border-white/[0.08]'
+                : 'bg-zinc-100/80 text-zinc-800 border-zinc-200'
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
             Completed
           </span>
         )
       case 'BLOCKED':
         return (
           <span
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${
+            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border ${
               isDark
-                ? 'bg-rose-500/10 text-rose-300 border-rose-500/20'
-                : 'bg-rose-50 text-rose-700 border-rose-200'
+                ? 'bg-white/[0.04] text-zinc-200 border-white/[0.08]'
+                : 'bg-zinc-100/80 text-zinc-800 border-zinc-200'
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+            <svg className="w-3 h-3 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <circle cx="12" cy="12" r="9" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
             Blocked
           </span>
         )
@@ -136,33 +145,37 @@ export function InboxTable({
     switch (priority) {
       case 'URGENT':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-rose-600 dark:text-rose-400">
+            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 3v13M12 20v1" strokeLinecap="round" />
+            </svg>
             Urgent
           </span>
         )
       case 'HIGH':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="18 15 12 9 6 15" />
+            </svg>
             High
           </span>
         )
       case 'MEDIUM':
         return (
-          <span
-            className={`inline-flex items-center gap-1 text-[11px] font-medium ${
-              isDark ? 'text-zinc-300' : 'text-zinc-600'
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+          <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
             Medium
           </span>
         )
       default:
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
             Low
           </span>
         )
@@ -202,8 +215,12 @@ export function InboxTable({
     : 'bg-zinc-100 text-zinc-600 border-zinc-200'
 
   const actionBtn = isDark
-    ? 'text-zinc-400 hover:text-white hover:bg-white/[0.08]'
-    : 'text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100'
+    ? 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] border-transparent'
+    : 'text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 border-transparent'
+
+  const deleteBtn = isDark
+    ? 'text-zinc-400 hover:text-rose-400 hover:bg-rose-950/30 hover:border-rose-900/40 border-transparent'
+    : 'text-zinc-400 hover:text-rose-600 hover:bg-rose-50/80 hover:border-rose-200 border-transparent'
 
   return (
     <div className="flex flex-col flex-1 min-w-0">
@@ -367,8 +384,8 @@ export function InboxTable({
                             <span
                               className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono border ${
                                 isDark
-                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]'
+                                  : 'bg-zinc-100 text-zinc-700 border-zinc-200'
                               }`}
                               title="Contains execution commands"
                             >
@@ -424,7 +441,7 @@ export function InboxTable({
                             e.stopPropagation()
                             onEditTicket(ticket)
                           }}
-                          className={`p-1 rounded transition cursor-pointer ${actionBtn}`}
+                          className={`p-1.5 rounded-lg border transition cursor-pointer ${actionBtn}`}
                           title="Edit ticket"
                         >
                           <svg
@@ -440,7 +457,7 @@ export function InboxTable({
                         </button>
                         <button
                           onClick={() => onDeleteTicket(ticket)}
-                          className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
+                          className={`p-1.5 rounded-lg border transition cursor-pointer ${deleteBtn}`}
                           title="Delete ticket"
                         >
                           <svg
@@ -495,8 +512,8 @@ export function InboxTable({
                         <span
                           className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-mono border ${
                             isDark
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]'
+                              : 'bg-zinc-100 text-zinc-700 border-zinc-200'
                           }`}
                         >
                           <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -522,7 +539,7 @@ export function InboxTable({
                     </div>
 
                     <div
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-1.5"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
@@ -530,7 +547,7 @@ export function InboxTable({
                           e.stopPropagation()
                           onEditTicket(ticket)
                         }}
-                        className={`p-1 rounded ${actionBtn}`}
+                        className={`p-1.5 rounded-lg border transition cursor-pointer ${actionBtn}`}
                         title="Edit ticket"
                       >
                         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -540,7 +557,7 @@ export function InboxTable({
                       </button>
                       <button
                         onClick={() => onDeleteTicket(ticket)}
-                        className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer"
+                        className={`p-1.5 rounded-lg border transition cursor-pointer ${deleteBtn}`}
                         title="Delete ticket"
                       >
                         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

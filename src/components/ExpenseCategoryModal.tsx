@@ -232,7 +232,6 @@ export function ExpenseCategoryModal({
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
                       <span className="font-medium">{cat}</span>
                       {isLocked && (
                         <span className="text-[9px] px-1.5 py-0.2 rounded bg-zinc-500/10 text-zinc-400">
@@ -244,7 +243,7 @@ export function ExpenseCategoryModal({
                       <button
                         onClick={() => handleDelete(cat)}
                         disabled={isDel}
-                        className="text-[11px] text-rose-400 hover:text-rose-300 transition cursor-pointer disabled:opacity-50"
+                        className="text-[11px] text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer disabled:opacity-50"
                       >
                         {isDel ? 'Deleting...' : 'Delete'}
                       </button>

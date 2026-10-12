@@ -15,12 +15,11 @@ interface KanbanBoardProps {
 const COLUMNS: {
   id: TicketStatus
   label: string
-  dotColor: string
 }[] = [
-  { id: 'TODO', label: 'To Do', dotColor: 'bg-zinc-400' },
-  { id: 'IN_PROGRESS', label: 'In Progress', dotColor: 'bg-amber-400' },
-  { id: 'DONE', label: 'Completed', dotColor: 'bg-emerald-400' },
-  { id: 'BLOCKED', label: 'Blocked', dotColor: 'bg-rose-400' },
+  { id: 'TODO', label: 'To Do' },
+  { id: 'IN_PROGRESS', label: 'In Progress' },
+  { id: 'DONE', label: 'Completed' },
+  { id: 'BLOCKED', label: 'Blocked' },
 ]
 
 export function KanbanBoard({
@@ -37,34 +36,38 @@ export function KanbanBoard({
     switch (priority) {
       case 'URGENT':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            URGENT
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-rose-600 dark:text-rose-400">
+            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 3v13M12 20v1" strokeLinecap="round" />
+            </svg>
+            Urgent
           </span>
         )
       case 'HIGH':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            HIGH
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="18 15 12 9 6 15" />
+            </svg>
+            High
           </span>
         )
       case 'MEDIUM':
         return (
-          <span
-            className={`inline-flex items-center gap-1 text-[10px] font-medium ${
-              isDark ? 'text-zinc-300' : 'text-zinc-600'
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-            MEDIUM
+          <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Medium
           </span>
         )
       default:
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            LOW
+          <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+            Low
           </span>
         )
     }
@@ -122,12 +125,9 @@ export function KanbanBoard({
           >
             {/* Column Header */}
             <div className={`flex items-center justify-between pb-3 mb-3 border-b ${columnHeaderBorder}`}>
-              <div className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${col.dotColor}`} />
-                <span className={`font-semibold text-xs tracking-wider uppercase ${columnTitle}`}>
-                  {col.label}
-                </span>
-              </div>
+              <span className={`font-semibold text-xs tracking-wider uppercase ${columnTitle}`}>
+                {col.label}
+              </span>
               <span className={`text-xs px-2 py-0.5 rounded-md font-mono border ${countBadge}`}>
                 {columnTickets.length}
               </span>
@@ -212,10 +212,10 @@ export function KanbanBoard({
                       </div>
 
                       {/* Edit & Delete Action Buttons */}
-                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => onEditTicket(ticket)}
-                          className="p-1 rounded text-zinc-400 hover:text-zinc-800 dark:hover:text-white transition cursor-pointer"
+                          className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
                           title="Edit ticket"
                         >
                           <svg
@@ -231,7 +231,7 @@ export function KanbanBoard({
                         </button>
                         <button
                           onClick={() => onDeleteTicket(ticket)}
-                          className="p-1 rounded text-zinc-400 hover:text-rose-500 transition cursor-pointer"
+                          className="p-1.5 rounded-md text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-500/10 transition cursor-pointer"
                           title="Delete ticket"
                         >
                           <svg

@@ -20,29 +20,37 @@ export function TableView({
     switch (priority) {
       case 'URGENT':
         return (
-          <span className="inline-flex items-center gap-1 text-xs text-rose-400 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+          <span className="inline-flex items-center gap-1.5 text-xs text-rose-500 font-medium">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            </svg>
             Urgent
           </span>
         )
       case 'HIGH':
         return (
-          <span className="inline-flex items-center gap-1 text-xs text-amber-400 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+          <span className="inline-flex items-center gap-1.5 text-xs text-amber-500 font-medium">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M18 15l-6-6-6 6" />
+            </svg>
             High
           </span>
         )
       case 'MEDIUM':
         return (
-          <span className="inline-flex items-center gap-1 text-xs text-sky-400 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+          <span className="inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M5 12h14" />
+            </svg>
             Medium
           </span>
         )
       default:
         return (
-          <span className="inline-flex items-center gap-1 text-xs text-teal-400 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+          <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
             Low
           </span>
         )

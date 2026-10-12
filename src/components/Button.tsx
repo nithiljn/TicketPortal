@@ -48,7 +48,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ticket:
         'bg-zinc-900 text-white hover:bg-zinc-800 border-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 dark:border-white shadow-xs font-semibold',
       danger:
-        'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/40 dark:border-rose-900/50 shadow-xs font-medium',
+        'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 border-rose-600 dark:bg-rose-600 dark:text-white dark:hover:bg-rose-500 dark:border-rose-600 shadow-xs font-semibold',
       ghost:
         'bg-transparent text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 border-transparent dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-white/[0.06]',
     }
@@ -66,7 +66,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           case 'ticket':
             return 'bg-zinc-900 text-white hover:bg-zinc-800 border-zinc-800 shadow-xs font-semibold'
           case 'danger':
-            return 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200 shadow-xs font-medium'
+            return 'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 border-rose-600 shadow-xs font-semibold'
           case 'ghost':
             return 'bg-transparent text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 border-transparent'
         }
@@ -82,7 +82,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           case 'ticket':
             return 'bg-white text-zinc-900 hover:bg-zinc-100 border-white shadow-xs font-semibold'
           case 'danger':
-            return 'bg-rose-950/40 text-rose-300 hover:bg-rose-900/40 border-rose-900/50 shadow-xs font-medium'
+            return 'bg-rose-600 text-white hover:bg-rose-500 active:bg-rose-700 border-rose-600 shadow-xs font-semibold'
           case 'ghost':
             return 'bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] border-transparent'
         }

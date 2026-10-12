@@ -441,18 +441,20 @@ export function ExpenseTracker({
         {/* Card 1: Total Spent */}
         <div className={`p-4 rounded-2xl border ${cardBg}`}>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-500">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-400">
               Total Spent
             </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-mono font-medium">
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono border ${
+              isDark ? 'bg-white/[0.04] text-zinc-400 border-white/[0.06]' : 'bg-zinc-100 text-zinc-600 border-zinc-200'
+            }`}>
               {stats.count} txns
             </span>
           </div>
-          <div className="text-xl sm:text-2xl font-bold font-mono mt-1 text-emerald-500">
+          <div className="text-xl sm:text-2xl font-bold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
             {formatMoney(stats.totalAmount)}
           </div>
           <div className="text-[11px] text-zinc-500 mt-1">
-            {activeMonth === 'ALL' ? 'Total all-time spend' : `Spend for ${formatMonthName(activeMonth)}`}
+            {activeMonth === 'ALL' ? 'Total all time spend' : `Spend for ${formatMonthName(activeMonth)}`}
           </div>
         </div>
 
@@ -697,7 +699,7 @@ export function ExpenseTracker({
                       ({dayExpenses.length} {dayExpenses.length === 1 ? 'transaction' : 'transactions'})
                     </span>
                   </div>
-                  <div className="font-mono text-xs font-bold text-emerald-500">
+                  <div className="font-mono text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                     Day Total: {formatMoney(dayTotal)}
                   </div>
                 </div>
@@ -729,23 +731,19 @@ export function ExpenseTracker({
                                 {exp.title}
                               </span>
                               {isHigh && (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-md border font-semibold ${
                                   isDark
-                                    ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                                    : 'bg-rose-50 text-rose-700 border-rose-200'
+                                    ? 'bg-white/[0.06] text-zinc-200 border-white/[0.1]'
+                                    : 'bg-zinc-100 text-zinc-800 border-zinc-200'
                                 }`}>
                                   High
                                 </span>
                               )}
-                              <span className={`inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-md border font-medium ${
+                              <span className={`inline-flex items-center text-[10px] px-2 py-0.5 rounded-md border font-medium ${
                                 isDark
                                   ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]'
                                   : 'bg-zinc-100 text-zinc-700 border-zinc-200'
                               }`}>
-                                <span
-                                  className="w-1.5 h-1.5 rounded-full shrink-0"
-                                  style={{ backgroundColor: getCategoryColor(exp.category, 0) }}
-                                />
                                 {exp.category}
                               </span>
                               <span className={`text-[10px] px-1.5 py-0.5 rounded-md border font-mono ${
@@ -796,10 +794,10 @@ export function ExpenseTracker({
                             {/* Delete Button */}
                             <button
                               onClick={() => onDeleteExpense(exp)}
-                              className={`p-1.5 rounded-lg border text-rose-400 hover:text-rose-300 transition cursor-pointer ${
+                              className={`p-1.5 rounded-lg border text-zinc-400 hover:text-rose-600 hover:bg-rose-50/80 dark:hover:text-rose-400 dark:hover:bg-rose-950/30 transition cursor-pointer ${
                                 isDark
-                                  ? 'border-white/[0.06] hover:bg-rose-500/10'
-                                  : 'border-zinc-200 hover:bg-rose-50'
+                                  ? 'border-white/[0.06] hover:border-rose-900/40'
+                                  : 'border-zinc-200 hover:border-rose-200'
                               }`}
                               title="Delete Expense"
                             >

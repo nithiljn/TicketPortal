@@ -1,142 +1,143 @@
-# TicketPortal 🎫
+# TicketFlow
 
-A modern, full-stack engineering workspace for ticket tracking, daily standup notes, and personal expense management. Built with Next.js 16, React 19, GraphQL Yoga, Supabase, and Tailwind CSS v4.
+A unified developer workspace for managing engineering tickets, tracking daily standup logs, building work consistency, and monitoring project expenses.
 
----
-
-## 🚀 Overview
-
-**TicketPortal** combines high density task management with daily developer workflows into a unified, distraction free portal. Designed with human crafted, minimalist aesthetics inspired by Linear, Stripe, and GitHub — featuring clean neutral typography, micro SVG icons, and smooth dark/light theme switching.
+Built with Next.js 16, React 19, GraphQL Yoga, Supabase, and Tailwind CSS.
 
 ---
 
-## ✨ Key Features
+## Overview
 
-### 🎫 Workspace & Ticket Management
-- **Scoped Workspaces:** Organize tasks under distinct projects or switch to an all workspaces overview.
-- **Rich Ticket Details:** Capture title, markdown friendly descriptions, technical categories, priority levels, and execution commands.
-- **Dedicated View Mode:** Quick view modal with one click copy for command snippets, author metadata, timestamps, and fast edit switching.
-- **Quick Keyboard Shortcuts:** Save tickets instantly with `⌘ / Ctrl + Enter`, or close modals with `Esc`.
+TicketFlow is designed for software developers and engineering teams who want a fast, focused tool to manage their day to day work without jumping between multiple apps.
 
-### 📊 Multiple Workflow Views
-- **Inbox Table View:** High density desktop table and mobile optimized card layout with inline actions and clean neutral status indicators.
-- **Kanban Board:** Multi column visual board (`To Do`, `In Progress`, `Completed`, `Blocked`) with ticket counts and fluid card actions.
-- **Analytics Dashboard:** Executive KPI metric cards, completion rate progress, interactive status donut chart, priority severity distribution, and workspace workload stats.
-
-### 🔍 Multi-Facet Filtering & Real Time Search
-- **Multi Select Filters:** Filter across multiple statuses (e.g. `To Do` + `In Progress` at the same time), priorities (`Urgent` + `High`), and technical categories simultaneously.
-- **Global Search:** Fast client side search across titles, descriptions, commands, and authors.
-- **Active Filter Chips:** Quick dismiss badges with one click clear all support.
-
-### 💳 Integrated Expense Tracker
-- **Monthly & Daily Grouping:** Log and monitor expenses with automatic day totals and month-by-month filtering.
-- **KPI Metrics:** Real time Total Spent and transaction count statistics.
-- **Custom Categories:** Manage and customize expense categories with the category management modal.
-- **Payment Methods:** Support for UPI, Credit Card, Debit Card, Cash, Net Banking, and more.
-
-### 📝 Daily Standup Notes
-- Capture daily progress logs, blocker notes, and personal scratchpad entries alongside your tickets.
-
-### 🎨 Human-Crafted Design System
-- **Theme Toggle:** Dark and Light mode support with smooth transitions and persistent state.
-- **High-Contrast Micro-Icons:** Clean SVG icons replace rainbow color clutter and dot templates.
-- **Neutral Idle Actions:** Subtle action buttons that highlight only on user interaction.
-
-### 🔐 Authentication & Account Management
-- **Supabase Auth:** Secure authentication with email, password, and session persistence.
-- **Password Strength Meter:** Real-time feedback meter inspired by enterprise account registration flows.
-- **User Settings Modal:** Quick profile settings, username management, and session logout.
+Instead of keeping tickets in one tool, standup notes in another, and personal or project expenses in a spreadsheet, TicketFlow brings everything into a single, clean workspace. The interface follows a minimalist black and white theme with high contrast typography and smooth transitions between views.
 
 ---
 
-## 🛠️ Tech Stack
+## What TicketFlow Does
 
-| Layer | Technology |
-|---|---|
-| **Framework** | [Next.js 16](https://nextjs.org/) (App Router, Server & Client Components) |
-| **UI Library** | [React 19](https://react.dev/) |
-| **API Layer** | [GraphQL Yoga](https://the-guild.dev/graphql/yoga-server) (`/api/graphql`) |
-| **Database & Auth** | [Supabase](https://supabase.com/) (PostgreSQL) |
-| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) |
-| **Language** | [TypeScript 5](https://www.typescriptlang.org/) |
+### Ticket Management
+Every ticket gets an automatic four digit reference ID starting from 1001. Tickets are organized by project workspaces so you can isolate work between different repositories or view everything combined. You can store execution commands, technical categories, priority tags, and descriptions. Opening any ticket updates the browser link, allowing you to share the exact ticket directly with a teammate using a quick URL.
+
+### Multiple Views
+Work the way you prefer:
+* Inbox Table View: A structured table for desktop and a touch friendly card view for mobile.
+* Kanban Board: Move tasks across To Do, In Progress, Completed, and Blocked columns.
+* Analytics Dashboard: Review completion rates, priority distribution, and workspace workloads.
+
+### Consistency Activity Heatmap
+A GitHub style contribution heatmap tracks your day to day momentum over the past fourteen weeks. Developers can schedule daily task goals with one time completion checks to build steady habits and maintain delivery consistency without burn out.
+
+### Daily Standup Logs
+Keep clean records of daily progress, notes, and blockers alongside your active tasks. Useful for standup meetings and end of day reviews.
+
+### Expense Tracking and PDF Reports
+Record project expenditures by date, workspace, category, and payment method. The tracker calculates total spending, highest transactions, and daily averages. When you need to share or archive your spending, a single click exports your current filtered view into a formatted PDF complete with vector branding, metric cards, a category distribution chart, and daily trend visuals.
+
+### Human Centered Design
+Built with an interface that stays quiet and out of your way. Dark and light themes are fully supported with zero neon gradients or noisy colors. Modals respond to standard keyboard shortcuts such as Escape to close and Command Enter to submit.
 
 ---
 
-## 📁 Project Structure
+## Tech Stack
+
+* Framework: Next.js 16 with Turbopack and the App Router
+* Front End: React 19 and TypeScript 5
+* Styling: Tailwind CSS v4 with custom dark and light themes
+* API Layer: GraphQL Yoga running on Next.js route handlers
+* Database and Auth: Supabase with PostgreSQL
+* PDF Generation: jsPDF and AutoTable for client side vector exports
+
+---
+
+## Project Structure
 
 ```text
 ticket-portal/
+├── public/
+│   ├── ticket-icon.png
+│   ├── apple-touch-icon.png
+│   └── favicon.ico
 ├── src/
 │   ├── app/
 │   │   ├── api/
-│   │   │   ├── auth/lookup/     # Email lookup endpoint
-│   │   │   └── graphql/         # GraphQL Yoga endpoint (schema & resolvers)
-│   │   ├── globals.css          # Tailwind CSS configuration & theme tokens
-│   │   ├── layout.tsx           # Root layout & font definitions
-│   │   └── page.tsx             # Main portal page (views, state, handlers)
+│   │   │   ├── auth/lookup/          # User lookup endpoint
+│   │   │   └── graphql/              # GraphQL Yoga schema and resolvers
+│   │   ├── globals.css               # Theme tokens and base styles
+│   │   ├── layout.tsx                # Metadata, fonts, and root provider
+│   │   ├── opengraph-image.tsx       # Social share image generator
+│   │   └── page.tsx                  # Main workspace controller and deep linking
 │   ├── components/
-│   │   ├── Button.tsx           # Standardized button variants
-│   │   ├── ConfirmModal.tsx     # Destructive action confirmation dialog
-│   │   ├── DailyNotes.tsx       # Standup notes editor & logs
-│   │   ├── DashboardView.tsx    # Analytics & KPI dashboard
-│   │   ├── ExpenseTracker.tsx   # Expense tracker view & statistics
-│   │   ├── ExpenseModal.tsx     # Create / Edit expense modal
-│   │   ├── ExpenseCategoryModal.tsx # Manage expense categories
-│   │   ├── InboxTable.tsx       # Inbox table & mobile list view
-│   │   ├── KanbanBoard.tsx      # Kanban board workflow view
-│   │   ├── LoginScreen.tsx      # Authentication (Sign In & Sign Up)
-│   │   ├── Sidebar.tsx          # Navigation, workspace switcher & multi-filters
-│   │   ├── TicketModal.tsx      # Ticket view & edit modal
-│   │   └── WorkspaceModal.tsx   # Workspace creation modal
+│   │   ├── ActivityHeatmapModal.tsx  # Contribution heatmap and task confirmations
+│   │   ├── Button.tsx                # Standard button component
+│   │   ├── ConfirmModal.tsx          # Confirmation dialogs
+│   │   ├── DailyNotes.tsx            # Daily work log editor
+│   │   ├── DashboardView.tsx         # Analytics and KPI view
+│   │   ├── ExpenseCategoryModal.tsx  # Custom expense category manager
+│   │   ├── ExpenseModal.tsx          # Expense creation and edit form
+│   │   ├── ExpenseTracker.tsx        # Expense tracker, metrics, and export button
+│   │   ├── InboxTable.tsx            # Inbox table and mobile touch cards
+│   │   ├── KanbanBoard.tsx           # Multi column task board
+│   │   ├── LoginScreen.tsx           # Authentication view
+│   │   ├── Sidebar.tsx               # Navigation, workspace switcher, and filters
+│   │   ├── TicketModal.tsx           # Ticket view and edit modal
+│   │   ├── Toast.tsx                 # Non intrusive notification banners
+│   │   └── WorkspaceModal.tsx        # Workspace management dialog
 │   ├── context/
-│   │   └── AuthContext.tsx      # Supabase authentication provider
+│   │   └── AuthContext.tsx           # Supabase session and user state
 │   ├── lib/
-│   │   ├── graphql-client.ts    # Frontend GraphQL query & mutation client
-│   │   └── supabase.ts          # Supabase client initialization
+│   │   ├── generateExpensePdf.ts     # Client side PDF report generator
+│   │   ├── graphql-client.ts         # GraphQL client utilities
+│   │   └── supabase.ts               # Supabase client setup
 │   └── types/
-│       └── index.ts             # TypeScript interfaces & domain models
-├── public/                      # Static assets
+│       └── index.ts                  # Shared TypeScript interfaces
 ├── package.json
-├── tsconfig.json
-└── README.md
+└── tsconfig.json
 ```
 
 ---
 
-## 🚦 Getting Started
+## Getting Started
 
 ### Prerequisites
-- Node.js 18.17+ or later
-- npm, pnpm, or yarn
-- A [Supabase](https://supabase.com/) project
+
+* Node.js 18.17 or later
+* npm, pnpm, or yarn
+* A Supabase project
 
 ### 1. Clone the repository
+
 ```bash
-git clone https://github.com/your-username/ticket-portal.git
-cd ticket-portal
+git clone https://github.com/nithiljn/TicketPortal.git
+cd TicketPortal
 ```
 
 ### 2. Install dependencies
+
 ```bash
 npm install
 ```
 
-### 3. Environment Variables
+### 3. Configure environment variables
+
 Create a `.env.local` file in the root directory:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-### 4. Database Setup (Supabase)
-Run the following SQL in your Supabase SQL Editor:
+### 4. Database Setup
+
+Run the following SQL commands in your Supabase SQL Editor:
 
 ```sql
 -- Tickets Table
 create table public.tickets (
   id uuid default gen_random_uuid() primary key,
+  ticket_id varchar(10) unique,
   title text not null,
   description text default '',
   commands text default '',
@@ -144,8 +145,8 @@ create table public.tickets (
   priority text not null default 'MEDIUM',
   category text not null default 'DEV',
   project_name text not null default 'General',
-  created_by text not null default 'James Nithil',
-  updated_by text not null default 'James Nithil',
+  created_by text not null default 'User',
+  updated_by text not null default 'User',
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
@@ -155,7 +156,7 @@ create table public.daily_notes (
   id uuid default gen_random_uuid() primary key,
   date text not null,
   content text not null,
-  created_by text not null default 'James Nithil',
+  created_by text not null default 'User',
   created_at timestamptz default now() not null
 );
 
@@ -185,35 +186,23 @@ create table public.expense_categories (
 ```
 
 ### 5. Run the development server
+
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open http://localhost:3000 in your browser to view the application.
 
 ---
 
-## 📜 Available Scripts
+## Keyboard Shortcuts
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Starts local Next.js development server at `localhost:3000` |
-| `npm run build` | Compiles and builds production-optimized bundle |
-| `npm run start` | Starts production server after build |
-| `npm run lint` | Runs ESLint validation across codebase |
+* Command + Enter (or Ctrl + Enter): Save and submit open ticket forms
+* Escape: Close open modals and dialogs
+* Command + N (or Ctrl + N): Open new ticket creation modal
 
 ---
 
-## ⌨️ Shortcuts Reference
-
-| Shortcut | Action |
-|---|---|
-| `⌘ / Ctrl + Enter` | Save / Submit ticket form inside modal |
-| `Esc` | Dismiss open dialogs and modals |
-| `Click on row` | Open ticket details in view mode |
-
----
-
-## 📄 License
+## License
 
 This project is private and maintained for personal engineering workflow tracking.

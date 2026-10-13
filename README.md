@@ -205,4 +205,4 @@ Open http://localhost:3000 in your browser to view the application.
 
 ## License
 
-This project is private and maintained for personal engineering workflow tracking.
+This project is open source and available under the [MIT License](LICENSE).

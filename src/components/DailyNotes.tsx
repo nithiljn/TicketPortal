@@ -16,6 +16,14 @@ interface PlanItem {
   id: string
   text: string
   completed: boolean
+  completedAt?: string
+}
+
+interface ParsedTask {
+  isCheckbox: boolean
+  text: string
+  completed: boolean
+  completedAt: string | null
 }
 
 // Parse checklist statistics from note content
@@ -38,14 +46,73 @@ function getNoteStats(content: string) {
   return { total, completed, percentage }
 }
 
-// Mark checkbox as completed in markdown note content
-function markNoteTaskCompleted(content: string, lineIndex: number): string {
+// Parse single markdown line for task state and completion metadata
+function parseTaskLine(line: string): ParsedTask {
+  const isChecked = /^\s*-\s*\[[xX]\]/.test(line)
+  const isUnchecked = /^\s*-\s*\[ \]/.test(line)
+  const isCheckbox = isChecked || isUnchecked
+
+  if (!isCheckbox) {
+    return {
+      isCheckbox: false,
+      text: line,
+      completed: false,
+      completedAt: null,
+    }
+  }
+
+  const match = line.match(/<!--\s*completed(?:At)?:\s*([^\s>]+)\s*-->/i)
+  const completedAt = match ? match[1] : null
+
+  const text = line
+    .replace(/^\s*-\s*\[[ xX]\]\s*/, '')
+    .replace(/<!--\s*completed(?:At)?:\s*([^\s>]+)\s*-->/i, '')
+    .trim()
+
+  return {
+    isCheckbox: true,
+    text,
+    completed: isChecked,
+    completedAt,
+  }
+}
+
+// Format completion timestamp for timeline display
+function formatCompletionTime(dateString?: string | null, fallbackDateStr?: string): string {
+  if (!dateString && !fallbackDateStr) return ''
+
+  try {
+    const d = dateString ? new Date(dateString) : new Date(fallbackDateStr || '')
+    if (isNaN(d.getTime())) return ''
+
+    const month = d.toLocaleDateString('en-US', { month: 'short' })
+    const day = d.getDate()
+    const year = d.getFullYear()
+    const currentYear = new Date().getFullYear()
+
+    const time = d.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    })
+
+    const yearPart = year !== currentYear ? `, ${year}` : ''
+    return `${month} ${day}${yearPart} at ${time}`
+  } catch {
+    return ''
+  }
+}
+
+// Mark checkbox as completed in markdown note content with completion timestamp
+function markNoteTaskCompleted(content: string, lineIndex: number, completedAt?: string): string {
   const lines = content.split('\n')
   if (lineIndex < 0 || lineIndex >= lines.length) return content
 
   const line = lines[lineIndex]
   if (/^\s*-\s*\[ \]/.test(line)) {
-    lines[lineIndex] = line.replace(/^(\s*-\s*)\[ \]/, '$1[x]')
+    const timestamp = completedAt || new Date().toISOString()
+    const cleanLine = line.replace(/^(\s*-\s*)\[ \]/, '$1[x]')
+    lines[lineIndex] = `${cleanLine} <!-- completed:${timestamp} -->`
   }
 
   return lines.join('\n')
@@ -126,7 +193,17 @@ export function DailyNotes({
   // Toggle checkbox of a pending plan item in compose form
   const handleTogglePlan = (id: string) => {
     setPlans((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, completed: !p.completed } : p))
+      prev.map((p) => {
+        if (p.id === id) {
+          const nextCompleted = !p.completed
+          return {
+            ...p,
+            completed: nextCompleted,
+            completedAt: nextCompleted ? new Date().toISOString() : undefined,
+          }
+        }
+        return p
+      })
     )
   }
 
@@ -143,8 +220,12 @@ export function DailyNotes({
     // Compile dynamic plans and additional notes into structured markdown
     const sections: string[] = []
     if (plans.length > 0) {
+      const nowIso = new Date().toISOString()
       const planLines = plans.map(
-        (p) => `- [${p.completed ? 'x' : ' '}] ${p.text}`
+        (p) =>
+          p.completed
+            ? `- [x] ${p.text} <!-- completed:${p.completedAt || nowIso} -->`
+            : `- [ ] ${p.text}`
       )
       sections.push(`TODAY'S PLANS:\n${planLines.join('\n')}`)
     }
@@ -171,7 +252,12 @@ export function DailyNotes({
 
     setIsConfirming(true)
     try {
-      const updated = markNoteTaskCompleted(confirmingTask.noteContent, confirmingTask.lineIndex)
+      const nowIso = new Date().toISOString()
+      const updated = markNoteTaskCompleted(
+        confirmingTask.noteContent,
+        confirmingTask.lineIndex,
+        nowIso
+      )
       await onUpdateNote(confirmingTask.noteId, updated)
       setConfirmingTask(null)
     } finally {
@@ -495,37 +581,42 @@ export function DailyNotes({
                   </div>
 
                   {/* Interactive Markdown Checkboxes Content with Confirmation */}
-                  <div className="text-xs font-mono leading-relaxed space-y-1.5">
+                  <div className="text-xs font-mono leading-relaxed space-y-2">
                     {note.content.split('\n').map((line, idx) => {
-                      const isChecked = /^\s*-\s*\[[xX]\]/.test(line)
-                      const isUnchecked = /^\s*-\s*\[ \]/.test(line)
-                      const isCheckbox = isChecked || isUnchecked
+                      const parsed = parseTaskLine(line)
 
-                      if (isCheckbox) {
-                        const label = line.replace(/^\s*-\s*\[[ xX]\]\s*/, '')
+                      if (parsed.isCheckbox) {
+                        const completionTime = parsed.completed
+                          ? formatCompletionTime(parsed.completedAt, note.createdAt)
+                          : null
+
                         return (
                           <div
                             key={idx}
                             onClick={() => {
                               // If task is not checked, prompt confirmation to mark done permanently
-                              if (!isChecked) {
+                              if (!parsed.completed) {
                                 setConfirmingTask({
                                   noteId: note.id,
                                   noteContent: note.content,
                                   lineIndex: idx,
-                                  taskText: label,
+                                  taskText: parsed.text,
                                 })
                               }
                             }}
-                            className={`flex items-start gap-2.5 py-1 select-none group/item transition ${
-                              isChecked
-                                ? 'cursor-default'
-                                : 'cursor-pointer hover:bg-white/[0.02] dark:hover:bg-white/[0.02] rounded-md px-1'
+                            className={`flex items-start gap-2.5 py-1.5 select-none group/item transition rounded-lg px-2 border ${
+                              parsed.completed
+                                ? isDark
+                                  ? 'bg-white/[0.02] border-white/[0.04]'
+                                  : 'bg-zinc-100/60 border-zinc-200/70'
+                                : isDark
+                                ? 'cursor-pointer hover:bg-white/[0.03] border-transparent hover:border-white/[0.08]'
+                                : 'cursor-pointer hover:bg-zinc-100 border-transparent hover:border-zinc-200'
                             }`}
                           >
                             <span
                               className={`mt-0.5 w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition ${
-                                isChecked
+                                parsed.completed
                                   ? isDark
                                     ? 'bg-white border-white text-zinc-950 shadow-2xs'
                                     : 'bg-zinc-900 border-zinc-900 text-white shadow-2xs'
@@ -533,28 +624,46 @@ export function DailyNotes({
                                   ? 'border-white/[0.25] group-hover/item:border-white/[0.5] bg-transparent'
                                   : 'border-zinc-300 group-hover/item:border-zinc-500 bg-white'
                               }`}
-                              title={isChecked ? 'Completed (locked to preserve consistency)' : 'Click to complete'}
+                              title={parsed.completed ? 'Completed (locked to preserve consistency)' : 'Click to complete'}
                             >
-                              {isChecked && (
+                              {parsed.completed && (
                                 <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                                   <polyline points="20 6 9 17 4 12" />
                                 </svg>
                               )}
                             </span>
-                            <span
-                              className={`flex-1 transition ${
-                                isChecked
-                                  ? 'line-through text-zinc-400 dark:text-zinc-500'
-                                  : isDark
-                                  ? 'text-zinc-200 group-hover/item:text-white'
-                                  : 'text-zinc-800 group-hover/item:text-zinc-950'
-                              }`}
-                            >
-                              {label}
-                            </span>
-                            {isChecked && (
+
+                            <div className="flex-1 min-w-0">
                               <span
-                                className="text-[10px] font-mono text-zinc-500 dark:text-zinc-500 shrink-0 select-none"
+                                className={`block break-words transition ${
+                                  parsed.completed
+                                    ? 'line-through text-zinc-400 dark:text-zinc-500'
+                                    : isDark
+                                    ? 'text-zinc-200 group-hover/item:text-white'
+                                    : 'text-zinc-800 group-hover/item:text-zinc-950'
+                                }`}
+                              >
+                                {parsed.text}
+                              </span>
+
+                              {/* Task Completion Date & Time */}
+                              {parsed.completed && completionTime && (
+                                <div className="mt-1 flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 dark:text-zinc-400">
+                                  <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                  <span>Completed on {completionTime}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {parsed.completed && (
+                              <span
+                                className={`text-[10px] font-mono px-2 py-0.5 rounded-md border shrink-0 select-none ${
+                                  isDark
+                                    ? 'bg-white/[0.04] text-zinc-400 border-white/[0.08]'
+                                    : 'bg-white text-zinc-600 border-zinc-200 shadow-2xs'
+                                }`}
                                 title="Completed and locked"
                               >
                                 Done

@@ -15,6 +15,7 @@ export interface Ticket {
   updatedBy: string
   createdAt: string
   updatedAt: string
+  isBookmarked?: boolean
 }
 
 export interface DailyNote {
@@ -35,6 +36,7 @@ export interface CreateTicketInput {
   category?: string
   projectName?: string
   createdBy?: string
+  isBookmarked?: boolean
 }
 
 export interface UpdateTicketInput {
@@ -47,6 +49,7 @@ export interface UpdateTicketInput {
   category?: string
   projectName?: string
   updatedBy?: string
+  isBookmarked?: boolean
 }
 
 export type UserRole = 'USER' | 'ADMIN' | 'VIEWER'

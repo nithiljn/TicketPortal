@@ -23,6 +23,7 @@ interface TicketModalProps {
   availableProjects: string[]
   currentProject: string
   theme?: 'dark' | 'light'
+  onToggleBookmark?: (ticket: Ticket) => Promise<void> | void
 }
 
 export function TicketModal({
@@ -34,6 +35,7 @@ export function TicketModal({
   availableProjects,
   currentProject,
   theme = 'dark',
+  onToggleBookmark,
 }: TicketModalProps) {
   const [isEditing, setIsEditing] = useState(initialMode === 'edit' || !existingTicket)
   const [title, setTitle] = useState('')
@@ -317,6 +319,33 @@ export function TicketModal({
               </div>
 
               <div className="flex items-center gap-2">
+                {onToggleBookmark && existingTicket && (
+                  <button
+                    type="button"
+                    onClick={() => onToggleBookmark(existingTicket)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-xl flex items-center gap-1.5 border transition cursor-pointer shadow-2xs ${
+                      existingTicket.isBookmarked
+                        ? isDark
+                          ? 'bg-white/[0.1] border-white/[0.2] text-white'
+                          : 'bg-zinc-900 border-zinc-900 text-white'
+                        : isDark
+                          ? 'bg-white/[0.04] border-white/[0.08] hover:border-white/[0.15] text-zinc-300 hover:text-white'
+                          : 'bg-zinc-100 border-zinc-200 hover:border-zinc-300 text-zinc-700 hover:text-zinc-900'
+                    }`}
+                    title={existingTicket.isBookmarked ? 'Remove bookmark' : 'Bookmark this ticket'}
+                  >
+                    <svg
+                      className="w-3.5 h-3.5"
+                      viewBox="0 0 24 24"
+                      fill={existingTicket.isBookmarked ? 'currentColor' : 'none'}
+                      stroke="currentColor"
+                      strokeWidth={existingTicket.isBookmarked ? '1.5' : '2'}
+                    >
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <span>{existingTicket.isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}

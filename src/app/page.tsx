@@ -94,6 +94,7 @@ export default function Home() {
   const [fromDate, setFromDate] = useState<string>('')
   const [toDate, setToDate] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false)
 
   // Expense Specific Filters
   const [selectedExpenseCategory, setSelectedExpenseCategory] = useState<string | 'ALL'>('ALL')
@@ -300,6 +301,7 @@ export default function Home() {
             updatedBy
             createdAt
             updatedAt
+            isBookmarked
           }
           dailyNotes(userEmail: $userEmail) {
             id
@@ -455,9 +457,12 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // 2. Filtered Tickets based on Facets + Date Range (From - To)
+  // 2. Filtered Tickets based on Facets + Date Range (From - To) + Bookmarks
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
+      if (showOnlyBookmarked && !t.isBookmarked) {
+        return false
+      }
       if (selectedStatuses.length > 0 && !selectedStatuses.includes(t.status)) {
         return false
       }
@@ -483,7 +488,12 @@ export default function Home() {
       }
       return true
     })
-  }, [tickets, selectedStatuses, selectedPriorities, selectedCategories, fromDate, toDate])
+  }, [tickets, showOnlyBookmarked, selectedStatuses, selectedPriorities, selectedCategories, fromDate, toDate])
+
+  // Count total bookmarked tickets
+  const bookmarkedCount = useMemo(() => {
+    return tickets.filter((t) => t.isBookmarked).length
+  }, [tickets])
 
   // 3. Facet Counts
   const ticketCounts = useMemo(() => {
@@ -602,6 +612,7 @@ export default function Home() {
             projectName
             updatedBy
             updatedAt
+            isBookmarked
           }
         }
       `
@@ -638,6 +649,7 @@ export default function Home() {
             projectName
             createdBy
             createdAt
+            isBookmarked
           }
         }
       `
@@ -684,6 +696,50 @@ export default function Home() {
       alert(err instanceof Error ? err.message : 'Failed to delete ticket')
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleToggleBookmark = async (ticket: Ticket) => {
+    const nextState = !ticket.isBookmarked
+    // Optimistic UI updates across ticket state and active modal
+    setTickets((prev) =>
+      prev.map((t) => (t.id === ticket.id ? { ...t, isBookmarked: nextState } : t))
+    )
+    if (editingTicket && editingTicket.id === ticket.id) {
+      setEditingTicket((prev) => (prev ? { ...prev, isBookmarked: nextState } : null))
+    }
+
+    try {
+      const mutation = /* GraphQL */ `
+        mutation ToggleBookmark($id: ID!) {
+          toggleBookmark(id: $id) {
+            id
+            isBookmarked
+          }
+        }
+      `
+      await fetchGraphQL(mutation, { id: ticket.id })
+      setToast({
+        isOpen: true,
+        title: nextState ? 'Ticket Bookmarked' : 'Bookmark Removed',
+        message: nextState
+          ? `Added "${ticket.title}" to bookmarked items`
+          : `Removed "${ticket.title}" from bookmarked items`,
+      })
+    } catch (err: unknown) {
+      console.error('Failed to toggle bookmark:', err)
+      // Rollback on error
+      setTickets((prev) =>
+        prev.map((t) => (t.id === ticket.id ? { ...t, isBookmarked: !nextState } : t))
+      )
+      if (editingTicket && editingTicket.id === ticket.id) {
+        setEditingTicket((prev) => (prev ? { ...prev, isBookmarked: !nextState } : null))
+      }
+      setToast({
+        isOpen: true,
+        title: 'Error',
+        message: 'Could not update bookmark. Please try again.',
+      })
     }
   }
 
@@ -1364,10 +1420,15 @@ export default function Home() {
                   selectedStatuses={selectedStatuses}
                   onRemoveStatus={(st) => handleSelectStatus(st)}
                   onClearAllStatuses={() => setSelectedStatuses([])}
+                  onToggleBookmark={handleToggleBookmark}
+                  showOnlyBookmarked={showOnlyBookmarked}
+                  onToggleBookmarkedFilter={() => setShowOnlyBookmarked((prev) => !prev)}
+                  bookmarkedCount={bookmarkedCount}
                   onClearAllFilters={() => {
                     setSelectedStatuses([])
                     setSelectedPriorities([])
                     setSelectedCategories([])
+                    setShowOnlyBookmarked(false)
                   }}
                   theme={theme}
                 />
@@ -1459,6 +1520,7 @@ export default function Home() {
         availableProjects={availableProjects}
         currentProject={selectedProject}
         theme={theme}
+        onToggleBookmark={handleToggleBookmark}
       />
 
       {/* Confirm Delete Ticket Modal */}

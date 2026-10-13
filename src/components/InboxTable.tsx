@@ -9,6 +9,10 @@ interface InboxTableProps {
   onViewTicket?: (ticket: Ticket) => void
   onEditTicket: (ticket: Ticket) => void
   onDeleteTicket: (ticket: Ticket) => void
+  onToggleBookmark?: (ticket: Ticket) => Promise<void> | void
+  showOnlyBookmarked?: boolean
+  onToggleBookmarkedFilter?: () => void
+  bookmarkedCount?: number
   selectedProject: string
   selectedCategory?: string
   selectedCategories?: string[]
@@ -49,6 +53,10 @@ export function InboxTable({
   onViewTicket,
   onEditTicket,
   onDeleteTicket,
+  onToggleBookmark,
+  showOnlyBookmarked = false,
+  onToggleBookmarkedFilter,
+  bookmarkedCount,
   selectedProject,
   selectedCategory,
   selectedCategories,
@@ -324,6 +332,55 @@ export function InboxTable({
             </button>
           )}
         </div>
+
+        {/* Bookmark Filter Toggle */}
+        {onToggleBookmarkedFilter && (
+          <button
+            type="button"
+            onClick={onToggleBookmarkedFilter}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all duration-150 cursor-pointer shrink-0 select-none ${
+              showOnlyBookmarked
+                ? isDark
+                  ? 'bg-white/[0.1] border-white/[0.2] text-white shadow-2xs'
+                  : 'bg-zinc-900 border-zinc-900 text-white shadow-2xs'
+                : isDark
+                  ? 'bg-white/[0.02] border-white/[0.08] hover:border-white/[0.15] text-zinc-400 hover:text-zinc-200'
+                  : 'bg-white border-zinc-200 hover:border-zinc-300 text-zinc-600 hover:text-zinc-900 shadow-2xs'
+            }`}
+            title={showOnlyBookmarked ? 'Show all tickets' : 'Show bookmarked tickets only'}
+          >
+            <svg
+              className={`w-3.5 h-3.5 transition-colors ${
+                showOnlyBookmarked
+                  ? 'text-white fill-current'
+                  : isDark ? 'text-zinc-400 fill-none' : 'text-zinc-500 fill-none'
+              }`}
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+            <span>Bookmarked</span>
+            {typeof bookmarkedCount === 'number' && bookmarkedCount > 0 && (
+              <span
+                className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold ${
+                  showOnlyBookmarked
+                    ? isDark
+                      ? 'bg-white/20 text-white'
+                      : 'bg-white/20 text-white'
+                    : isDark
+                      ? 'bg-white/[0.06] text-zinc-300'
+                      : 'bg-zinc-100 text-zinc-700'
+                }`}
+              >
+                {bookmarkedCount}
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Content Area */}
@@ -352,7 +409,12 @@ export function InboxTable({
               <table className="w-full text-left text-xs border-collapse">
                 <thead className={`border-b text-[10px] uppercase tracking-wider font-semibold select-none ${tableThead}`}>
                   <tr>
-                    <th className="py-2.5 px-4 w-20 font-mono">ID</th>
+                    <th className="py-2.5 px-3 w-10 text-center" title="Bookmark">
+                      <svg className="w-3.5 h-3.5 mx-auto opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                      </svg>
+                    </th>
+                    <th className="py-2.5 px-3 w-20 font-mono">ID</th>
                     <th className="py-2.5 px-4 w-32">Status</th>
                     <th className="py-2.5 px-4">Title & Details</th>
                     <th className="py-2.5 px-4">Workspace</th>
@@ -370,8 +432,44 @@ export function InboxTable({
                       onDoubleClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
                       onClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
                     >
+                      {/* Bookmark Toggle Column */}
+                      <td
+                        className="py-3 px-3 text-center whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onToggleBookmark?.(ticket)
+                          }}
+                          className={`p-1.5 rounded-lg border transition-all duration-150 active:scale-[0.96] cursor-pointer inline-flex items-center justify-center ${
+                            ticket.isBookmarked
+                              ? isDark
+                                ? 'bg-white/[0.08] border-white/[0.14] text-white hover:bg-white/[0.12] shadow-2xs'
+                                : 'bg-zinc-100 border-zinc-300 text-zinc-900 hover:bg-zinc-200 shadow-2xs'
+                              : isDark
+                                ? 'bg-transparent border-transparent hover:border-white/[0.08] text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04]'
+                                : 'bg-transparent border-transparent hover:border-zinc-200 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100'
+                          }`}
+                          title={ticket.isBookmarked ? 'Remove bookmark' : 'Bookmark this ticket'}
+                        >
+                          <svg
+                            className="w-3.5 h-3.5"
+                            viewBox="0 0 24 24"
+                            fill={ticket.isBookmarked ? 'currentColor' : 'none'}
+                            stroke="currentColor"
+                            strokeWidth={ticket.isBookmarked ? '1.5' : '2'}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                          </svg>
+                        </button>
+                      </td>
+
                       {/* ID */}
-                      <td className="py-3 px-4 whitespace-nowrap font-mono text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                      <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                         #{ticket.ticketId || ticket.id.slice(0, 4)}
                       </td>
 
@@ -512,6 +610,35 @@ export function InboxTable({
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onToggleBookmark?.(ticket)
+                        }}
+                        className={`p-1 rounded-lg border transition-all duration-150 active:scale-[0.96] cursor-pointer inline-flex items-center justify-center ${
+                          ticket.isBookmarked
+                            ? isDark
+                              ? 'bg-white/[0.08] border-white/[0.14] text-white shadow-2xs'
+                              : 'bg-zinc-100 border-zinc-300 text-zinc-900 shadow-2xs'
+                            : isDark
+                              ? 'border-transparent text-zinc-500 hover:text-zinc-200'
+                              : 'border-transparent text-zinc-400 hover:text-zinc-700'
+                        }`}
+                        title={ticket.isBookmarked ? 'Remove bookmark' : 'Bookmark this ticket'}
+                      >
+                        <svg
+                          className="w-3.5 h-3.5"
+                          viewBox="0 0 24 24"
+                          fill={ticket.isBookmarked ? 'currentColor' : 'none'}
+                          stroke="currentColor"
+                          strokeWidth={ticket.isBookmarked ? '1.5' : '2'}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                        </svg>
+                      </button>
                       {getPriorityBadge(ticket.priority)}
                     </div>
                   </div>

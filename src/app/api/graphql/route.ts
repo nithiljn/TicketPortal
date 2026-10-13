@@ -31,6 +31,7 @@ const typeDefs = /* GraphQL */ `
     updatedBy: String!
     createdAt: String!
     updatedAt: String!
+    isBookmarked: Boolean
   }
 
   type DailyNote {
@@ -66,6 +67,7 @@ const typeDefs = /* GraphQL */ `
     category: String
     projectName: String
     createdBy: String
+    isBookmarked: Boolean
   }
 
   input UpdateTicketInput {
@@ -78,6 +80,7 @@ const typeDefs = /* GraphQL */ `
     category: String
     projectName: String
     updatedBy: String
+    isBookmarked: Boolean
   }
 
   input CreateDailyNoteInput {
@@ -137,6 +140,7 @@ const typeDefs = /* GraphQL */ `
   type Mutation {
     createTicket(input: CreateTicketInput!): Ticket!
     updateTicket(id: ID!, input: UpdateTicketInput!): Ticket!
+    toggleBookmark(id: ID!): Ticket!
     deleteTicket(id: ID!, userEmail: String): Boolean!
     createDailyNote(input: CreateDailyNoteInput!): DailyNote!
     updateDailyNote(id: ID!, content: String!, userEmail: String): DailyNote!
@@ -166,6 +170,7 @@ interface TicketRow {
   updated_by: string
   created_at: string
   updated_at: string
+  is_bookmarked?: boolean | null
 }
 
 const COMMANDS_START = '<!-- TICKET_COMMANDS_START -->'
@@ -173,6 +178,24 @@ const COMMANDS_END = '<!-- TICKET_COMMANDS_END -->'
 
 const TICKET_REF_START = '<!-- TICKET_REF_ID:'
 const TICKET_REF_END = ' -->'
+
+const BOOKMARK_TAG = '<!-- TICKET_BOOKMARKED -->'
+
+function extractBookmark(rawDesc: string | null): { cleanDescription: string; isBookmarked: boolean } {
+  if (!rawDesc) return { cleanDescription: '', isBookmarked: false }
+  if (rawDesc.includes(BOOKMARK_TAG)) {
+    const cleanDescription = rawDesc.replace(/<!-- TICKET_BOOKMARKED -->/g, '').trim()
+    return { cleanDescription, isBookmarked: true }
+  }
+  return { cleanDescription: rawDesc, isBookmarked: false }
+}
+
+function packBookmark(desc: string | null, isBookmarked?: boolean | null): string | null {
+  if (!desc && !isBookmarked) return null
+  const clean = desc ? desc.replace(/<!-- TICKET_BOOKMARKED -->/g, '').trim() : ''
+  if (!isBookmarked) return clean || null
+  return clean ? `${clean}\n\n${BOOKMARK_TAG}` : BOOKMARK_TAG
+}
 
 function extractTicketRefId(rawDesc: string | null): string | null {
   if (!rawDesc) return null
@@ -232,15 +255,21 @@ function formatAuthor(raw: string): string {
 function formatTicket(row: TicketRow, fallbackSeq?: number) {
   const displayAuthor = formatAuthor(row.created_by)
   const { cleanDescription: rawCleanDesc, commands: extractedCmds } = extractCommands(row.description)
-  const embeddedId = extractTicketRefId(rawCleanDesc)
-  const cleanDescription = rawCleanDesc
-    ? rawCleanDesc.replace(/<!-- TICKET_REF_ID:.*? -->/g, '').trim()
+  const { cleanDescription: descWithoutBm, isBookmarked: embeddedBookmark } = extractBookmark(rawCleanDesc)
+  const embeddedId = extractTicketRefId(descWithoutBm)
+  const cleanDescription = descWithoutBm
+    ? descWithoutBm.replace(/<!-- TICKET_REF_ID:.*? -->/g, '').trim()
     : ''
 
   const finalCommands =
     row.commands !== undefined && row.commands !== null ? row.commands : extractedCmds
   const finalDescription =
     row.commands !== undefined && row.commands !== null ? cleanDescription || '' : cleanDescription
+
+  const isBookmarked =
+    row.is_bookmarked !== undefined && row.is_bookmarked !== null
+      ? Boolean(row.is_bookmarked)
+      : embeddedBookmark
 
   // Resolve 4-digit Ticket ID
   let resolvedTicketId = ''
@@ -273,6 +302,7 @@ function formatTicket(row: TicketRow, fallbackSeq?: number) {
     updatedBy: formatAuthor(row.updated_by || row.created_by),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    isBookmarked,
   }
 }
 
@@ -763,6 +793,7 @@ const resolvers = {
           category?: string
           projectName?: string
           createdBy?: string
+          isBookmarked?: boolean
         }
       }
     ) => {
@@ -795,7 +826,7 @@ const resolvers = {
 
       const assignedTicketId = (input.ticketId && input.ticketId.trim()) || String(nextSeq)
 
-      // 1. First attempt to insert with native 'ticket_id' and 'commands' columns
+      // 1. First attempt to insert with native 'ticket_id', 'commands', and 'is_bookmarked' columns
       const basePayload: Record<string, unknown> = {
         ticket_id: assignedTicketId,
         title: input.title,
@@ -808,6 +839,9 @@ const resolvers = {
         created_by: input.createdBy || 'Nithil',
         updated_by: input.createdBy || 'Nithil',
       }
+      if (input.isBookmarked !== undefined) {
+        basePayload.is_bookmarked = input.isBookmarked
+      }
 
       const { data, error } = await supabase
         .from('tickets')
@@ -816,14 +850,20 @@ const resolvers = {
         .single()
 
       if (error) {
-        // Fallback: If ticket_id or commands column doesn't exist yet on Supabase table (PGRST204)
+        // Fallback: If ticket_id, commands, or is_bookmarked column doesn't exist yet on Supabase table (PGRST204)
         delete basePayload.ticket_id
         if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('commands')) {
           delete basePayload.commands
         }
+        if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('is_bookmarked')) {
+          delete basePayload.is_bookmarked
+        }
 
         let packed = packDescription(input.description || null, input.commands || null)
         packed = packTicketRefId(packed, assignedTicketId)
+        if (input.isBookmarked) {
+          packed = packBookmark(packed, input.isBookmarked)
+        }
         basePayload.description = packed
 
         const { data: fbData, error: fbError } = await supabase
@@ -858,6 +898,7 @@ const resolvers = {
           category?: string
           projectName?: string
           updatedBy?: string
+          isBookmarked?: boolean
         }
       }
     ) => {
@@ -871,6 +912,7 @@ const resolvers = {
       if (input.category !== undefined) updateData.category = input.category
       if (input.projectName !== undefined) updateData.project_name = input.projectName
       if (input.updatedBy !== undefined) updateData.updated_by = input.updatedBy
+      if (input.isBookmarked !== undefined) updateData.is_bookmarked = input.isBookmarked
 
       const { data, error } = await supabase
         .from('tickets')
@@ -896,6 +938,16 @@ const resolvers = {
           updateData.description = packDescription(baseDesc, input.commands)
           shouldRetry = true
         }
+        if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('is_bookmarked')) {
+          delete updateData.is_bookmarked
+          let baseDesc = (updateData.description as string | undefined) ?? input.description
+          if (baseDesc === undefined) {
+            const { data: cur } = await supabase.from('tickets').select('description').eq('id', id).single()
+            baseDesc = cur?.description || null
+          }
+          updateData.description = packBookmark(baseDesc ?? null, input.isBookmarked)
+          shouldRetry = true
+        }
 
         if (shouldRetry) {
           const { data: fbData, error: fbError } = await supabase
@@ -914,6 +966,56 @@ const resolvers = {
         throw new Error(error.message)
       }
       return formatTicket(data as TicketRow)
+    },
+
+    toggleBookmark: async (
+      _: unknown,
+      { id }: { id: string }
+    ) => {
+      const { data: cur, error: fetchErr } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (fetchErr || !cur) {
+        throw new Error(fetchErr?.message || 'Ticket not found')
+      }
+
+      const currentRow = cur as TicketRow
+      const currentBookmarked =
+        currentRow.is_bookmarked !== undefined && currentRow.is_bookmarked !== null
+          ? Boolean(currentRow.is_bookmarked)
+          : (currentRow.description || '').includes(BOOKMARK_TAG)
+
+      const nextBookmarked = !currentBookmarked
+
+      // 1. Try updating is_bookmarked column
+      const { data, error } = await supabase
+        .from('tickets')
+        .update({ is_bookmarked: nextBookmarked })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (!error && data) {
+        return formatTicket(data as TicketRow)
+      }
+
+      // 2. Fallback: embed bookmark tag into description
+      const updatedDesc = packBookmark(currentRow.description, nextBookmarked)
+      const { data: fbData, error: fbError } = await supabase
+        .from('tickets')
+        .update({ description: updatedDesc })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (fbError || !fbData) {
+        throw new Error(fbError?.message || 'Failed to update bookmark')
+      }
+
+      return formatTicket(fbData as TicketRow)
     },
 
     deleteTicket: async (

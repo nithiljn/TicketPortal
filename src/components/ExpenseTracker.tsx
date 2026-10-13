@@ -146,6 +146,7 @@ export function ExpenseTracker({
   const [internalCategory, setInternalCategory] = useState<string>('ALL')
   const [internalPaymentMethod, setInternalPaymentMethod] = useState<string>('ALL')
   const [internalHighExpense, setInternalHighExpense] = useState<boolean>(false)
+  const [viewingExpense, setViewingExpense] = useState<Expense | null>(null)
 
   const activeMonth = propMonth !== undefined ? propMonth : internalMonth
   const handleMonthChange = (m: string) => {
@@ -783,9 +784,11 @@ export function ExpenseTracker({
                     return (
                       <div
                         key={exp.id}
-                        className={`p-3.5 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition ${
-                          isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-zinc-50/70'
+                        onDoubleClick={() => setViewingExpense(exp)}
+                        className={`p-3.5 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition cursor-pointer select-none ${
+                          isDark ? 'hover:bg-white/[0.04]' : 'hover:bg-zinc-50'
                         }`}
+                        title="Double-click to view receipt details"
                       >
                         {/* Left Info */}
                         <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -826,9 +829,11 @@ export function ExpenseTracker({
                             </div>
 
                             {exp.notes && (
-                              <p className="text-[11px] text-zinc-500 line-clamp-1">
-                                {exp.notes}
-                              </p>
+                              <div className="mt-1">
+                                <p className="text-[11px] text-zinc-400 whitespace-pre-line line-clamp-2 leading-relaxed">
+                                  {exp.notes}
+                                </p>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -845,9 +850,34 @@ export function ExpenseTracker({
                           </div>
 
                           <div className="flex items-center gap-1.5">
+                            {/* View Details Button */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setViewingExpense(exp)
+                              }}
+                              className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
+                                isDark
+                                  ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-300 hover:text-white'
+                                  : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 hover:text-zinc-950 shadow-2xs'
+                              }`}
+                              title="View Details"
+                            >
+                              <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                              </svg>
+                              <span>View</span>
+                            </button>
+
                             {/* Edit Button */}
                             <button
-                              onClick={() => onEditExpense(exp)}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onEditExpense(exp)
+                              }}
                               className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
                                 isDark
                                   ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-300 hover:text-white'
@@ -864,7 +894,11 @@ export function ExpenseTracker({
 
                             {/* Delete Button */}
                             <button
-                              onClick={() => onDeleteExpense(exp)}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onDeleteExpense(exp)
+                              }}
                               className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
                                 isDark
                                   ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-200'
@@ -889,6 +923,246 @@ export function ExpenseTracker({
           })
         )}
       </div>
+
+      {/* 5. Expense View Modal (Triggered by Double-Click or View Button) */}
+      {viewingExpense && (
+        <div
+          onClick={() => setViewingExpense(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={`w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${
+              isDark
+                ? 'bg-[#151518] border-white/[0.12] text-zinc-100 shadow-black/80'
+                : 'bg-white border-zinc-200 text-zinc-900 shadow-zinc-500/20'
+            }`}
+          >
+            {/* Modal Header */}
+            <div className={`px-5 py-4 border-b flex items-center justify-between ${
+              isDark ? 'border-white/[0.08] bg-white/[0.02]' : 'border-zinc-100 bg-zinc-50/60'
+            }`}>
+              <div className="flex items-center gap-2.5">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
+                  isDark ? 'bg-white/[0.04] border-white/[0.08]' : 'bg-zinc-100 border-zinc-200'
+                }`}>
+                  {renderPaymentMethodIcon(viewingExpense.paymentMethod)}
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold leading-none">
+                    Expense Details
+                  </h3>
+                  <span className="text-[11px] text-zinc-500 mt-1 block font-mono">
+                    #{viewingExpense.projectName} • {viewingExpense.date}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const exp = viewingExpense
+                    setViewingExpense(null)
+                    onEditExpense(exp)
+                  }}
+                  className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition cursor-pointer inline-flex items-center gap-1.5 ${
+                    isDark
+                      ? 'border-white/[0.1] hover:bg-white/[0.08] text-zinc-300'
+                      : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700'
+                  }`}
+                  title="Edit this expense"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                  <span>Edit</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewingExpense(null)}
+                  className={`p-1.5 rounded-lg transition cursor-pointer ${
+                    isDark ? 'hover:bg-white/[0.08] text-zinc-400 hover:text-white' : 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900'
+                  }`}
+                  title="Close modal"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto space-y-4 custom-scrollbar">
+              {/* Hero Amount & Title Card */}
+              <div className={`p-4 rounded-xl border ${
+                isDark ? 'bg-black/30 border-white/[0.06]' : 'bg-zinc-50 border-zinc-200/80'
+              }`}>
+                <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1">
+                  Total Amount Paid
+                </div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <div className="text-2xl font-extrabold font-mono tracking-tight text-zinc-950 dark:text-white">
+                    {formatMoney(Number(viewingExpense.amount))}
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${
+                    isDark ? 'bg-white/[0.06] text-zinc-200 border-white/[0.1]' : 'bg-zinc-200 text-zinc-800 border-zinc-300'
+                  }`}>
+                    {PAYMENT_METHOD_LABELS[viewingExpense.paymentMethod] || viewingExpense.paymentMethod}
+                  </span>
+                </div>
+                <div className="mt-2 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                  {viewingExpense.title}
+                </div>
+              </div>
+
+              {/* Transaction Attributes Grid */}
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
+                <div className={`p-3 rounded-xl border ${
+                  isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
+                }`}>
+                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1">
+                    Category
+                  </span>
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">{viewingExpense.category}</span>
+                </div>
+                <div className={`p-3 rounded-xl border ${
+                  isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
+                }`}>
+                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1">
+                    Workspace
+                  </span>
+                  <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100">#{viewingExpense.projectName}</span>
+                </div>
+                <div className={`p-3 rounded-xl border ${
+                  isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
+                }`}>
+                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1">
+                    Date
+                  </span>
+                  <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100">{viewingExpense.date}</span>
+                </div>
+                <div className={`p-3 rounded-xl border ${
+                  isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
+                }`}>
+                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1">
+                    Currency
+                  </span>
+                  <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100">{viewingExpense.currency || 'INR'}</span>
+                </div>
+              </div>
+
+              {/* Receipt Breakdown & Notes Card */}
+              <div className={`p-4 rounded-xl border ${
+                isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
+              }`}>
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    Receipt Breakdown & Remarks
+                  </span>
+                  {viewingExpense.notes && (
+                    <span className="text-[10px] font-mono text-zinc-500">
+                      {viewingExpense.notes.split('\n').filter((l) => l.trim().length > 0).length} entries
+                    </span>
+                  )}
+                </div>
+
+                {viewingExpense.notes ? (
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+                    {viewingExpense.notes.split('\n').map((line, idx) => {
+                      const trimmed = line.trim()
+                      if (!trimmed) return null
+                      const isBullet = trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')
+                      const cleanContent = isBullet ? trimmed.replace(/^[•\-*]\s*/, '') : trimmed
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs leading-relaxed transition ${
+                            isDark
+                              ? 'bg-black/30 border-white/[0.05] text-zinc-300'
+                              : 'bg-white border-zinc-200/70 text-zinc-800'
+                          }`}
+                        >
+                          <span className="text-zinc-400 dark:text-zinc-500 font-mono text-xs shrink-0 select-none mt-0.5">•</span>
+                          <span className="flex-1 whitespace-pre-wrap">{cleanContent}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-500 italic py-1">
+                    No receipt remarks or breakdown notes recorded for this transaction.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className={`p-4 border-t flex items-center justify-between gap-3 ${
+              isDark ? 'border-white/[0.08] bg-white/[0.02]' : 'border-zinc-100 bg-zinc-50/60'
+            }`}>
+              <button
+                type="button"
+                onClick={() => {
+                  const exp = viewingExpense
+                  setViewingExpense(null)
+                  onDeleteExpense(exp)
+                }}
+                className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer inline-flex items-center gap-1.5 ${
+                  isDark
+                    ? 'border-white/[0.08] hover:border-red-500/30 bg-white/[0.02] hover:bg-red-500/10 text-zinc-400 hover:text-red-400'
+                    : 'border-zinc-200 hover:border-red-300 bg-white hover:bg-red-50 text-zinc-600 hover:text-red-600 shadow-2xs'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                <span>Delete</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const exp = viewingExpense
+                    setViewingExpense(null)
+                    onEditExpense(exp)
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer inline-flex items-center gap-1.5 ${
+                    isDark
+                      ? 'bg-white hover:bg-zinc-100 text-zinc-950 border border-white shadow-xs'
+                      : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900 shadow-xs'
+                  }`}
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                  <span>Edit Expense</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewingExpense(null)}
+                  className={`px-3.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+                    isDark
+                      ? 'bg-white/[0.08] hover:bg-white/[0.14] text-zinc-200 border-white/[0.1]'
+                      : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200 shadow-2xs'
+                  }`}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

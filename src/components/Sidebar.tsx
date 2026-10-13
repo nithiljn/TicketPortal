@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { TicketStatus, TicketPriority, AuthUser } from '@/types'
 import { Button } from '@/components/Button'
+import packageInfo from '../../package.json'
 
 const SIDEBAR_PAYMENT_METHODS: { id: string; label: string }[] = [
   { id: 'ALL', label: 'All Methods' },
@@ -311,12 +312,21 @@ export function Sidebar({
                 </svg>
               </div>
               <div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <span className={`font-semibold text-xs tracking-wider ${textPrimary}`}>
                     TicketFlow
                   </span>
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[11px] font-medium border leading-none select-none ${
+                      isDark
+                        ? 'bg-zinc-800/90 text-zinc-300 border-zinc-700/80 shadow-2xs'
+                        : 'bg-zinc-100 text-zinc-700 border-zinc-300/80 shadow-2xs'
+                    }`}
+                  >
+                    v{packageInfo.version}
+                  </span>
                 </div>
-                <span className={`block text-[11px] font-medium leading-none ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                <span className={`block text-[11px] font-medium leading-none mt-1 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   Maintain Daily Work
                 </span>
               </div>
@@ -980,6 +990,20 @@ export function Sidebar({
                       <span>Dark</span>
                     </button>
                   </div>
+                </div>
+
+                {/* App Version */}
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg text-xs">
+                  <span className={`font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Version</span>
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[11px] font-medium border leading-none select-none ${
+                      isDark
+                        ? 'bg-zinc-800/90 text-zinc-300 border-zinc-700/80 shadow-2xs'
+                        : 'bg-zinc-100 text-zinc-700 border-zinc-300/80 shadow-2xs'
+                    }`}
+                  >
+                    v{packageInfo.version}
+                  </span>
                 </div>
 
                 <div className={`my-1 border-t ${isDark ? 'border-white/[0.08]' : 'border-zinc-100'}`} />

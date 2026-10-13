@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Ticket, TicketStatus, TicketPriority } from '@/types'
 
 interface InboxTableProps {
@@ -77,6 +77,47 @@ export function InboxTable({
   theme = 'dark',
 }: InboxTableProps) {
   const isDark = theme === 'dark'
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  // Reset to first page when tickets count or filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [
+    tickets.length,
+    selectedProject,
+    selectedCategory,
+    selectedCategories?.length,
+    selectedPriority,
+    selectedPriorities?.length,
+    selectedStatus,
+    selectedStatuses?.length,
+    showOnlyBookmarked,
+  ])
+
+  const totalPages = Math.max(1, Math.ceil(tickets.length / pageSize))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const startIndex = (safeCurrentPage - 1) * pageSize
+  const endIndex = Math.min(startIndex + pageSize, tickets.length)
+
+  const paginatedTickets = useMemo(() => {
+    return tickets.slice(startIndex, endIndex)
+  }, [tickets, startIndex, endIndex])
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1)
+    }
+    if (safeCurrentPage <= 3) {
+      return [1, 2, 3, 4, '...', totalPages]
+    }
+    if (safeCurrentPage >= totalPages - 2) {
+      return [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages]
+    }
+    return [1, '...', safeCurrentPage - 1, safeCurrentPage, safeCurrentPage + 1, '...', totalPages]
+  }, [safeCurrentPage, totalPages])
 
   const activeStatuses = selectedStatuses ?? (selectedStatus && selectedStatus !== 'ALL' ? [selectedStatus] : [])
   const activePriorities = selectedPriorities ?? (selectedPriority && selectedPriority !== 'ALL' ? [selectedPriority] : [])
@@ -425,7 +466,7 @@ export function InboxTable({
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${tableRowDivide}`}>
-                  {tickets.map((ticket) => (
+                  {paginatedTickets.map((ticket) => (
                     <tr
                       key={ticket.id}
                       className={`transition-colors group cursor-pointer ${tableRowHover}`}
@@ -586,7 +627,7 @@ export function InboxTable({
 
             {/* Mobile Touch-Friendly Card List (Shown only on small screens) */}
             <div className="sm:hidden space-y-2.5">
-              {tickets.map((ticket) => (
+              {paginatedTickets.map((ticket) => (
                 <div
                   key={ticket.id}
                   onDoubleClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
@@ -712,6 +753,159 @@ export function InboxTable({
                 </div>
               ))}
             </div>
+
+            {/* Pagination Footer */}
+            {tickets.length > 0 && (
+              <div
+                className={`mt-4 pt-3.5 border-t flex flex-col sm:flex-row items-center justify-between gap-3 text-xs select-none ${
+                  isDark ? 'border-white/[0.06] text-zinc-400' : 'border-zinc-200 text-zinc-600'
+                }`}
+              >
+                {/* Left: Summary and Page Size Selector */}
+                <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
+                  <span>
+                    Showing{' '}
+                    <span className={`font-mono font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>
+                      {startIndex + 1}
+                    </span>{' '}
+                    to{' '}
+                    <span className={`font-mono font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>
+                      {endIndex}
+                    </span>{' '}
+                    of{' '}
+                    <span className={`font-mono font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>
+                      {tickets.length}
+                    </span>{' '}
+                    tickets
+                  </span>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-zinc-500">Rows per page:</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value))
+                        setCurrentPage(1)
+                      }}
+                      className={`px-2 py-1 rounded-lg border text-xs font-mono transition cursor-pointer outline-none ${
+                        isDark
+                          ? 'bg-black/40 border-white/[0.08] text-zinc-200 focus:border-white/[0.25]'
+                          : 'bg-white border-zinc-200 text-zinc-800 focus:border-zinc-400'
+                      }`}
+                    >
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Right: Page Navigation Buttons */}
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-1">
+                    {/* First Page */}
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={safeCurrentPage === 1}
+                      className={`p-1.5 rounded-lg border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                        isDark
+                          ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200'
+                          : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900'
+                      }`}
+                      title="First page"
+                    >
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="11 17 6 12 11 7" />
+                        <polyline points="18 17 13 12 18 7" />
+                      </svg>
+                    </button>
+
+                    {/* Previous Page */}
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={safeCurrentPage === 1}
+                      className={`p-1.5 rounded-lg border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                        isDark
+                          ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200'
+                          : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900'
+                      }`}
+                      title="Previous page"
+                    >
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                      </svg>
+                    </button>
+
+                    {/* Numeric Page Buttons */}
+                    {pageNumbers.map((p, idx) => {
+                      if (p === '...') {
+                        return (
+                          <span key={`dots-${idx}`} className="px-2 py-1 text-xs text-zinc-500 font-mono">
+                            ...
+                          </span>
+                        )
+                      }
+                      const isCurrent = p === safeCurrentPage
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setCurrentPage(Number(p))}
+                          className={`min-w-[28px] h-7 px-2 rounded-lg border text-xs font-mono font-medium transition cursor-pointer ${
+                            isCurrent
+                              ? isDark
+                                ? 'bg-white border-white text-zinc-950 shadow-2xs font-bold'
+                                : 'bg-zinc-900 border-zinc-900 text-white shadow-2xs font-bold'
+                              : isDark
+                                ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200'
+                                : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      )
+                    })}
+
+                    {/* Next Page */}
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safeCurrentPage === totalPages}
+                      className={`p-1.5 rounded-lg border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                        isDark
+                          ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200'
+                          : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900'
+                      }`}
+                      title="Next page"
+                    >
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+
+                    {/* Last Page */}
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={safeCurrentPage === totalPages}
+                      className={`p-1.5 rounded-lg border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                        isDark
+                          ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200'
+                          : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900'
+                      }`}
+                      title="Last page"
+                    >
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="13 17 18 12 13 7" />
+                        <polyline points="6 17 11 12 6 7" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

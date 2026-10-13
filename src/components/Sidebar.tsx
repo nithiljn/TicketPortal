@@ -386,7 +386,7 @@ export function Sidebar({
           </div>
 
           {/* Scrollable Navigation & Facets */}
-          <div className="flex-1 overflow-y-auto px-3 py-1 space-y-5 text-xs">
+          <div className="flex-1 overflow-y-auto px-3 py-1 space-y-5 text-xs custom-scrollbar">
             {/* Workspaces Facet */}
             <div>
               <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
@@ -597,7 +597,7 @@ export function Sidebar({
                       )}
                     </div>
                   </div>
-                  <div className="space-y-0.5 max-h-48 overflow-y-auto pr-0.5">
+                  <div className="space-y-0.5 max-h-48 overflow-y-auto pr-0.5 custom-scrollbar">
                     <button
                       onClick={() => {
                         onSelectExpenseCategory?.('ALL')

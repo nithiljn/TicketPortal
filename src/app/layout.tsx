@@ -82,8 +82,16 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${roboto.variable} ${roboto.className} h-full`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem('tp_theme')==='dark'){document.documentElement.classList.add('dark');}}catch(_){}`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
         <AuthProvider>{children}</AuthProvider>
       </body>

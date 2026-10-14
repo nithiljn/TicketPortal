@@ -588,7 +588,7 @@ export function InboxTable({
                               e.stopPropagation()
                               onViewTicket(ticket)
                             }}
-                            className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
+                            className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
                             title="View ticket details"
                           >
                             <svg
@@ -609,7 +609,7 @@ export function InboxTable({
                             e.stopPropagation()
                             onEditTicket(ticket)
                           }}
-                          className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
+                          className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
                           title="Edit ticket"
                         >
                           <svg
@@ -626,7 +626,7 @@ export function InboxTable({
                         </button>
                         <button
                           onClick={() => onDeleteTicket(ticket)}
-                          className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${deleteBtn}`}
+                          className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${deleteBtn}`}
                           title="Delete ticket"
                         >
                           <svg
@@ -752,7 +752,7 @@ export function InboxTable({
                             e.stopPropagation()
                             onViewTicket(ticket)
                           }}
-                          className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
+                          className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
                           title="View ticket details"
                         >
                           <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -767,7 +767,7 @@ export function InboxTable({
                           e.stopPropagation()
                           onEditTicket(ticket)
                         }}
-                        className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
+                        className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
                         title="Edit ticket"
                       >
                         <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -778,7 +778,7 @@ export function InboxTable({
                       </button>
                       <button
                         onClick={() => onDeleteTicket(ticket)}
-                        className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${deleteBtn}`}
+                        className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${deleteBtn}`}
                         title="Delete ticket"
                       >
                         <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

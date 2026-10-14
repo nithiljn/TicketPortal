@@ -58,6 +58,77 @@ export function TicketModal({
     setTimeout(() => setCopiedCommands(false), 2000)
   }
 
+  const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter') {
+      const target = e.currentTarget
+      const { selectionStart, value } = target
+      const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1
+      const currentLine = value.substring(lineStart, selectionStart)
+
+      if (currentLine.trim().startsWith('•') || currentLine.trim().startsWith('-')) {
+        e.preventDefault()
+        const isBullet = currentLine.trim().startsWith('•')
+        const marker = isBullet ? '• ' : '- '
+
+        // If the user pressed enter on an empty bullet line, exit list
+        if (currentLine.trim() === '•' || currentLine.trim() === '-') {
+          const before = value.substring(0, lineStart)
+          const after = value.substring(selectionStart)
+          setDescription(before + after)
+          return
+        }
+
+        const before = value.substring(0, selectionStart)
+        const after = value.substring(selectionStart)
+        const nextValue = `${before}\n${marker}${after}`
+        setDescription(nextValue)
+        setTimeout(() => {
+          target.selectionStart = target.selectionEnd = selectionStart + marker.length + 1
+        }, 0)
+      }
+    }
+  }
+
+  const handleCommandsKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter') {
+      const target = e.currentTarget
+      const { selectionStart, value } = target
+      const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1
+      const currentLine = value.substring(lineStart, selectionStart)
+
+      if (
+        currentLine.trim().startsWith('•') ||
+        currentLine.trim().startsWith('-') ||
+        currentLine.trim().startsWith('$')
+      ) {
+        e.preventDefault()
+        let marker = '• '
+        if (currentLine.trim().startsWith('$')) marker = '$ '
+        else if (currentLine.trim().startsWith('-')) marker = '- '
+
+        // If the user pressed enter on an empty marker line, exit list
+        if (
+          currentLine.trim() === '•' ||
+          currentLine.trim() === '-' ||
+          currentLine.trim() === '$'
+        ) {
+          const before = value.substring(0, lineStart)
+          const after = value.substring(selectionStart)
+          setCommands(before + after)
+          return
+        }
+
+        const before = value.substring(0, selectionStart)
+        const after = value.substring(selectionStart)
+        const nextValue = `${before}\n${marker}${after}`
+        setCommands(nextValue)
+        setTimeout(() => {
+          target.selectionStart = target.selectionEnd = selectionStart + marker.length + 1
+        }, 0)
+      }
+    }
+  }
+
   useEffect(() => {
     if (!existingTicket) {
       setIsEditing(true)
@@ -409,16 +480,48 @@ export function TicketModal({
               </div>
 
               {/* Description Display Card */}
-              <div className={`rounded-xl border p-4 space-y-1.5 ${
+              <div className={`rounded-xl border p-4 space-y-2.5 ${
                 isDark ? 'bg-black/30 border-white/[0.08]' : 'bg-zinc-50 border-zinc-200'
               }`}>
-                <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                  Description & Task Details
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                    Description & Task Details
+                  </span>
+                  {existingTicket.description && (
+                    <span className="text-[10px] font-mono text-zinc-500">
+                      {existingTicket.description.split('\n').filter((l) => l.trim().length > 0).length} entries
+                    </span>
+                  )}
+                </div>
                 {existingTicket.description ? (
-                  <div className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed text-zinc-800 dark:text-zinc-200 font-sans">
-                    {existingTicket.description}
-                  </div>
+                  existingTicket.description.split('\n').some((l) => /^[•\-*]/.test(l.trim())) ? (
+                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+                      {existingTicket.description.split('\n').map((line, idx) => {
+                        const trimmed = line.trim()
+                        if (!trimmed) return null
+                        const isBullet = trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')
+                        const cleanContent = isBullet ? trimmed.replace(/^[•\-*]\s*/, '') : trimmed
+
+                        return (
+                          <div
+                            key={idx}
+                            className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs leading-relaxed transition ${
+                              isDark
+                                ? 'bg-black/30 border-white/[0.05] text-zinc-300'
+                                : 'bg-white border-zinc-200/70 text-zinc-800'
+                            }`}
+                          >
+                            <span className="text-zinc-400 dark:text-zinc-500 font-mono text-xs shrink-0 select-none mt-0.5">•</span>
+                            <span className="flex-1 whitespace-pre-wrap font-sans">{cleanContent}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="max-h-56 overflow-y-auto pr-1 custom-scrollbar text-xs sm:text-sm whitespace-pre-wrap leading-relaxed text-zinc-800 dark:text-zinc-200 font-sans">
+                      {existingTicket.description}
+                    </div>
+                  )
                 ) : (
                   <p className="text-xs italic text-zinc-400 font-sans">
                     No description provided for this ticket.
@@ -426,14 +529,21 @@ export function TicketModal({
                 )}
               </div>
 
-              {/* Commands & Extra Details Display Card (Same clean style like Description) */}
-              <div className={`rounded-xl border p-4 space-y-2 ${
+              {/* Commands & Extra Details Display Card */}
+              <div className={`rounded-xl border p-4 space-y-2.5 ${
                 isDark ? 'bg-black/30 border-white/[0.08]' : 'bg-zinc-50 border-zinc-200'
               }`}>
                 <div className="flex items-center justify-between">
-                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                    Commands & Extra Details
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                      Commands & Extra Details
+                    </span>
+                    {existingTicket.commands && (
+                      <span className="text-[10px] font-mono text-zinc-500">
+                        {existingTicket.commands.split('\n').filter((l) => l.trim().length > 0).length} entries
+                      </span>
+                    )}
+                  </div>
                   {existingTicket.commands && (
                     <button
                       type="button"
@@ -466,8 +576,36 @@ export function TicketModal({
                 </div>
 
                 {existingTicket.commands ? (
-                  <div className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed text-zinc-800 dark:text-zinc-200 font-mono bg-black/20 dark:bg-black/40 p-3 rounded-lg border border-white/[0.04]">
-                    {existingTicket.commands}
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+                    {existingTicket.commands.split('\n').map((line, idx) => {
+                      const trimmed = line.trim()
+                      if (!trimmed) return null
+                      const isCmd = trimmed.startsWith('$')
+                      const isBullet = trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')
+                      const cleanContent = isCmd
+                        ? trimmed.replace(/^\$\s*/, '')
+                        : isBullet
+                          ? trimmed.replace(/^[•\-*]\s*/, '')
+                          : trimmed
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex items-start gap-2.5 p-2 rounded-lg border font-mono text-xs leading-relaxed transition ${
+                            isDark
+                              ? 'bg-black/40 border-white/[0.05] text-zinc-200'
+                              : 'bg-zinc-100/80 border-zinc-200 text-zinc-800'
+                          }`}
+                        >
+                          <span className={`font-mono text-xs shrink-0 select-none mt-0.5 ${
+                            isCmd ? 'text-emerald-500 font-semibold' : 'text-zinc-400 dark:text-zinc-500'
+                          }`}>
+                            {isCmd ? '$' : '•'}
+                          </span>
+                          <span className="flex-1 whitespace-pre-wrap select-all">{cleanContent}</span>
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : (
                   <p className="text-xs italic text-zinc-400 font-sans">
@@ -700,32 +838,76 @@ export function TicketModal({
 
               {/* Row 3: Description & Notes */}
               <div>
-                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelColor}`}>
-                  Description & Task Details
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
+                    Description & Task Details
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDescription((prev) => (prev ? `${prev}\n• ` : '• '))
+                    }}
+                    className={`text-[11px] font-medium transition cursor-pointer select-none inline-flex items-center gap-1 ${
+                      isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                  >
+                    <span>+ Add Bullet (•)</span>
+                  </button>
+                </div>
                 <textarea
                   rows={4}
-                  placeholder="Describe requirements, implementation notes, API endpoints, or reproduction steps..."
+                  placeholder={'Describe requirements, implementation notes, or breakdown, e.g.:\n• Implement authentication flow\n• Add unit tests and verify\n• Deploy to staging'}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className={`w-full rounded-xl border p-3.5 text-xs sm:text-sm focus:outline-none transition resize-y min-h-[100px] leading-relaxed font-sans ${inputBg}`}
-                />
-              </div>
-
-              {/* Row 4: Commands & Extra Details (Same clean styling like Description) */}
-              <div>
-                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelColor}`}>
-                  Commands & Extra Details
-                </label>
-                <textarea
-                  rows={4}
-                  placeholder="Store commands, execution steps, API queries, notes, or extra details for this ticket..."
-                  value={commands}
-                  onChange={(e) => setCommands(e.target.value)}
-                  className={`w-full rounded-xl border p-3.5 text-xs sm:text-sm focus:outline-none transition resize-y min-h-[100px] leading-relaxed font-mono ${inputBg}`}
+                  onKeyDown={handleDescriptionKeyDown}
+                  className={`w-full rounded-xl border p-3.5 text-xs sm:text-sm focus:outline-none transition min-h-[100px] max-h-[220px] resize-y overflow-y-auto leading-relaxed custom-scrollbar font-sans ${inputBg}`}
                 />
                 <p className="mt-1 text-[10px] text-zinc-500">
-                  Store terminal commands, setup steps, notes, or extra technical details needed for this ticket.
+                  Tip: Press Enter on a bullet line to automatically continue the next bullet.
+                </p>
+              </div>
+
+              {/* Row 4: Commands & Extra Details */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
+                    Commands & Extra Details
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCommands((prev) => (prev ? `${prev}\n• ` : '• '))
+                      }}
+                      className={`text-[11px] font-medium transition cursor-pointer select-none inline-flex items-center gap-1 ${
+                        isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-900'
+                      }`}
+                    >
+                      <span>+ Add Bullet (•)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCommands((prev) => (prev ? `${prev}\n$ ` : '$ '))
+                      }}
+                      className={`text-[11px] font-medium transition cursor-pointer select-none inline-flex items-center gap-1 ${
+                        isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-900'
+                      }`}
+                    >
+                      <span>+ Add Command ($)</span>
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  rows={4}
+                  placeholder={'Store commands, execution steps, or technical notes, e.g.:\n$ npm run build\n$ npx prisma migrate dev\n• Ensure Redis service is running'}
+                  value={commands}
+                  onChange={(e) => setCommands(e.target.value)}
+                  onKeyDown={handleCommandsKeyDown}
+                  className={`w-full rounded-xl border p-3.5 text-xs sm:text-sm focus:outline-none transition min-h-[100px] max-h-[220px] resize-y overflow-y-auto leading-relaxed custom-scrollbar font-mono ${inputBg}`}
+                />
+                <p className="mt-1 text-[10px] text-zinc-500">
+                  Tip: Press Enter on a bullet (•) or command ($) line to automatically continue on the next line.
                 </p>
               </div>
 

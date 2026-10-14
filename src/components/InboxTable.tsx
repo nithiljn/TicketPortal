@@ -543,7 +543,7 @@ export function InboxTable({
                           )}
                         </div>
                         {ticket.description && (
-                          <div className={`text-[11px] truncate mt-0.5 leading-relaxed ${ticketDesc}`}>
+                          <div className={`text-[11px] line-clamp-2 mt-0.5 leading-relaxed whitespace-pre-line ${ticketDesc}`}>
                             {ticket.description}
                           </div>
                         )}
@@ -581,6 +581,29 @@ export function InboxTable({
                         className="py-3 px-4 text-right space-x-1 whitespace-nowrap"
                         onClick={(e) => e.stopPropagation()}
                       >
+                        {onViewTicket && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onViewTicket(ticket)
+                            }}
+                            className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
+                            title="View ticket details"
+                          >
+                            <svg
+                              className="w-3.5 h-3.5 shrink-0 opacity-80"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            <span>View</span>
+                          </button>
+                        )}
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -706,7 +729,7 @@ export function InboxTable({
                       )}
                     </div>
                     {ticket.description && (
-                      <p className={`text-[11px] line-clamp-2 mt-0.5 ${ticketDesc}`}>
+                      <p className={`text-[11px] line-clamp-2 mt-0.5 whitespace-pre-line leading-relaxed ${ticketDesc}`}>
                         {ticket.description}
                       </p>
                     )}
@@ -723,6 +746,22 @@ export function InboxTable({
                       className="flex items-center gap-1.5"
                       onClick={(e) => e.stopPropagation()}
                     >
+                      {onViewTicket && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onViewTicket(ticket)
+                          }}
+                          className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
+                          title="View ticket details"
+                        >
+                          <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                          <span>View</span>
+                        </button>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation()

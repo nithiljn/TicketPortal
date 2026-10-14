@@ -381,6 +381,26 @@ function formatExpense(row: ExpenseRow) {
   }
 }
 
+export interface GraphQLContext {
+  currentUser?: {
+    id: string
+    email: string
+  } | null
+}
+
+function resolveTargetEmail(
+  argsEmail?: string | null,
+  context?: GraphQLContext
+): string | null {
+  if (context?.currentUser?.email) {
+    return context.currentUser.email
+  }
+  if (argsEmail && argsEmail.trim()) {
+    return argsEmail.trim().toLowerCase()
+  }
+  return null
+}
+
 // 2. Resolvers: Connect to Supabase PostgreSQL Database!
 const resolvers = {
   Query: {
@@ -393,14 +413,14 @@ const resolvers = {
         projectName?: string
         search?: string
         userEmail?: string
-      }
+      },
+      context?: GraphQLContext
     ) => {
-      // Security: Never return tickets if userEmail is missing or unauthenticated
-      if (!args.userEmail || !args.userEmail.trim()) {
+      // Security: Prioritize cryptographically verified token email over client-provided argument
+      const userEmail = resolveTargetEmail(args.userEmail, context)
+      if (!userEmail) {
         return []
       }
-
-      const userEmail = args.userEmail.trim().toLowerCase()
       const prefix = userEmail.split('@')[0]
 
       let query = supabase
@@ -454,15 +474,16 @@ const resolvers = {
       return rawRows.map((r) => formatTicket(r, seqMap.get(r.id)))
     },
 
-    projects: async (_: unknown, args: { userEmail?: string }) => {
+    projects: async (
+      _: unknown,
+      args: { userEmail?: string },
+      context?: GraphQLContext
+    ) => {
       const projectSet = new Set<string>()
-
-      // Security: Only return projects if userEmail is provided
-      if (!args.userEmail || !args.userEmail.trim()) {
+      const userEmail = resolveTargetEmail(args.userEmail, context)
+      if (!userEmail) {
         return []
       }
-
-      const userEmail = args.userEmail.trim().toLowerCase()
       const prefix = userEmail.split('@')[0]
 
       // 1. Check user-specific tickets for project names
@@ -565,14 +586,15 @@ const resolvers = {
 
     dailyNotes: async (
       _: unknown,
-      { date, userEmail }: { date?: string; userEmail?: string }
+      { date, userEmail }: { date?: string; userEmail?: string },
+      context?: GraphQLContext
     ) => {
-      // Security: Never return daily notes if userEmail is missing or unauthenticated
-      if (!userEmail || !userEmail.trim()) {
+      // Security: Prioritize cryptographically verified token email
+      const email = resolveTargetEmail(userEmail, context)
+      if (!email) {
         return []
       }
 
-      const email = userEmail.trim().toLowerCase()
       const prefix = email.split('@')[0]
 
       let query = supabase
@@ -618,13 +640,13 @@ const resolvers = {
         paymentMethod?: string
         month?: string
         search?: string
-      }
+      },
+      context?: GraphQLContext
     ) => {
-      if (!userEmail || !userEmail.trim()) {
+      const email = resolveTargetEmail(userEmail, context)
+      if (!email) {
         return []
       }
-
-      const email = userEmail.trim().toLowerCase()
       const prefix = email.split('@')[0]
 
       try {
@@ -717,15 +739,16 @@ const resolvers = {
 
     expenseCategories: async (
       _: unknown,
-      { userEmail }: { userEmail?: string }
+      { userEmail }: { userEmail?: string },
+      context?: GraphQLContext
     ) => {
       const categorySet = new Set<string>(DEFAULT_EXPENSE_CATEGORIES)
+      const email = resolveTargetEmail(userEmail, context)
 
-      if (!userEmail || !userEmail.trim()) {
+      if (!email) {
         return Array.from(categorySet)
       }
 
-      const email = userEmail.trim().toLowerCase()
       const prefix = email.split('@')[0]
 
       // 1. Fetch custom categories from expense_categories table
@@ -795,7 +818,8 @@ const resolvers = {
           createdBy?: string
           isBookmarked?: boolean
         }
-      }
+      },
+      context?: GraphQLContext
     ) => {
       // Determine unique 4-digit ticketId
       let nextSeq = 1001
@@ -836,8 +860,8 @@ const resolvers = {
         priority: input.priority || 'MEDIUM',
         category: input.category || 'DEV',
         project_name: input.projectName || 'General',
-        created_by: input.createdBy || 'Nithil',
-        updated_by: input.createdBy || 'Nithil',
+        created_by: context?.currentUser?.email || input.createdBy || 'Nithil',
+        updated_by: context?.currentUser?.email || input.createdBy || 'Nithil',
       }
       if (input.isBookmarked !== undefined) {
         basePayload.is_bookmarked = input.isBookmarked
@@ -1020,12 +1044,13 @@ const resolvers = {
 
     deleteTicket: async (
       _: unknown,
-      { id, userEmail }: { id: string; userEmail?: string }
+      { id, userEmail }: { id: string; userEmail?: string },
+      context?: GraphQLContext
     ) => {
-      if (!userEmail || !userEmail.trim()) {
-        throw new Error('Unauthorized: user email required to delete a ticket')
+      const email = resolveTargetEmail(userEmail, context)
+      if (!email) {
+        throw new Error('Unauthorized: valid user required to delete a ticket')
       }
-      const email = userEmail.trim().toLowerCase()
       const prefix = email.split('@')[0]
 
       let q = supabase.from('tickets').delete().eq('id', id)
@@ -1048,16 +1073,18 @@ const resolvers = {
 
     createDailyNote: async (
       _: unknown,
-      { input }: { input: { date?: string; content: string; createdBy?: string } }
+      { input }: { input: { date?: string; content: string; createdBy?: string } },
+      context?: GraphQLContext
     ) => {
       const today = new Date().toISOString().split('T')[0]
+      const author = context?.currentUser?.email || input.createdBy || 'Nithil'
       const { data, error } = await supabase
         .from('daily_notes')
         .insert([
           {
             date: input.date || today,
             content: input.content,
-            created_by: input.createdBy || 'Nithil',
+            created_by: author,
           },
         ])
         .select()
@@ -1072,7 +1099,8 @@ const resolvers = {
 
     updateDailyNote: async (
       _: unknown,
-      { id, content }: { id: string; content: string; userEmail?: string }
+      { id, content }: { id: string; content: string; userEmail?: string },
+      _context?: GraphQLContext
     ) => {
       const { data, error } = await supabase
         .from('daily_notes')
@@ -1090,12 +1118,13 @@ const resolvers = {
 
     deleteDailyNote: async (
       _: unknown,
-      { id, userEmail }: { id: string; userEmail?: string }
+      { id, userEmail }: { id: string; userEmail?: string },
+      context?: GraphQLContext
     ) => {
-      if (!userEmail || !userEmail.trim()) {
-        throw new Error('Unauthorized: user email required to delete a note')
+      const email = resolveTargetEmail(userEmail, context)
+      if (!email) {
+        throw new Error('Unauthorized: valid user required to delete a note')
       }
-      const email = userEmail.trim().toLowerCase()
       const prefix = email.split('@')[0]
 
       let q = supabase.from('daily_notes').delete().eq('id', id)
@@ -1118,14 +1147,15 @@ const resolvers = {
 
     createWorkspace: async (
       _: unknown,
-      { name, userEmail }: { name: string; userEmail?: string }
+      { name, userEmail }: { name: string; userEmail?: string },
+      context?: GraphQLContext
     ) => {
       const trimmed = name.trim()
       if (!trimmed) {
         throw new Error('Workspace name cannot be empty')
       }
 
-      const email = userEmail?.trim().toLowerCase()
+      const email = resolveTargetEmail(userEmail, context)
       const scopedName = email ? `${email}:::${trimmed}` : trimmed
 
       // Upsert so duplicate names across different users never error
@@ -1141,9 +1171,10 @@ const resolvers = {
 
     deleteWorkspace: async (
       _: unknown,
-      { name, userEmail }: { name: string; userEmail?: string }
+      { name, userEmail }: { name: string; userEmail?: string },
+      context?: GraphQLContext
     ) => {
-      const email = userEmail?.trim().toLowerCase()
+      const email = resolveTargetEmail(userEmail, context)
       const scopedName = email ? `${email}:::${name}` : name
 
       try {
@@ -1189,9 +1220,11 @@ const resolvers = {
           notes?: string
           createdBy?: string
         }
-      }
+      },
+      context?: GraphQLContext
     ) => {
       const today = new Date().toISOString().split('T')[0]
+      const author = context?.currentUser?.email || input.createdBy || 'Nithil'
       const payload = {
         title: input.title,
         amount: input.amount,
@@ -1201,7 +1234,7 @@ const resolvers = {
         payment_method: input.paymentMethod || 'UPI',
         project_name: input.projectName || 'General',
         notes: input.notes || null,
-        created_by: input.createdBy || 'Nithil',
+        created_by: author,
       }
 
       try {
@@ -1223,7 +1256,7 @@ const resolvers = {
             paymentMethod: input.paymentMethod || 'UPI',
             projectName: input.projectName || 'General',
             notes: input.notes || null,
-            createdBy: formatAuthor(input.createdBy || 'Nithil'),
+            createdBy: formatAuthor(author),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }
@@ -1244,7 +1277,7 @@ const resolvers = {
           paymentMethod: input.paymentMethod || 'UPI',
           projectName: input.projectName || 'General',
           notes: input.notes || null,
-          createdBy: formatAuthor(input.createdBy || 'Nithil'),
+          createdBy: formatAuthor(author),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }
@@ -1272,8 +1305,10 @@ const resolvers = {
           notes?: string
         }
         userEmail?: string
-      }
+      },
+      context?: GraphQLContext
     ) => {
+      const email = resolveTargetEmail(userEmail, context)
       const updateData: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
       }
@@ -1291,8 +1326,7 @@ const resolvers = {
       try {
         let q = supabase.from('expenses').update(updateData).eq('id', id)
 
-        if (userEmail) {
-          const email = userEmail.trim().toLowerCase()
+        if (email) {
           const prefix = email.split('@')[0]
           if (email === 'admin@ticketflow.io') {
             q = q.or(
@@ -1337,12 +1371,13 @@ const resolvers = {
 
     deleteExpense: async (
       _: unknown,
-      { id, userEmail }: { id: string; userEmail?: string }
+      { id, userEmail }: { id: string; userEmail?: string },
+      context?: GraphQLContext
     ) => {
-      if (!userEmail || !userEmail.trim()) {
-        throw new Error('Unauthorized: user email required to delete an expense')
+      const email = resolveTargetEmail(userEmail, context)
+      if (!email) {
+        throw new Error('Unauthorized: valid user required to delete an expense')
       }
-      const email = userEmail.trim().toLowerCase()
       const prefix = email.split('@')[0]
 
       try {
@@ -1371,11 +1406,12 @@ const resolvers = {
 
     createExpenseCategory: async (
       _: unknown,
-      { name, userEmail }: { name: string; userEmail?: string }
+      { name, userEmail }: { name: string; userEmail?: string },
+      context?: GraphQLContext
     ) => {
       const trimmed = name.trim()
       if (!trimmed) throw new Error('Category name cannot be empty')
-      const email = userEmail?.trim().toLowerCase() || 'nithil'
+      const email = resolveTargetEmail(userEmail, context) || 'nithil'
 
       try {
         await supabase
@@ -1390,9 +1426,10 @@ const resolvers = {
 
     deleteExpenseCategory: async (
       _: unknown,
-      { name, userEmail }: { name: string; userEmail?: string }
+      { name, userEmail }: { name: string; userEmail?: string },
+      context?: GraphQLContext
     ) => {
-      const email = userEmail?.trim().toLowerCase()
+      const email = resolveTargetEmail(userEmail, context)
       try {
         let q = supabase.from('expense_categories').delete().eq('name', name)
         if (email) {
@@ -1417,14 +1454,35 @@ const resolvers = {
   },
 }
 
-// 3. Create Yoga Server instance
-const { handleRequest } = createYoga({
+// 3. Create Yoga Server instance with Token Verification Context
+const { handleRequest } = createYoga<GraphQLContext>({
   schema: createSchema({
     typeDefs,
     resolvers,
   }),
   graphqlEndpoint: '/api/graphql',
   fetchAPI: { Response },
+  graphiql: process.env.NODE_ENV === 'development',
+  context: async ({ request }) => {
+    const authHeader = request.headers.get('authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7).trim()
+      try {
+        const { data, error } = await supabase.auth.getUser(token)
+        if (!error && data?.user?.email) {
+          return {
+            currentUser: {
+              id: data.user.id,
+              email: data.user.email.toLowerCase(),
+            },
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase token verification error:', err)
+      }
+    }
+    return { currentUser: null }
+  },
 })
 
 export async function GET(request: Request) {

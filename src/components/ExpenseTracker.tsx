@@ -26,6 +26,10 @@ interface ExpenseTrackerProps {
   maxAmount?: string
   searchQuery?: string
   onSelectWorkspace?: (ws: string) => void
+  onMinAmountChange?: (val: string) => void
+  onMaxAmountChange?: (val: string) => void
+  onExpenseSearchChange?: (val: string) => void
+  onClearAllFilters?: () => void
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -58,7 +62,7 @@ function getCategoryColor(category: string, index: number): string {
 }
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  UPI: 'UPI',
+  UPI: 'UPI / GPay',
   CREDIT_CARD: 'Credit Card',
   DEBIT_CARD: 'Debit Card',
   CASH: 'Cash',
@@ -134,6 +138,10 @@ export function ExpenseTracker({
   maxAmount = '',
   searchQuery = '',
   onSelectWorkspace,
+  onMinAmountChange,
+  onMaxAmountChange,
+  onExpenseSearchChange,
+  onClearAllFilters,
 }: ExpenseTrackerProps) {
   const isDark = theme === 'dark'
 
@@ -165,6 +173,52 @@ export function ExpenseTracker({
     setInternalPaymentMethod(pm)
     if (onSelectPaymentMethod) onSelectPaymentMethod(pm)
   }
+
+  const handleClearMonth = () => {
+    handleMonthChange('ALL')
+  }
+
+  const handleClearCategory = () => {
+    handleCategoryChange('ALL')
+  }
+
+  const handleClearPaymentMethod = () => {
+    handlePaymentMethodChange('ALL')
+  }
+
+  const handleClearWorkspace = () => {
+    onSelectWorkspace?.('ALL')
+  }
+
+  const handleClearAmount = () => {
+    onMinAmountChange?.('')
+    onMaxAmountChange?.('')
+  }
+
+  const handleClearSearch = () => {
+    onExpenseSearchChange?.('')
+  }
+
+  const handleClearAll = () => {
+    if (onClearAllFilters) {
+      onClearAllFilters()
+    }
+    handleMonthChange('ALL')
+    handleCategoryChange('ALL')
+    handlePaymentMethodChange('ALL')
+    onSelectWorkspace?.('ALL')
+    onMinAmountChange?.('')
+    onMaxAmountChange?.('')
+    onExpenseSearchChange?.('')
+  }
+
+  const activeFiltersCount =
+    (selectedProject !== 'ALL' ? 1 : 0) +
+    (activeMonth !== 'ALL' ? 1 : 0) +
+    (activeCategory !== 'ALL' ? 1 : 0) +
+    (activePaymentMethod !== 'ALL' ? 1 : 0) +
+    (Boolean(minAmount || maxAmount) ? 1 : 0) +
+    (Boolean(searchQuery && searchQuery.trim()) ? 1 : 0)
 
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc')
 
@@ -432,38 +486,243 @@ export function ExpenseTracker({
   const pillActive = isDark
     ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 font-semibold'
     : 'bg-emerald-50 border-emerald-300 text-emerald-700 font-semibold'
+  const subHeaderBorder = isDark ? 'border-white/[0.06] bg-[#09090b]' : 'border-zinc-200 bg-white'
+  const subHeaderTitle = isDark ? 'text-zinc-200 font-semibold' : 'text-zinc-800 font-semibold'
+  const categoryBadge = isDark
+    ? 'bg-white/[0.03] border-white/[0.08] text-zinc-300'
+    : 'bg-zinc-50 border-zinc-200 text-zinc-700'
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto w-full">
-      {/* 1. Header & Actions Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-base transition-all shrink-0 ${
-              isDark
-                ? 'bg-zinc-800 border border-zinc-700/80 text-white shadow-xs'
-                : 'bg-zinc-900 border border-zinc-800 text-white shadow-xs'
-            }`}>
-              ₹
-            </div>
-            <div>
-              <h1 className="text-base sm:text-lg font-bold tracking-tight">
-                Expense Tracker
-              </h1>
-              <p className="text-xs text-zinc-500">
-                Monitor spending, manage categories, and review daily expenditure
-              </p>
-            </div>
-          </div>
+    <div className="flex flex-col flex-1 min-w-0">
+      {/* Sub-header inside view (Matches InboxTable filtration bar) */}
+      <div className={`px-4 sm:px-6 py-2.5 sm:py-3 border-b flex items-center justify-between text-xs shrink-0 ${subHeaderBorder}`}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={subHeaderTitle}>
+            {selectedProject === 'ALL' ? 'All Workspaces' : selectedProject}
+          </span>
+          <span className={isDark ? 'text-zinc-600' : 'text-zinc-300'}>•</span>
+          <span className="font-mono text-[11px] text-zinc-500">
+            {filteredExpenses.length} {filteredExpenses.length === 1 ? 'item' : 'items'}
+          </span>
+
+          {/* Active Workspace Filter Chip */}
+          {selectedProject !== 'ALL' && (
+            <span
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+            >
+              <span className="text-zinc-500 text-[11px]">Workspace:</span>
+              <span className="truncate max-w-[140px] sm:max-w-[200px]">{selectedProject}</span>
+              {onSelectWorkspace && (
+                <button
+                  type="button"
+                  onClick={handleClearWorkspace}
+                  className={`p-0.5 rounded transition cursor-pointer ${
+                    isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                  }`}
+                  title="Reset to All Workspaces"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+            </span>
+          )}
+
+          {/* Active Month Filter Chip */}
+          {activeMonth !== 'ALL' && (
+            <span
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+            >
+              <span className="text-zinc-500 text-[11px]">Month:</span>
+              <span>{formatMonthName(activeMonth)}</span>
+              <button
+                type="button"
+                onClick={handleClearMonth}
+                className={`p-0.5 rounded transition cursor-pointer ${
+                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                }`}
+                title="Reset to All Time"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </span>
+          )}
+
+          {/* Active Category Filter Chip */}
+          {activeCategory !== 'ALL' && (
+            <span
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+            >
+              <span className="text-zinc-500 text-[11px]">Category:</span>
+              <span className="truncate max-w-[140px] sm:max-w-[200px]">{activeCategory}</span>
+              <button
+                type="button"
+                onClick={handleClearCategory}
+                className={`p-0.5 rounded transition cursor-pointer ${
+                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                }`}
+                title={`Remove ${activeCategory} filter`}
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </span>
+          )}
+
+          {/* Active Payment Method Filter Chip */}
+          {activePaymentMethod !== 'ALL' && (
+            <span
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+            >
+              <span className="text-zinc-500 text-[11px]">Payment:</span>
+              <span>{PAYMENT_METHOD_LABELS[activePaymentMethod] || activePaymentMethod}</span>
+              <button
+                type="button"
+                onClick={handleClearPaymentMethod}
+                className={`p-0.5 rounded transition cursor-pointer ${
+                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                }`}
+                title="Remove payment method filter"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </span>
+          )}
+
+          {/* Active Amount Range Filter Chip */}
+          {(minAmount || maxAmount) && (
+            <span
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+            >
+              <span className="text-zinc-500 text-[11px]">Amount:</span>
+              <span className="font-mono">
+                {minAmount && maxAmount
+                  ? `₹${minAmount} - ₹${maxAmount}`
+                  : minAmount
+                  ? `≥ ₹${minAmount}`
+                  : `≤ ₹${maxAmount}`}
+              </span>
+              <button
+                type="button"
+                onClick={handleClearAmount}
+                className={`p-0.5 rounded transition cursor-pointer ${
+                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                }`}
+                title="Remove amount range filter"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </span>
+          )}
+
+          {/* Active Search Query Filter Chip */}
+          {searchQuery && searchQuery.trim() && (
+            <span
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+            >
+              <span className="text-zinc-500 text-[11px]">Search:</span>
+              <span className="truncate max-w-[140px] sm:max-w-[200px]">&quot;{searchQuery.trim()}&quot;</span>
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className={`p-0.5 rounded transition cursor-pointer ${
+                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                }`}
+                title="Clear search query"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </span>
+          )}
+
+          {/* Clear All Filters */}
+          {activeFiltersCount >= 1 && (
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className={`text-[11px] font-medium transition cursor-pointer underline ml-1 ${
+                isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-800'
+              }`}
+            >
+              Clear all
+            </button>
+          )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Download PDF Report Button (Left side of Categories) */}
-          <button
-            type="button"
-            onClick={handleDownloadPdf}
-            disabled={isGeneratingPdf || filteredExpenses.length === 0}
-            className={`h-8 px-3 rounded-xl border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
+        {/* Right side: Filtered Spend Summary */}
+        <div className="hidden sm:flex items-center gap-2 shrink-0">
+          <span className="text-[11px] text-zinc-500">Filtered Total:</span>
+          <span className="font-mono font-semibold text-xs text-zinc-900 dark:text-zinc-100">
+            {formatMoney(stats.totalAmount)}
+          </span>
+        </div>
+      </div>
+
+      <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto w-full">
+        {/* 1. Header & Actions Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-base transition-all shrink-0 ${
+                isDark
+                  ? 'bg-zinc-800 border border-zinc-700/80 text-white shadow-xs'
+                  : 'bg-zinc-900 border border-zinc-800 text-white shadow-xs'
+              }`}>
+                ₹
+              </div>
+              <div>
+                <h1 className="text-base sm:text-lg font-bold tracking-tight">
+                  Expense Tracker
+                </h1>
+                <p className="text-xs text-zinc-500">
+                  Monitor spending, manage categories, and review daily expenditure
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Quick Month Filter Selector */}
+            <select
+              value={activeMonth}
+              onChange={(e) => handleMonthChange(e.target.value)}
+              className={`h-8 px-2.5 rounded-xl border text-xs font-medium focus:outline-none cursor-pointer transition ${
+                isDark
+                  ? 'bg-zinc-900 border-zinc-800 text-zinc-200 hover:border-zinc-700'
+                  : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300 shadow-2xs'
+              }`}
+              title="Filter expenses by month"
+            >
+              <option value="ALL">All Time</option>
+              {availableMonths.map((m) => (
+                <option key={m} value={m}>
+                  {formatMonthName(m)}
+                </option>
+              ))}
+            </select>
+
+            {/* Download PDF Report Button (Left side of Categories) */}
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf || filteredExpenses.length === 0}
+              className={`h-8 px-3 rounded-xl border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
               isDark
                 ? 'bg-zinc-900 border-zinc-800 text-zinc-200 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 disabled:opacity-50'
                 : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300 shadow-2xs disabled:opacity-50'
@@ -710,7 +969,9 @@ export function ExpenseTracker({
               Transactions
             </h3>
             <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-zinc-500/10 text-zinc-400">
-              {filteredExpenses.length}
+              {filteredExpenses.length !== expenses.length
+                ? `${filteredExpenses.length} of ${expenses.length}`
+                : filteredExpenses.length}
             </span>
           </div>
           <select
@@ -733,16 +994,36 @@ export function ExpenseTracker({
                 <line x1="2" y1="10" x2="22" y2="10" />
               </svg>
             </div>
-            <h3 className="text-sm font-semibold">No expenses found</h3>
+            <h3 className="text-sm font-semibold">
+              {activeFiltersCount > 0 ? 'No matching expenses found' : 'No expenses found'}
+            </h3>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-              No transactions match the selected filters or month. Try adjusting your filter or add a new expense.
+              {activeFiltersCount > 0
+                ? 'No transactions match your active filters. Try adjusting your filters or clear them to view all expenses.'
+                : 'No transactions match the selected filters or month. Try adjusting your filter or add a new expense.'}
             </p>
-            <button
-              onClick={onAddExpense}
-              className="mt-2 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1.5"
-            >
-              <span>Record First Expense</span>
-            </button>
+            <div className="flex items-center justify-center gap-2 pt-1">
+              {activeFiltersCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className={`px-3.5 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition ${
+                    isDark
+                      ? 'border-zinc-700 hover:bg-zinc-800 text-zinc-200'
+                      : 'border-zinc-300 hover:bg-zinc-100 text-zinc-800 shadow-2xs'
+                  }`}
+                >
+                  Clear all filters
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onAddExpense}
+                className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <span>Record First Expense</span>
+              </button>
+            </div>
           </div>
         ) : (
           Object.keys(groupedExpenses).map((dateStr) => {
@@ -1163,6 +1444,7 @@ export function ExpenseTracker({
         </div>
       )}
 
+    </div>
     </div>
   )
 }

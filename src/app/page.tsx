@@ -1492,8 +1492,20 @@ export default function Home() {
                   onSelectMonth={setSelectedExpenseMonth}
                   minAmount={expenseMinAmount}
                   maxAmount={expenseMaxAmount}
+                  onMinAmountChange={setExpenseMinAmount}
+                  onMaxAmountChange={setExpenseMaxAmount}
                   searchQuery={expenseSearchQuery}
+                  onExpenseSearchChange={setExpenseSearchQuery}
                   onSelectWorkspace={setSelectedProject}
+                  onClearAllFilters={() => {
+                    setSelectedExpenseCategory('ALL')
+                    setSelectedPaymentMethod('ALL')
+                    setSelectedExpenseMonth('ALL')
+                    setSelectedProject('ALL')
+                    setExpenseMinAmount('')
+                    setExpenseMaxAmount('')
+                    setExpenseSearchQuery('')
+                  }}
                 />
               )}
             </div>

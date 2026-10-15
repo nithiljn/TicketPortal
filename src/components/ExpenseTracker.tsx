@@ -33,32 +33,112 @@ interface ExpenseTrackerProps {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'Food & Dining': '#10b981', // Emerald (Theme Primary)
-  'Travel & Transport': '#14b8a6', // Teal
-  'Software & Subscriptions': '#0ea5e9', // Sky
-  'Office Supplies': '#71717a', // Zinc
-  'Cloud & Hosting': '#6366f1', // Indigo
-  'Marketing & Ads': '#f59e0b', // Subtle Amber
-  'Bills & Utilities': '#64748b', // Slate
-  'Personal': '#059669', // Deep Emerald
-  'Miscellaneous': '#52525b', // Neutral Zinc
+  // 1. Food & Dining: Vibrant Emerald (Theme Primary)
+  'Food & Dining': '#10b981',
+
+  // 2. Travel & Transport: Electric Cyan (distinct from emerald green)
+  'Travel & Transport': '#06b6d4',
+
+  // 3. Software & Subscriptions: Vivid Purple / Violet
+  'Software & Subscriptions': '#8b5cf6',
+
+  // 4. Office Supplies: Warm Amber / Orange (distinct, never grey)
+  'Office Supplies': '#f97316',
+
+  // 5. Cloud & Hosting: Tech Royal Blue
+  'Cloud & Hosting': '#3b82f6',
+
+  // 6. Marketing & Ads: Bright Gold / Yellow
+  'Marketing & Ads': '#eab308',
+
+  // 7. Bills & Utilities: Coral Red / Crimson (essential bills, vibrant, never grey)
+  'Bills & Utilities': '#ef4444',
+
+  // 8. Personal: Radiant Fuchsia / Magenta
+  'Personal': '#d946ef',
+
+  // 9. Clothes & Products: Hot Pink (shopping/retail, completely distinct from bills & food)
+  'Clothes and products': '#ec4899',
+  'Clothes & Products': '#ec4899',
+  'Clothing & Apparel': '#ec4899',
+  'Shopping': '#ec4899',
+
+  // 10. Health & Wellness: Bright Lime Green
+  'Health & Wellness': '#84cc16',
+  'Medical & Healthcare': '#84cc16',
+  'Fitness': '#84cc16',
+
+  // 11. Entertainment: Rich Indigo
+  'Entertainment': '#6366f1',
+  'Entertainment & Leisure': '#6366f1',
+
+  // 12. Education: Deep Sky Blue
+  'Education': '#0ea5e9',
+  'Education & Learning': '#0ea5e9',
+
+  // 13. Miscellaneous: Clean Slate Grey
+  'Miscellaneous': '#94a3b8',
+  'General': '#94a3b8',
+  'Other': '#94a3b8',
 }
 
-const FALLBACK_PALETTE = [
+// 32-color curated palette with wide hue distribution for automatic assignment
+const DYNAMIC_PALETTE = [
   '#10b981', // Emerald
+  '#3b82f6', // Royal Blue
+  '#f97316', // Orange
+  '#8b5cf6', // Violet
+  '#ec4899', // Hot Pink
+  '#06b6d4', // Cyan
+  '#eab308', // Gold
+  '#ef4444', // Red
   '#14b8a6', // Teal
-  '#0ea5e9', // Sky
+  '#a855f7', // Purple
+  '#f59e0b', // Amber
   '#6366f1', // Indigo
-  '#f59e0b', // Subtle Amber
-  '#71717a', // Zinc
-  '#059669', // Deep Emerald
-  '#64748b', // Slate
-  '#a1a1aa', // Soft Zinc
+  '#d946ef', // Fuchsia
+  '#0ea5e9', // Sky Blue
+  '#84cc16', // Lime
+  '#fb7185', // Rose
+  '#22c55e', // Green
+  '#38bdf8', // Light Blue
+  '#c084fc', // Lavender
+  '#fb923c', // Peach Orange
+  '#4ade80', // Mint
+  '#e879f9', // Orchid
+  '#2dd4bf', // Aqua
+  '#f43f5e', // Crimson
+  '#60a5fa', // Cornflower
+  '#a3e635', // Yellow Green
+  '#f472b6', // Carnation
+  '#818cf8', // Periwinkle
+  '#34d399', // Sea Green
+  '#facc15', // Sunflower
+  '#93c5fd', // Soft Blue
+  '#94a3b8', // Slate
 ]
 
-function getCategoryColor(category: string, index: number): string {
-  if (CATEGORY_COLORS[category]) return CATEGORY_COLORS[category]
-  return FALLBACK_PALETTE[index % FALLBACK_PALETTE.length]
+function getCategoryColor(category: string, index?: number): string {
+  if (!category) return '#94a3b8'
+  const normalized = category.trim().toLowerCase()
+
+  // 1. Direct match or case-insensitive match against CATEGORY_COLORS
+  for (const [key, color] of Object.entries(CATEGORY_COLORS)) {
+    if (key.trim().toLowerCase() === normalized) {
+      return color
+    }
+  }
+
+  // 2. Deterministic string hash for any custom/new category
+  // Guarantees stable color assignment that never changes based on sorting or filter
+  let hash = 0
+  const clean = normalized.replace(/[^a-z0-9]/g, '')
+  for (let i = 0; i < clean.length; i++) {
+    hash = (hash << 5) - hash + clean.charCodeAt(i)
+    hash |= 0
+  }
+  const paletteIndex = Math.abs(hash) % DYNAMIC_PALETTE.length
+  return DYNAMIC_PALETTE[paletteIndex]
 }
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
@@ -155,6 +235,7 @@ export function ExpenseTracker({
   const [internalPaymentMethod, setInternalPaymentMethod] = useState<string>('ALL')
   const [internalHighExpense, setInternalHighExpense] = useState<boolean>(false)
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null)
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
 
   const activeMonth = propMonth !== undefined ? propMonth : internalMonth
   const handleMonthChange = (m: string) => {
@@ -389,6 +470,16 @@ export function ExpenseTracker({
       }
     })
   }, [stats.categoryTotals, stats.totalAmount])
+
+  // Currently hovered category segment for circle graph zoom & center readout
+  const hoveredSeg = useMemo(() => {
+    if (!hoveredCategory) return null
+    return (
+      donutSegments.find(
+        (s) => s.category.toLowerCase() === hoveredCategory.toLowerCase()
+      ) || null
+    )
+  }, [hoveredCategory, donutSegments])
 
   // Daily Spending Trend Data (Last 14 days or days in selected month)
   const dailySpendData = useMemo(() => {
@@ -856,7 +947,11 @@ export function ExpenseTracker({
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-2">
               {/* Circular SVG Donut Chart */}
               <div className="relative flex items-center justify-center shrink-0">
-                <svg className="w-36 h-36 transform -rotate-90" viewBox="0 0 100 100">
+                <svg
+                  className="w-36 h-36 transform -rotate-90 overflow-visible"
+                  viewBox="0 0 100 100"
+                  onMouseLeave={() => setHoveredCategory(null)}
+                >
                   <circle
                     cx="50"
                     cy="50"
@@ -865,54 +960,123 @@ export function ExpenseTracker({
                     strokeWidth="12"
                     fill="none"
                   />
-                  {donutSegments.map((seg) => (
-                    <circle
-                      key={seg.category}
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      stroke={seg.color}
-                      strokeWidth="12"
-                      strokeDasharray={seg.strokeDasharray}
-                      strokeDashoffset={seg.strokeDashoffset}
-                      fill="none"
-                      className="transition-all duration-500"
-                    />
-                  ))}
+                  {donutSegments.map((seg) => {
+                    const isHovered =
+                      hoveredCategory?.toLowerCase() === seg.category.toLowerCase()
+                    const isSelected =
+                      activeCategory?.toLowerCase() === seg.category.toLowerCase()
+                    const isAnyHovered = Boolean(hoveredCategory)
+
+                    return (
+                      <circle
+                        key={seg.category}
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        stroke={seg.color}
+                        strokeWidth={isHovered ? 16 : isSelected ? 14 : isAnyHovered ? 10 : 12}
+                        strokeDasharray={seg.strokeDasharray}
+                        strokeDashoffset={seg.strokeDashoffset}
+                        fill="none"
+                        opacity={isHovered || isSelected ? 1 : isAnyHovered ? 0.35 : 1}
+                        className="transition-all duration-200 cursor-pointer"
+                        onMouseEnter={() => setHoveredCategory(seg.category)}
+                        onClick={() =>
+                          handleCategoryChange(seg.category === activeCategory ? 'ALL' : seg.category)
+                        }
+                      >
+                        <title>{`${seg.category}: ${formatMoney(seg.amount)} (${seg.percentage}%)`}</title>
+                      </circle>
+                    )
+                  })}
                 </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                  <span className="text-[10px] uppercase font-mono text-zinc-400">Total</span>
-                  <span className="text-xs font-bold font-mono">
-                    {formatMoney(stats.totalAmount)}
-                  </span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1 transition-all duration-200">
+                  {hoveredSeg ? (
+                    <div className="animate-in fade-in zoom-in-95 duration-150 flex flex-col items-center max-w-[85px]">
+                      <span
+                        className="text-[10px] font-bold font-mono uppercase tracking-tight truncate max-w-full"
+                        style={{ color: hoveredSeg.color }}
+                        title={hoveredSeg.category}
+                      >
+                        {hoveredSeg.category}
+                      </span>
+                      <span className="text-xs font-bold font-mono text-zinc-900 dark:text-zinc-100 truncate max-w-full mt-0.5">
+                        {formatMoney(hoveredSeg.amount)}
+                      </span>
+                      <span className="text-[10px] font-mono font-medium text-zinc-500">
+                        {hoveredSeg.percentage}%
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] uppercase font-mono text-zinc-400">Total</span>
+                      <span className="text-xs font-bold font-mono text-zinc-900 dark:text-zinc-100">
+                        {formatMoney(stats.totalAmount)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Legend List */}
-              <div className="flex-1 w-full space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                {donutSegments.map((seg) => (
-                  <div
-                    key={seg.category}
-                    onClick={() => handleCategoryChange(seg.category === activeCategory ? 'ALL' : seg.category)}
-                    className={`flex items-center justify-between p-1.5 rounded-lg text-xs cursor-pointer transition ${
-                      activeCategory === seg.category
-                        ? isDark ? 'bg-white/[0.08]' : 'bg-zinc-100'
-                        : 'hover:bg-zinc-500/5'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: seg.color }}
-                      />
-                      <span className="truncate font-medium">{seg.category}</span>
+              <div
+                className="flex-1 w-full space-y-1.5 max-h-48 overflow-y-auto pr-1"
+                onMouseLeave={() => setHoveredCategory(null)}
+              >
+                {donutSegments.map((seg) => {
+                  const isHovered =
+                    hoveredCategory?.toLowerCase() === seg.category.toLowerCase()
+                  const isSelected = activeCategory === seg.category
+
+                  return (
+                    <div
+                      key={seg.category}
+                      onMouseEnter={() => setHoveredCategory(seg.category)}
+                      onClick={() =>
+                        handleCategoryChange(seg.category === activeCategory ? 'ALL' : seg.category)
+                      }
+                      className={`flex items-center justify-between p-1.5 rounded-lg text-xs cursor-pointer transition-all duration-150 ${
+                        isSelected
+                          ? isDark
+                            ? 'bg-white/[0.12] ring-1 ring-white/20'
+                            : 'bg-zinc-200 ring-1 ring-zinc-300'
+                          : isHovered
+                          ? isDark
+                            ? 'bg-white/[0.08] translate-x-1'
+                            : 'bg-zinc-100 translate-x-1'
+                          : 'hover:bg-zinc-500/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <span
+                          className={`rounded-full shrink-0 transition-transform duration-150 ${
+                            isHovered ? 'w-3 h-3 scale-125' : 'w-2.5 h-2.5'
+                          }`}
+                          style={{ backgroundColor: seg.color }}
+                        />
+                        <span
+                          className={`truncate ${
+                            isHovered || isSelected
+                              ? 'font-semibold text-zinc-900 dark:text-zinc-100'
+                              : 'font-medium'
+                          }`}
+                        >
+                          {seg.category}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 font-mono">
+                        <span className="text-zinc-500 text-[11px]">{seg.percentage}%</span>
+                        <span
+                          className={`font-semibold ${
+                            isHovered ? 'text-zinc-950 dark:text-white' : ''
+                          }`}
+                        >
+                          {formatMoney(seg.amount)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 font-mono">
-                      <span className="text-zinc-500 text-[11px]">{seg.percentage}%</span>
-                      <span className="font-semibold">{formatMoney(seg.amount)}</span>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}

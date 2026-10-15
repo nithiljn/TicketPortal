@@ -95,6 +95,7 @@ export default function Home() {
   const [toDate, setToDate] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
   const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false)
+  const [ticketIdFilter, setTicketIdFilter] = useState('')
 
   // Expense Specific Filters
   const [selectedExpenseCategory, setSelectedExpenseCategory] = useState<string | 'ALL'>('ALL')
@@ -209,6 +210,19 @@ export default function Home() {
   const handleClearDateRange = useCallback(() => {
     setFromDate('')
     setToDate('')
+    triggerFilterTransition()
+  }, [triggerFilterTransition])
+
+  const handleSelectTicketIdFilter = useCallback(
+    (id: string) => {
+      setTicketIdFilter(id)
+      triggerFilterTransition()
+    },
+    [triggerFilterTransition]
+  )
+
+  const handleClearTicketIdFilter = useCallback(() => {
+    setTicketIdFilter('')
     triggerFilterTransition()
   }, [triggerFilterTransition])
 
@@ -486,9 +500,21 @@ export default function Home() {
         const ticketDate = t.createdAt.split('T')[0]
         if (ticketDate > toDate) return false
       }
+      // Ticket ID Filter
+      if (ticketIdFilter.trim()) {
+        const cleanFilter = ticketIdFilter.trim().replace(/^#/, '').toLowerCase()
+        const tId = (t.ticketId || '').toLowerCase()
+        const idPrefix = (t.id || '').toLowerCase()
+        const matches =
+          tId === cleanFilter ||
+          tId.includes(cleanFilter) ||
+          idPrefix.startsWith(cleanFilter) ||
+          idPrefix.includes(cleanFilter)
+        if (!matches) return false
+      }
       return true
     })
-  }, [tickets, showOnlyBookmarked, selectedStatuses, selectedPriorities, selectedCategories, fromDate, toDate])
+  }, [tickets, showOnlyBookmarked, selectedStatuses, selectedPriorities, selectedCategories, fromDate, toDate, ticketIdFilter])
 
   // Count total bookmarked tickets
   const bookmarkedCount = useMemo(() => {
@@ -1086,6 +1112,9 @@ export default function Home() {
         onSelectFromDate={handleSelectFromDate}
         onSelectToDate={handleSelectToDate}
         onClearDateRange={handleClearDateRange}
+        ticketIdFilter={ticketIdFilter}
+        onSelectTicketIdFilter={handleSelectTicketIdFilter}
+        onClearTicketIdFilter={handleClearTicketIdFilter}
         theme={theme}
         onToggleTheme={handleToggleTheme}
         ticketCounts={ticketCounts}
@@ -1420,6 +1449,9 @@ export default function Home() {
                   selectedStatuses={selectedStatuses}
                   onRemoveStatus={(st) => handleSelectStatus(st)}
                   onClearAllStatuses={() => setSelectedStatuses([])}
+                  ticketIdFilter={ticketIdFilter}
+                  onSelectTicketIdFilter={handleSelectTicketIdFilter}
+                  onClearTicketIdFilter={handleClearTicketIdFilter}
                   onToggleBookmark={handleToggleBookmark}
                   showOnlyBookmarked={showOnlyBookmarked}
                   onToggleBookmarkedFilter={() => setShowOnlyBookmarked((prev) => !prev)}
@@ -1429,6 +1461,7 @@ export default function Home() {
                     setSelectedPriorities([])
                     setSelectedCategories([])
                     setShowOnlyBookmarked(false)
+                    setTicketIdFilter('')
                   }}
                   theme={theme}
                 />

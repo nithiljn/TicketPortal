@@ -115,6 +115,11 @@ interface SidebarProps {
   onSelectToDate: (d: string) => void
   onClearDateRange: () => void
 
+  // Ticket ID Filter
+  ticketIdFilter?: string
+  onSelectTicketIdFilter?: (id: string) => void
+  onClearTicketIdFilter?: () => void
+
   // Theme Settings
   theme: 'dark' | 'light'
   onToggleTheme: () => void
@@ -188,6 +193,9 @@ export function Sidebar({
   onSelectFromDate,
   onSelectToDate,
   onClearDateRange,
+  ticketIdFilter = '',
+  onSelectTicketIdFilter,
+  onClearTicketIdFilter,
   theme,
   onToggleTheme,
   ticketCounts,
@@ -514,36 +522,7 @@ export function Sidebar({
             {activeTab === 'expenses' ? (
               /* Expense Specific Filters */
               <>
-                {/* 1. Search Expenses */}
-                <div>
-                  <div className="relative">
-                    <svg className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="11" cy="11" r="8" />
-                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder="Search expenses..."
-                      value={expenseSearchQuery}
-                      onChange={(e) => onExpenseSearchChange?.(e.target.value)}
-                      className={`w-full pl-8 pr-7 py-1.5 rounded-lg text-xs focus:outline-none border ${inputBg}`}
-                    />
-                    {expenseSearchQuery && (
-                      <button
-                        onClick={() => onExpenseSearchChange?.('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 cursor-pointer p-0.5"
-                        title="Clear search"
-                      >
-                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="18" y1="6" x2="6" y2="18" />
-                          <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* 2. Month / Period Filter */}
+                {/* 1. Month / Period Filter */}
                 <div>
                   <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     <span>Month / Period</span>
@@ -745,6 +724,49 @@ export function Sidebar({
             ) : (
               /* Ticket Specific Filters (Inbox, Dashboard, Board, Notes) */
               <>
+                {/* Ticket ID Filter */}
+                <div>
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    <span>Ticket ID Filter</span>
+                    {ticketIdFilter && onClearTicketIdFilter && (
+                      <button
+                        onClick={onClearTicketIdFilter}
+                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-zinc-400 font-semibold select-none pointer-events-none">#</span>
+                    <input
+                      type="text"
+                      placeholder="Filter by ID (e.g. 1035)"
+                      value={ticketIdFilter}
+                      onChange={(e) => onSelectTicketIdFilter?.(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          onClearTicketIdFilter?.()
+                        }
+                      }}
+                      className={`w-full pl-6 pr-6 py-1.5 rounded-lg text-xs font-mono focus:outline-none border ${inputBg}`}
+                    />
+                    {ticketIdFilter && onClearTicketIdFilter && (
+                      <button
+                        type="button"
+                        onClick={onClearTicketIdFilter}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer p-0.5"
+                        title="Clear ID filter"
+                      >
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Status Filter */}
                 <div>
                   <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">

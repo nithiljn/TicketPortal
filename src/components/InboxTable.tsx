@@ -29,6 +29,9 @@ interface InboxTableProps {
   onClearStatus?: () => void
   onRemoveStatus?: (status: TicketStatus) => void
   onClearAllStatuses?: () => void
+  ticketIdFilter?: string
+  onSelectTicketIdFilter?: (id: string) => void
+  onClearTicketIdFilter?: () => void
   onClearAllFilters?: () => void
   theme?: 'dark' | 'light'
 }
@@ -73,6 +76,9 @@ export function InboxTable({
   onClearStatus,
   onRemoveStatus,
   onClearAllStatuses,
+  ticketIdFilter = '',
+  onSelectTicketIdFilter,
+  onClearTicketIdFilter,
   onClearAllFilters,
   theme = 'dark',
 }: InboxTableProps) {
@@ -95,6 +101,7 @@ export function InboxTable({
     selectedStatus,
     selectedStatuses?.length,
     showOnlyBookmarked,
+    ticketIdFilter,
   ])
 
   const totalPages = Math.max(1, Math.ceil(tickets.length / pageSize))
@@ -122,7 +129,12 @@ export function InboxTable({
   const activeStatuses = selectedStatuses ?? (selectedStatus && selectedStatus !== 'ALL' ? [selectedStatus] : [])
   const activePriorities = selectedPriorities ?? (selectedPriority && selectedPriority !== 'ALL' ? [selectedPriority] : [])
   const activeCategories = selectedCategories ?? (selectedCategory && selectedCategory !== 'ALL' ? [selectedCategory] : [])
-  const totalActiveFilters = activeStatuses.length + activePriorities.length + activeCategories.length
+  const totalActiveFilters =
+    activeStatuses.length +
+    activePriorities.length +
+    activeCategories.length +
+    (showOnlyBookmarked ? 1 : 0) +
+    (ticketIdFilter?.trim() ? 1 : 0)
 
   const getStatusBadge = (status: TicketStatus) => {
     switch (status) {
@@ -360,6 +372,29 @@ export function InboxTable({
             </span>
           ))}
 
+          {/* Active Ticket ID Filter Chip */}
+          {ticketIdFilter?.trim() && (
+            <span
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+            >
+              <span className="text-zinc-500 text-[11px]">Ticket ID:</span>
+              <span className="font-mono">{ticketIdFilter.startsWith('#') ? ticketIdFilter : `#${ticketIdFilter}`}</span>
+              <button
+                type="button"
+                onClick={onClearTicketIdFilter}
+                className={`p-0.5 rounded transition cursor-pointer ${
+                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                }`}
+                title="Remove Ticket ID filter"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </span>
+          )}
+
           {/* Clear All Filters */}
           {totalActiveFilters > 1 && onClearAllFilters && (
             <button
@@ -440,8 +475,35 @@ export function InboxTable({
             </svg>
             <p className={`text-sm font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>No tickets found</p>
             <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>
-              Adjust your filters or create a new ticket.
+              {ticketIdFilter?.trim()
+                ? `No ticket matches Ticket ID "${ticketIdFilter.startsWith('#') ? ticketIdFilter : `#${ticketIdFilter}`}".`
+                : 'Adjust your filters or create a new ticket.'}
             </p>
+            {ticketIdFilter?.trim() ? (
+              <button
+                type="button"
+                onClick={onClearTicketIdFilter}
+                className={`mt-4 px-3.5 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer ${
+                  isDark
+                    ? 'border-white/[0.12] bg-white/[0.05] hover:bg-white/[0.1] text-zinc-200'
+                    : 'border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-800 shadow-2xs'
+                }`}
+              >
+                Clear ID filter
+              </button>
+            ) : totalActiveFilters > 0 && onClearAllFilters ? (
+              <button
+                type="button"
+                onClick={onClearAllFilters}
+                className={`mt-4 px-3.5 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer ${
+                  isDark
+                    ? 'border-white/[0.12] bg-white/[0.05] hover:bg-white/[0.1] text-zinc-200'
+                    : 'border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-800 shadow-2xs'
+                }`}
+              >
+                Clear all filters
+              </button>
+            ) : null}
           </div>
         ) : (
           <>
@@ -510,8 +572,23 @@ export function InboxTable({
                       </td>
 
                       {/* ID */}
-                      <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-                        #{ticket.ticketId || ticket.id.slice(0, 4)}
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const rawId = ticket.ticketId || ticket.id.slice(0, 4)
+                            onSelectTicketIdFilter?.(rawId)
+                          }}
+                          className={`font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded transition cursor-pointer text-left ${
+                            isDark
+                              ? 'text-zinc-400 hover:text-white hover:bg-white/[0.08]'
+                              : 'text-zinc-500 hover:text-zinc-950 hover:bg-zinc-100'
+                          }`}
+                          title={`Filter by #${ticket.ticketId || ticket.id.slice(0, 4)}`}
+                        >
+                          #{ticket.ticketId || ticket.id.slice(0, 4)}
+                        </button>
                       </td>
 
                       {/* Status */}
@@ -663,9 +740,22 @@ export function InboxTable({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-[10px] font-semibold text-zinc-500 dark:text-zinc-400">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const rawId = ticket.ticketId || ticket.id.slice(0, 4)
+                          onSelectTicketIdFilter?.(rawId)
+                        }}
+                        className={`font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded transition cursor-pointer text-left ${
+                          isDark
+                            ? 'text-zinc-400 hover:text-white hover:bg-white/[0.08]'
+                            : 'text-zinc-500 hover:text-zinc-950 hover:bg-zinc-100'
+                        }`}
+                        title={`Filter by #${ticket.ticketId || ticket.id.slice(0, 4)}`}
+                      >
                         #{ticket.ticketId || ticket.id.slice(0, 4)}
-                      </span>
+                      </button>
                       <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-mono ${workspaceBadge}`}>
                         <svg className="w-2.5 h-2.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />

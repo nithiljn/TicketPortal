@@ -212,13 +212,28 @@ export function VersionModal({
         {/* Create Form */}
         <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
           {error && (
-            <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
-              <svg className="w-3.5 h-3.5 shrink-0 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <span>{error}</span>
+            <div
+              className={`p-2.5 rounded-xl border text-xs flex items-center justify-between gap-2.5 animate-in fade-in duration-150 ${
+                isDark
+                  ? 'bg-white/[0.03] border-white/[0.08] text-zinc-300'
+                  : 'bg-zinc-50 border-zinc-200 text-zinc-800'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                <span className="truncate">{error}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setError('')}
+                className="text-zinc-400 hover:text-zinc-200 p-0.5 rounded transition cursor-pointer shrink-0"
+                title="Dismiss"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
           )}
 

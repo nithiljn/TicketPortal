@@ -1020,6 +1020,24 @@ const resolvers = {
         }
       }
     ) => {
+      // Resolve valid UUID if a 4-digit ticketId was passed
+      let targetId = id
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+      if (!isUuid) {
+        try {
+          const { data: matched } = await supabase
+            .from('tickets')
+            .select('id')
+            .or(`ticket_id.eq.${id},id.ilike.${id}%`)
+            .limit(1)
+          if (matched && matched[0]) {
+            targetId = matched[0].id
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const updateData: Record<string, unknown> = {}
       if (input.title !== undefined) updateData.title = input.title
       if (input.ticketId !== undefined) updateData.ticket_id = input.ticketId
@@ -1032,67 +1050,63 @@ const resolvers = {
       if (input.projectName !== undefined) updateData.project_name = input.projectName
       if (input.updatedBy !== undefined) updateData.updated_by = input.updatedBy
       if (input.isBookmarked !== undefined) updateData.is_bookmarked = input.isBookmarked
+      updateData.updated_at = new Date().toISOString()
 
       const { data, error } = await supabase
         .from('tickets')
         .update(updateData)
-        .eq('id', id)
+        .eq('id', targetId)
         .select()
         .single()
 
       if (error) {
-        let shouldRetry = false
-        if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('ticket_id')) {
-          delete updateData.ticket_id
-          shouldRetry = true
-        }
-        if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('commands')) {
-          delete updateData.commands
-          let baseDesc = input.description
-          if (baseDesc === undefined) {
-            const { data: cur } = await supabase.from('tickets').select('description').eq('id', id).single()
-            const { cleanDescription } = extractCommands(cur?.description || null)
+        console.warn('Initial updateTicket failed, executing fallback:', error.message)
+        // Retrieve current description to preserve commands, bookmarks, and version tags
+        let baseDesc = input.description
+        if (baseDesc === undefined) {
+          const { data: cur } = await supabase
+            .from('tickets')
+            .select('description')
+            .eq('id', targetId)
+            .single()
+          if (cur?.description) {
+            const { cleanDescription } = extractCommands(cur.description)
             baseDesc = cleanDescription
           }
-          updateData.description = packDescription(baseDesc, input.commands)
-          shouldRetry = true
-        }
-        if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('is_bookmarked')) {
-          delete updateData.is_bookmarked
-          let baseDesc = (updateData.description as string | undefined) ?? input.description
-          if (baseDesc === undefined) {
-            const { data: cur } = await supabase.from('tickets').select('description').eq('id', id).single()
-            baseDesc = cur?.description || null
-          }
-          updateData.description = packBookmark(baseDesc ?? null, input.isBookmarked)
-          shouldRetry = true
-        }
-        if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('version')) {
-          delete updateData.version
-          let baseDesc = (updateData.description as string | undefined) ?? input.description
-          if (baseDesc === undefined) {
-            const { data: cur } = await supabase.from('tickets').select('description').eq('id', id).single()
-            baseDesc = cur?.description || null
-          }
-          updateData.description = packVersion(baseDesc ?? null, input.version)
-          shouldRetry = true
         }
 
-        if (shouldRetry) {
-          const { data: fbData, error: fbError } = await supabase
-            .from('tickets')
-            .update(updateData)
-            .eq('id', id)
-            .select()
-            .single()
-
-          if (!fbError && fbData) {
-            return formatTicket(fbData as TicketRow)
-          }
+        let packed = baseDesc ? packDescription(baseDesc, input.commands) : input.description || null
+        if (input.isBookmarked !== undefined) {
+          packed = packBookmark(packed, input.isBookmarked)
+        }
+        if (input.version !== undefined) {
+          packed = packVersion(packed, input.version)
         }
 
-        console.error('Supabase updateTicket error:', error)
-        throw new Error(error.message)
+        const safePayload: Record<string, unknown> = {
+          updated_at: new Date().toISOString(),
+        }
+        if (input.title !== undefined) safePayload.title = input.title
+        if (input.status !== undefined) safePayload.status = input.status
+        if (input.priority !== undefined) safePayload.priority = input.priority
+        if (input.category !== undefined) safePayload.category = input.category
+        if (input.projectName !== undefined) safePayload.project_name = input.projectName
+        if (input.updatedBy !== undefined) safePayload.updated_by = input.updatedBy
+        safePayload.description = packed
+
+        const { data: fbData, error: fbError } = await supabase
+          .from('tickets')
+          .update(safePayload)
+          .eq('id', targetId)
+          .select()
+          .single()
+
+        if (!fbError && fbData) {
+          return formatTicket(fbData as TicketRow)
+        }
+
+        console.error('Supabase updateTicket fallback error:', fbError || error)
+        throw new Error(fbError?.message || error.message)
       }
       return formatTicket(data as TicketRow)
     },
@@ -1615,6 +1629,7 @@ const { handleRequest } = createYoga<GraphQLContext>({
   graphqlEndpoint: '/api/graphql',
   fetchAPI: { Response },
   graphiql: process.env.NODE_ENV === 'development',
+  maskedErrors: false,
   context: async ({ request }) => {
     const authHeader = request.headers.get('authorization')
     if (authHeader && authHeader.startsWith('Bearer ')) {

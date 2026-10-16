@@ -1504,46 +1504,6 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* Version Manager Header Companion Button (Desktop) */}
-                <button
-                  type="button"
-                  onClick={() => setIsVersionModalOpen(true)}
-                  className={`hidden sm:flex p-2 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium items-center gap-1.5 transition cursor-pointer shrink-0 ${
-                    isDark
-                      ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.06]'
-                      : 'border-zinc-200 text-zinc-700 hover:bg-zinc-100 bg-white shadow-2xs'
-                  }`}
-                  title="Manage Release Versions"
-                  aria-label="Manage Versions"
-                >
-                  <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                    <line x1="7" y1="7" x2="7.01" y2="7" />
-                  </svg>
-                  <span className="hidden md:inline">Versions</span>
-                </button>
-
-                {/* Activity Heatmap Header Companion Button (Desktop) */}
-                <button
-                  type="button"
-                  onClick={() => setIsActivityModalOpen(true)}
-                  className={`hidden sm:flex p-2 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium items-center gap-1.5 transition cursor-pointer shrink-0 ${
-                    isDark
-                      ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.06]'
-                      : 'border-zinc-200 text-zinc-700 hover:bg-zinc-100 bg-white shadow-2xs'
-                  }`}
-                  title="Activity Heatmap"
-                  aria-label="Activity Heatmap"
-                >
-                  <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="3" width="7" height="7" rx="1" />
-                    <rect x="14" y="3" width="7" height="7" rx="1" />
-                    <rect x="14" y="14" width="7" height="7" rx="1" />
-                    <rect x="3" y="14" width="7" height="7" rx="1" />
-                  </svg>
-                  <span className="hidden md:inline">Heatmap</span>
-                </button>
-
                 {/* Create button */}
                 <Button
                   variant="ticket"

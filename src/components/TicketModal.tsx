@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Ticket, TicketStatus, TicketPriority } from '@/types'
 import { Button } from '@/components/Button'
 
@@ -15,15 +15,18 @@ interface TicketModalProps {
     status: TicketStatus
     priority: TicketPriority
     category: string
+    version?: string
     projectName: string
     author: string
   }) => Promise<void>
   existingTicket?: Ticket | null
   initialMode?: 'view' | 'edit'
   availableProjects: string[]
+  availableVersions?: string[]
   currentProject: string
   theme?: 'dark' | 'light'
   onToggleBookmark?: (ticket: Ticket) => Promise<void> | void
+  onOpenCreateVersionModal?: () => void
 }
 
 export function TicketModal({
@@ -33,9 +36,11 @@ export function TicketModal({
   existingTicket,
   initialMode = 'view',
   availableProjects,
+  availableVersions = [],
   currentProject,
   theme = 'dark',
   onToggleBookmark,
+  onOpenCreateVersionModal,
 }: TicketModalProps) {
   const [isEditing, setIsEditing] = useState(initialMode === 'edit' || !existingTicket)
   const [title, setTitle] = useState('')
@@ -45,6 +50,7 @@ export function TicketModal({
   const [status, setStatus] = useState<TicketStatus>('TODO')
   const [priority, setPriority] = useState<TicketPriority>('MEDIUM')
   const [category, setCategory] = useState('DEV')
+  const [version, setVersion] = useState('')
   const [projectName, setProjectName] = useState(availableProjects[0] || 'General')
   const [author, setAuthor] = useState('James Nithil')
   const [loading, setLoading] = useState(false)
@@ -145,6 +151,7 @@ export function TicketModal({
       setStatus(existingTicket.status)
       setPriority(existingTicket.priority)
       setCategory(existingTicket.category || 'DEV')
+      setVersion(existingTicket.version || '')
       setProjectName(
         existingTicket.projectName ||
           (availableProjects[0] || 'General')
@@ -157,6 +164,7 @@ export function TicketModal({
       setStatus('TODO')
       setPriority('MEDIUM')
       setCategory('DEV')
+      setVersion('')
       // If currentProject is selected and not 'ALL', pre-select it; otherwise use first available workspace
       const defaultProject =
         currentProject && currentProject !== 'ALL'
@@ -167,6 +175,20 @@ export function TicketModal({
     }
     setError('')
   }, [existingTicket, isOpen, currentProject, availableProjects])
+
+  // Auto-select a newly created version if one was created while the modal is open
+  const prevVersionsRef = useRef<string[]>(availableVersions)
+  useEffect(() => {
+    if (!isOpen) return
+    const prev = prevVersionsRef.current
+    if (availableVersions.length > prev.length) {
+      const added = availableVersions.find((v) => !prev.includes(v))
+      if (added) {
+        setVersion(added)
+      }
+    }
+    prevVersionsRef.current = availableVersions
+  }, [availableVersions, isOpen])
 
   // Keyboard shortcut: Cmd/Ctrl + Enter to submit form
   useEffect(() => {
@@ -209,6 +231,7 @@ export function TicketModal({
         status,
         priority,
         category,
+        version: version.trim() || undefined,
         projectName: projectName.trim(),
         author: author.trim() || 'James Nithil',
       })
@@ -470,6 +493,17 @@ export function TicketModal({
                   </svg>
                   <span>{existingTicket.projectName}</span>
                 </span>
+                {existingTicket.version && (
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border ${
+                    isDark ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]' : 'bg-zinc-100 text-zinc-700 border-zinc-200'
+                  }`}>
+                    <svg className="w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                      <line x1="7" y1="7" x2="7.01" y2="7" />
+                    </svg>
+                    <span>{existingTicket.version}</span>
+                  </span>
+                )}
               </div>
 
               {/* Title Display */}
@@ -756,8 +790,8 @@ export function TicketModal({
             )}
 
             <form id="ticket-modal-form" onSubmit={handleSubmit} className="mt-5 space-y-4 sm:space-y-5">
-              {/* Row 1: Workspace Selection & Category (2-Column Clean Alignment) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+              {/* Row 1: Workspace Selection, Category & Version (3-Column Clean Alignment) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelColor}`}>
                     Workspace *
@@ -787,7 +821,7 @@ export function TicketModal({
                     </div>
                   </div>
                   <p className="mt-1 text-[10px] text-zinc-500">
-                    Tickets are grouped within this selected workspace.
+                    Grouping workspace.
                   </p>
                 </div>
 
@@ -816,7 +850,56 @@ export function TicketModal({
                     </div>
                   </div>
                   <p className="mt-1 text-[10px] text-zinc-500">
-                    Tag the technical domain of the task.
+                    Domain of the task.
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className={`block text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
+                      Version
+                    </label>
+                    {onOpenCreateVersionModal && (
+                      <button
+                        type="button"
+                        onClick={onOpenCreateVersionModal}
+                        className={`text-[10px] font-medium transition cursor-pointer ${
+                          isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-900'
+                        }`}
+                        title="Create new version"
+                      >
+                        + New
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={version}
+                      onChange={(e) => setVersion(e.target.value)}
+                      className={`w-full h-10 rounded-xl border px-3 py-2 text-xs font-mono font-medium focus:outline-none transition cursor-pointer appearance-none ${inputBg}`}
+                    >
+                      <option value="" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>
+                        None (Unassigned)
+                      </option>
+                      {version && !availableVersions.includes(version) && (
+                        <option value={version} className={isDark ? 'bg-[#18181b]' : 'bg-white'}>
+                          {version}
+                        </option>
+                      )}
+                      {availableVersions.map((v) => (
+                        <option key={v} value={v} className={isDark ? 'bg-[#18181b]' : 'bg-white'}>
+                          {v}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-400">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </div>
+                  </div>
+                  <p className="mt-1 text-[10px] text-zinc-500">
+                    Optional release tag.
                   </p>
                 </div>
               </div>

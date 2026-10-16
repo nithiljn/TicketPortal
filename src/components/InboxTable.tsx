@@ -521,6 +521,7 @@ export function InboxTable({
                     <th className="py-2.5 px-4 w-32">Status</th>
                     <th className="py-2.5 px-4">Title & Details</th>
                     <th className="py-2.5 px-4">Workspace</th>
+                    <th className="py-2.5 px-4">Version</th>
                     <th className="py-2.5 px-4">Priority</th>
                     <th className="py-2.5 px-4">Category</th>
                     <th className="py-2.5 px-4">Created</th>
@@ -636,6 +637,27 @@ export function InboxTable({
                         </span>
                       </td>
 
+                      {/* Version Badge */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {ticket.version ? (
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-[11px] font-mono font-medium ${
+                            isDark
+                              ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]'
+                              : 'bg-zinc-100 text-zinc-700 border-zinc-200'
+                          }`}>
+                            <svg className="w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                              <line x1="7" y1="7" x2="7.01" y2="7" />
+                            </svg>
+                            <span>{ticket.version}</span>
+                          </span>
+                        ) : (
+                          <span className="text-zinc-400 dark:text-zinc-600 font-mono text-[11px]">
+                            —
+                          </span>
+                        )}
+                      </td>
+
                       {/* Priority */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         {getPriorityBadge(ticket.priority)}
@@ -739,7 +761,7 @@ export function InboxTable({
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -762,8 +784,21 @@ export function InboxTable({
                         </svg>
                         {ticket.projectName}
                       </span>
+                      {ticket.version && (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-mono font-medium ${
+                          isDark
+                            ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]'
+                            : 'bg-zinc-100 text-zinc-700 border-zinc-200'
+                        }`}>
+                          <svg className="w-2.5 h-2.5 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                            <line x1="7" y1="7" x2="7.01" y2="7" />
+                          </svg>
+                          {ticket.version}
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -825,57 +860,66 @@ export function InboxTable({
                     )}
                   </div>
 
-                  <div className={`flex items-center justify-between pt-2 border-t text-[11px] ${
+                  <div className={`flex items-center justify-between pt-2.5 border-t text-[11px] gap-2 ${
                     isDark ? 'border-white/[0.04]' : 'border-zinc-100'
                   }`}>
-                    <div className="flex items-center">
+                    <div className="flex items-center shrink-0">
                       {getStatusBadge(ticket.status)}
                     </div>
 
                     <div
-                      className="flex items-center gap-1.5"
+                      className="flex items-center gap-1.5 shrink-0"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {onViewTicket && (
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation()
                             onViewTicket(ticket)
                           }}
-                          className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
+                          className={`h-8 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center justify-center gap-1.5 ${actionBtn}`}
                           title="View ticket details"
+                          aria-label="View ticket"
                         >
                           <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                             <circle cx="12" cy="12" r="3" />
                           </svg>
-                          <span>View</span>
+                          <span className="hidden min-[480px]:inline">View</span>
                         </button>
                       )}
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation()
                           onEditTicket(ticket)
                         }}
-                        className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
+                        className={`h-8 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center justify-center gap-1.5 ${actionBtn}`}
                         title="Edit ticket"
+                        aria-label="Edit ticket"
                       >
                         <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
-                        <span>Edit</span>
+                        <span className="hidden min-[480px]:inline">Edit</span>
                       </button>
                       <button
-                        onClick={() => onDeleteTicket(ticket)}
-                        className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${deleteBtn}`}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onDeleteTicket(ticket)
+                        }}
+                        className={`h-8 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center justify-center gap-1.5 ${deleteBtn}`}
                         title="Delete ticket"
+                        aria-label="Delete ticket"
                       >
                         <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="3 6 5 6 21 6" />
                           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                         </svg>
-                        <span>Delete</span>
+                        <span className="hidden min-[480px]:inline">Delete</span>
                       </button>
                     </div>
                   </div>

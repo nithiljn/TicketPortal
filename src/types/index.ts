@@ -10,6 +10,7 @@ export interface Ticket {
   status: TicketStatus
   priority: TicketPriority
   category: string
+  version?: string
   projectName: string
   createdBy: string
   updatedBy: string
@@ -34,6 +35,7 @@ export interface CreateTicketInput {
   status?: TicketStatus
   priority?: TicketPriority
   category?: string
+  version?: string
   projectName?: string
   createdBy?: string
   isBookmarked?: boolean
@@ -47,6 +49,7 @@ export interface UpdateTicketInput {
   status?: TicketStatus
   priority?: TicketPriority
   category?: string
+  version?: string
   projectName?: string
   updatedBy?: string
   isBookmarked?: boolean

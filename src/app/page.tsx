@@ -14,6 +14,7 @@ import { TicketModal } from '@/components/TicketModal'
 import { ExpenseModal } from '@/components/ExpenseModal'
 import { ExpenseCategoryModal } from '@/components/ExpenseCategoryModal'
 import { WorkspaceModal } from '@/components/WorkspaceModal'
+import { VersionModal } from '@/components/VersionModal'
 import { DeleteWorkspaceModal } from '@/components/DeleteWorkspaceModal'
 import { ConfirmModal } from '@/components/ConfirmModal'
 import { ActivityHeatmapModal } from '@/components/ActivityHeatmapModal'
@@ -34,7 +35,10 @@ export default function Home() {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [availableProjects, setAvailableProjects] = useState<string[]>([])
+  const [availableVersions, setAvailableVersions] = useState<string[]>([])
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false)
+  const [isVersionModalOpen, setIsVersionModalOpen] = useState(false)
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
   const [workspaceToDelete, setWorkspaceToDelete] = useState<string | null>(null)
   const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null)
   const [noteToDelete, setNoteToDelete] = useState<DailyNote | null>(null)
@@ -301,6 +305,7 @@ export default function Home() {
       const query = /* GraphQL */ `
         query GetPortalData($projectName: String, $search: String, $userEmail: String) {
           projects(userEmail: $userEmail)
+          versions(userEmail: $userEmail)
           tickets(projectName: $projectName, search: $search, userEmail: $userEmail) {
             id
             ticketId
@@ -310,6 +315,7 @@ export default function Home() {
             status
             priority
             category
+            version
             projectName
             createdBy
             updatedBy
@@ -344,6 +350,7 @@ export default function Home() {
 
       const data = await fetchGraphQL<{
         projects: string[]
+        versions?: string[]
         tickets: Ticket[]
         dailyNotes: DailyNote[]
         expenses: Expense[]
@@ -355,6 +362,7 @@ export default function Home() {
       })
 
       setTickets(data.tickets || [])
+      setAvailableVersions(data.versions || [])
       setDailyNotes(data.dailyNotes || [])
       setExpenses(data.expenses || [])
       setExpenseCategories(data.expenseCategories || [])
@@ -618,6 +626,7 @@ export default function Home() {
     status: TicketStatus
     priority: TicketPriority
     category: string
+    version?: string
     projectName: string
     author: string
   }) => {
@@ -635,6 +644,7 @@ export default function Home() {
             status
             priority
             category
+            version
             projectName
             updatedBy
             updatedAt
@@ -651,6 +661,7 @@ export default function Home() {
           status: ticketData.status,
           priority: ticketData.priority,
           category: ticketData.category,
+          version: ticketData.version,
           projectName: ticketData.projectName,
           updatedBy: currentUserName,
         },
@@ -672,6 +683,7 @@ export default function Home() {
             status
             priority
             category
+            version
             projectName
             createdBy
             createdAt
@@ -687,6 +699,7 @@ export default function Home() {
           status: ticketData.status,
           priority: ticketData.priority,
           category: ticketData.category,
+          version: ticketData.version,
           projectName: ticketData.projectName,
           createdBy: currentUserName,
         },
@@ -845,6 +858,53 @@ export default function Home() {
       })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to delete workspace'
+      setToast({
+        isOpen: true,
+        title: 'Error',
+        message: msg,
+      })
+      throw err
+    }
+  }
+
+  const handleCreateVersion = async (ver: string) => {
+    const trimmed = ver.trim()
+    if (!trimmed) return
+    try {
+      const mutation = /* GraphQL */ `
+        mutation CreateVersion($version: String!, $userEmail: String) {
+          createVersion(version: $version, userEmail: $userEmail)
+        }
+      `
+      await fetchGraphQL(mutation, { version: trimmed, userEmail: user?.email })
+    } catch (err: unknown) {
+      console.warn('Version GraphQL notice:', err)
+    }
+
+    setAvailableVersions((prev) => Array.from(new Set([...prev, trimmed])))
+    setToast({
+      isOpen: true,
+      title: 'Version Created',
+      message: `Version "${trimmed}" has been created`,
+    })
+  }
+
+  const handleDeleteVersion = async (ver: string) => {
+    try {
+      const mutation = /* GraphQL */ `
+        mutation DeleteVersion($version: String!, $userEmail: String) {
+          deleteVersion(version: $version, userEmail: $userEmail)
+        }
+      `
+      await fetchGraphQL(mutation, { version: ver, userEmail: user?.email })
+      setAvailableVersions((prev) => prev.filter((v) => v !== ver))
+      setToast({
+        isOpen: true,
+        title: 'Version Removed',
+        message: `Version "${ver}" was removed`,
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete version'
       setToast({
         isOpen: true,
         title: 'Error',
@@ -1140,6 +1200,7 @@ export default function Home() {
         onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
         onOpenAddExpenseModal={handleOpenAddExpense}
         onOpenActivityModal={() => setIsActivityModalOpen(true)}
+        onOpenVersionModal={() => setIsVersionModalOpen(true)}
       />
 
       {/* 2. Main Content Canvas */}
@@ -1150,240 +1211,362 @@ export default function Home() {
       >
         {/* Top Header Bar: Search on Left + Views Switcher (Inbox, Dashboard, Board, Notes) on Right */}
         <header
-          className={`h-14 px-3 sm:px-6 border-b flex items-center justify-between gap-2 sm:gap-3 shrink-0 ${
+          className={`h-14 px-2.5 sm:px-6 border-b flex items-center justify-between gap-1.5 sm:gap-3 shrink-0 ${
             isDark
               ? 'border-white/[0.06] bg-[#09090b]'
               : 'border-zinc-200 bg-white'
           }`}
         >
-          {/* Left: Mobile Hamburger + Search Input */}
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0 max-w-xs sm:max-w-sm">
-            {/* Mobile Hamburger Button */}
-            <button
-              onClick={() => setIsSidebarOpen(true)}
-              className={`lg:hidden p-2 rounded-lg transition cursor-pointer shrink-0 ${
-                isDark
-                  ? 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
-                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-              }`}
-              title="Open Navigation Drawer"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
-
-            {/* Search Input */}
-            <div className="relative w-full min-w-0">
-              <svg
-                className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="text"
-                placeholder={activeTab === 'expenses' ? 'Search expenses...' : 'Search tickets...'}
-                value={activeTab === 'expenses' ? expenseSearchQuery : searchTerm}
-                onChange={(e) => {
-                  if (activeTab === 'expenses') {
-                    setExpenseSearchQuery(e.target.value)
-                  } else {
-                    setSearchTerm(e.target.value)
-                  }
-                }}
-                className={`w-full rounded-lg border pl-8 pr-8 py-1.5 text-xs focus:outline-none transition ${
+          {isMobileSearchOpen ? (
+            /* Full-width Mobile Search Bar */
+            <div className="flex items-center gap-2 w-full animate-in fade-in duration-150">
+              <button
+                type="button"
+                onClick={() => setIsMobileSearchOpen(false)}
+                className={`p-2 rounded-lg transition cursor-pointer shrink-0 ${
                   isDark
-                    ? 'bg-white/[0.04] border-white/[0.06] text-zinc-100 placeholder-zinc-500 focus:border-white/[0.2]'
-                    : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400'
+                    ? 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
                 }`}
-              />
-              {(activeTab === 'expenses' ? expenseSearchQuery : searchTerm) && (
-                <button
-                  onClick={() => {
+                title="Back"
+                aria-label="Close search"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
+              </button>
+
+              <div className="relative flex-1 min-w-0">
+                <svg
+                  className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder={activeTab === 'expenses' ? 'Search expenses...' : 'Search tickets...'}
+                  value={activeTab === 'expenses' ? expenseSearchQuery : searchTerm}
+                  onChange={(e) => {
                     if (activeTab === 'expenses') {
-                      setExpenseSearchQuery('')
+                      setExpenseSearchQuery(e.target.value)
                     } else {
-                      setSearchTerm('')
+                      setSearchTerm(e.target.value)
                     }
                   }}
-                  className="absolute right-2.5 top-2 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                  className={`w-full rounded-lg border pl-8 pr-8 py-1.5 text-xs focus:outline-none transition ${
+                    isDark
+                      ? 'bg-white/[0.04] border-white/[0.06] text-zinc-100 placeholder-zinc-500 focus:border-white/[0.2]'
+                      : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400'
+                  }`}
+                />
+                {(activeTab === 'expenses' ? expenseSearchQuery : searchTerm) && (
+                  <button
+                    onClick={() => {
+                      if (activeTab === 'expenses') {
+                        setExpenseSearchQuery('')
+                      } else {
+                        setSearchTerm('')
+                      }
+                    }}
+                    className="absolute right-2.5 top-2 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsMobileSearchOpen(false)}
+                className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition cursor-pointer shrink-0 ${
+                  isDark
+                    ? 'text-zinc-300 hover:bg-white/[0.06]'
+                    : 'text-zinc-700 hover:bg-zinc-100'
+                }`}
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Left: Mobile Hamburger + Desktop Search Input */}
+              <div className="flex items-center gap-1.5 sm:gap-2.5 flex-1 min-w-0 max-w-xs sm:max-w-sm">
+                {/* Mobile Hamburger Button */}
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className={`lg:hidden p-2 rounded-lg transition cursor-pointer shrink-0 ${
+                    isDark
+                      ? 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+                  }`}
+                  title="Open Navigation Drawer"
+                  aria-label="Open menu"
                 >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
                   </svg>
                 </button>
-              )}
-            </div>
-          </div>
 
-          {/* Right: Views Switcher (Inbox, Dashboard, Board, Notes) + Action Button */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* View Switcher Segmented Pill */}
-            <div
-              className={`flex items-center p-0.5 rounded-lg border ${
-                isDark
-                  ? 'bg-white/[0.04] border-white/[0.06]'
-                  : 'bg-zinc-100 border-zinc-200'
-              }`}
-            >
-              {/* 1. Inbox Table */}
-              <button
-                onClick={() => handleTabChange('inbox')}
-                className={`px-2 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                  (isTabSwitching ? tabSwitchTarget === 'inbox' : activeTab === 'inbox')
-                    ? isDark
-                      ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
-                      : 'bg-white text-zinc-950 shadow-sm font-semibold'
-                    : isDark
-                    ? 'text-zinc-400 hover:text-zinc-200'
-                    : 'text-zinc-500 hover:text-zinc-900'
-                }`}
-                title="Inbox"
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-                  <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
-                </svg>
-                <span className="hidden md:inline">Inbox</span>
-              </button>
+                {/* Desktop Search Input */}
+                <div className="hidden sm:block relative w-full min-w-0">
+                  <svg
+                    className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder={activeTab === 'expenses' ? 'Search expenses...' : 'Search tickets...'}
+                    value={activeTab === 'expenses' ? expenseSearchQuery : searchTerm}
+                    onChange={(e) => {
+                      if (activeTab === 'expenses') {
+                        setExpenseSearchQuery(e.target.value)
+                      } else {
+                        setSearchTerm(e.target.value)
+                      }
+                    }}
+                    className={`w-full rounded-lg border pl-8 pr-8 py-1.5 text-xs focus:outline-none transition ${
+                      isDark
+                        ? 'bg-white/[0.04] border-white/[0.06] text-zinc-100 placeholder-zinc-500 focus:border-white/[0.2]'
+                        : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400'
+                    }`}
+                  />
+                  {(activeTab === 'expenses' ? expenseSearchQuery : searchTerm) && (
+                    <button
+                      onClick={() => {
+                        if (activeTab === 'expenses') {
+                          setExpenseSearchQuery('')
+                        } else {
+                          setSearchTerm('')
+                        }
+                      }}
+                      className="absolute right-2.5 top-2 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                    >
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
 
-              {/* 2. Dashboard (Charts & Status) */}
-              <button
-                onClick={() => handleTabChange('dashboard')}
-                className={`px-2 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                  (isTabSwitching ? tabSwitchTarget === 'dashboard' : activeTab === 'dashboard')
-                    ? isDark
-                      ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
-                      : 'bg-white text-zinc-950 shadow-sm font-semibold'
-                    : isDark
-                    ? 'text-zinc-400 hover:text-zinc-200'
-                    : 'text-zinc-500 hover:text-zinc-900'
-                }`}
-                title="Dashboard"
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="20" x2="18" y2="10" />
-                  <line x1="12" y1="20" x2="12" y2="4" />
-                  <line x1="6" y1="20" x2="6" y2="14" />
-                </svg>
-                <span className="hidden md:inline">Dashboard</span>
-              </button>
+              {/* Right: Views Switcher + Action Buttons */}
+              <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                {/* Mobile Search Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsMobileSearchOpen(true)}
+                  className={`sm:hidden p-2 rounded-lg transition cursor-pointer shrink-0 ${
+                    isDark
+                      ? 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+                  }`}
+                  title="Search"
+                  aria-label="Search"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                </button>
 
-              {/* 3. Board (Kanban) */}
-              <button
-                onClick={() => handleTabChange('board')}
-                className={`px-2 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                  (isTabSwitching ? tabSwitchTarget === 'board' : activeTab === 'board')
-                    ? isDark
-                      ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
-                      : 'bg-white text-zinc-950 shadow-sm font-semibold'
-                    : isDark
-                    ? 'text-zinc-400 hover:text-zinc-200'
-                    : 'text-zinc-500 hover:text-zinc-900'
-                }`}
-                title="Board"
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="7" height="18" rx="1" />
-                  <rect x="14" y="3" width="7" height="18" rx="1" />
-                </svg>
-                <span className="hidden md:inline">Board</span>
-              </button>
+                {/* View Switcher Segmented Pill */}
+                <div
+                  className={`flex items-center p-0.5 rounded-lg border ${
+                    isDark
+                      ? 'bg-white/[0.04] border-white/[0.06]'
+                      : 'bg-zinc-100 border-zinc-200'
+                  }`}
+                >
+                  {/* 1. Inbox Table */}
+                  <button
+                    onClick={() => handleTabChange('inbox')}
+                    className={`px-1.5 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                      (isTabSwitching ? tabSwitchTarget === 'inbox' : activeTab === 'inbox')
+                        ? isDark
+                          ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                          : 'bg-white text-zinc-950 shadow-sm font-semibold'
+                        : isDark
+                        ? 'text-zinc-400 hover:text-zinc-200'
+                        : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                    title="Inbox"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+                      <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+                    </svg>
+                    <span className="hidden md:inline">Inbox</span>
+                  </button>
 
-              {/* 4. Notes (Daily Standup) */}
-              <button
-                onClick={() => handleTabChange('notes')}
-                className={`px-2 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                  (isTabSwitching ? tabSwitchTarget === 'notes' : activeTab === 'notes')
-                    ? isDark
-                      ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
-                      : 'bg-white text-zinc-950 shadow-sm font-semibold'
-                    : isDark
-                    ? 'text-zinc-400 hover:text-zinc-200'
-                    : 'text-zinc-500 hover:text-zinc-900'
-                }`}
-                title="Notes"
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                </svg>
-                <span className="hidden md:inline">Notes</span>
-              </button>
+                  {/* 2. Dashboard (Charts & Status) */}
+                  <button
+                    onClick={() => handleTabChange('dashboard')}
+                    className={`px-1.5 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                      (isTabSwitching ? tabSwitchTarget === 'dashboard' : activeTab === 'dashboard')
+                        ? isDark
+                          ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                          : 'bg-white text-zinc-950 shadow-sm font-semibold'
+                        : isDark
+                        ? 'text-zinc-400 hover:text-zinc-200'
+                        : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                    title="Dashboard"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="20" x2="18" y2="10" />
+                      <line x1="12" y1="20" x2="12" y2="4" />
+                      <line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                    <span className="hidden md:inline">Dashboard</span>
+                  </button>
 
-              {/* 5. Expenses (Expense Tracker) */}
-              <button
-                onClick={() => handleTabChange('expenses')}
-                className={`px-2 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                  (isTabSwitching ? tabSwitchTarget === 'expenses' : activeTab === 'expenses')
-                    ? isDark
-                      ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
-                      : 'bg-white text-zinc-950 shadow-sm font-semibold'
-                    : isDark
-                    ? 'text-zinc-400 hover:text-zinc-200'
-                    : 'text-zinc-500 hover:text-zinc-900'
-                }`}
-                title="Expenses"
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <line x1="2" y1="10" x2="22" y2="10" />
-                  <line x1="6" y1="15" x2="10" y2="15" />
-                </svg>
-                <span className="hidden md:inline">Expenses</span>
-              </button>
-            </div>
+                  {/* 3. Board (Kanban) */}
+                  <button
+                    onClick={() => handleTabChange('board')}
+                    className={`px-1.5 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                      (isTabSwitching ? tabSwitchTarget === 'board' : activeTab === 'board')
+                        ? isDark
+                          ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                          : 'bg-white text-zinc-950 shadow-sm font-semibold'
+                        : isDark
+                        ? 'text-zinc-400 hover:text-zinc-200'
+                        : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                    title="Board"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="7" height="18" rx="1" />
+                      <rect x="14" y="3" width="7" height="18" rx="1" />
+                    </svg>
+                    <span className="hidden md:inline">Board</span>
+                  </button>
 
-            {/* Activity Heatmap Header Companion Button */}
-            <button
-              type="button"
-              onClick={() => setIsActivityModalOpen(true)}
-              className={`p-2 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-                isDark
-                  ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.06]'
-                  : 'border-zinc-200 text-zinc-700 hover:bg-zinc-100 bg-white shadow-2xs'
-              }`}
-              title="Activity Heatmap"
-              aria-label="Activity Heatmap"
-            >
-              <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="14" width="7" height="7" rx="1" />
-                <rect x="3" y="14" width="7" height="7" rx="1" />
-              </svg>
-              <span className="hidden sm:inline">Heatmap</span>
-            </button>
+                  {/* 4. Notes (Daily Standup) */}
+                  <button
+                    onClick={() => handleTabChange('notes')}
+                    className={`px-1.5 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                      (isTabSwitching ? tabSwitchTarget === 'notes' : activeTab === 'notes')
+                        ? isDark
+                          ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                          : 'bg-white text-zinc-950 shadow-sm font-semibold'
+                        : isDark
+                        ? 'text-zinc-400 hover:text-zinc-200'
+                        : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                    title="Notes"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    </svg>
+                    <span className="hidden md:inline">Notes</span>
+                  </button>
 
-            {/* Create button */}
-            <Button
-              variant="ticket"
-              size="sm"
-              theme={theme}
-              onClick={activeTab === 'expenses' ? handleOpenAddExpense : handleOpenCreateTicket}
-              className="shrink-0 px-2 sm:px-2.5"
-              title={activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
-              aria-label={activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
-              leftIcon={
-                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-              }
-            >
-              <span className="hidden sm:inline">
-                {activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
-              </span>
-            </Button>
-          </div>
+                  {/* 5. Expenses (Expense Tracker) */}
+                  <button
+                    onClick={() => handleTabChange('expenses')}
+                    className={`px-1.5 sm:px-2.5 md:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                      (isTabSwitching ? tabSwitchTarget === 'expenses' : activeTab === 'expenses')
+                        ? isDark
+                          ? 'bg-white/[0.12] text-white shadow-sm font-semibold'
+                          : 'bg-white text-zinc-950 shadow-sm font-semibold'
+                        : isDark
+                        ? 'text-zinc-400 hover:text-zinc-200'
+                        : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                    title="Expenses"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <line x1="2" y1="10" x2="22" y2="10" />
+                      <line x1="6" y1="15" x2="10" y2="15" />
+                    </svg>
+                    <span className="hidden md:inline">Expenses</span>
+                  </button>
+                </div>
+
+                {/* Version Manager Header Companion Button (Desktop) */}
+                <button
+                  type="button"
+                  onClick={() => setIsVersionModalOpen(true)}
+                  className={`hidden sm:flex p-2 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium items-center gap-1.5 transition cursor-pointer shrink-0 ${
+                    isDark
+                      ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.06]'
+                      : 'border-zinc-200 text-zinc-700 hover:bg-zinc-100 bg-white shadow-2xs'
+                  }`}
+                  title="Manage Release Versions"
+                  aria-label="Manage Versions"
+                >
+                  <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                    <line x1="7" y1="7" x2="7.01" y2="7" />
+                  </svg>
+                  <span className="hidden md:inline">Versions</span>
+                </button>
+
+                {/* Activity Heatmap Header Companion Button (Desktop) */}
+                <button
+                  type="button"
+                  onClick={() => setIsActivityModalOpen(true)}
+                  className={`hidden sm:flex p-2 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium items-center gap-1.5 transition cursor-pointer shrink-0 ${
+                    isDark
+                      ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.06]'
+                      : 'border-zinc-200 text-zinc-700 hover:bg-zinc-100 bg-white shadow-2xs'
+                  }`}
+                  title="Activity Heatmap"
+                  aria-label="Activity Heatmap"
+                >
+                  <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                  <span className="hidden md:inline">Heatmap</span>
+                </button>
+
+                {/* Create button */}
+                <Button
+                  variant="ticket"
+                  size="sm"
+                  theme={theme}
+                  onClick={activeTab === 'expenses' ? handleOpenAddExpense : handleOpenCreateTicket}
+                  className="shrink-0 px-2 sm:px-2.5"
+                  title={activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+                  aria-label={activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+                  leftIcon={
+                    <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  }
+                >
+                  <span className="hidden sm:inline">
+                    {activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+                  </span>
+                </Button>
+              </div>
+            </>
+          )}
         </header>
 
         {/* Error Notification */}
@@ -1563,9 +1746,21 @@ export default function Home() {
         existingTicket={editingTicket}
         initialMode={modalMode}
         availableProjects={availableProjects}
+        availableVersions={availableVersions}
         currentProject={selectedProject}
         theme={theme}
         onToggleBookmark={handleToggleBookmark}
+        onOpenCreateVersionModal={() => setIsVersionModalOpen(true)}
+      />
+
+      {/* Separate Version Creation & Management Modal */}
+      <VersionModal
+        isOpen={isVersionModalOpen}
+        onClose={() => setIsVersionModalOpen(false)}
+        versions={availableVersions}
+        onCreateVersion={handleCreateVersion}
+        onDeleteVersion={handleDeleteVersion}
+        theme={theme}
       />
 
       {/* Confirm Delete Ticket Modal */}

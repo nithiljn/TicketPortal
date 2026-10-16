@@ -139,6 +139,7 @@ interface SidebarProps {
   onOpenCreateWorkspaceModal?: () => void
   onDeleteWorkspace?: (proj: string) => void
   onOpenActivityModal?: () => void
+  onOpenVersionModal?: () => void
 
   // Active Tab
   activeTab?: 'inbox' | 'dashboard' | 'board' | 'notes' | 'expenses'
@@ -223,6 +224,7 @@ export function Sidebar({
   onOpenCategoryModal,
   onOpenAddExpenseModal,
   onOpenActivityModal,
+  onOpenVersionModal,
 }: SidebarProps) {
   const isDark = theme === 'dark'
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -377,21 +379,44 @@ export function Sidebar({
               {activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
             </Button>
 
-            {/* Activity Heatmap button below New Ticket */}
-            {onOpenActivityModal && (
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenActivityModal()
-                  onClose()
-                }}
-                className={`w-full mt-2 py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  isDark
-                    ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.04]'
-                    : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50 shadow-2xs'
-                }`}
-                title="View consistency activity heatmap"
-              >
+          {/* Version Management button */}
+          {onOpenVersionModal && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenVersionModal()
+                onClose()
+              }}
+              className={`w-full mt-2 py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                isDark
+                  ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.04]'
+                  : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50 shadow-2xs'
+              }`}
+              title="Manage release versions"
+            >
+              <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                <line x1="7" y1="7" x2="7.01" y2="7" />
+              </svg>
+              <span>Manage Versions</span>
+            </button>
+          )}
+
+          {/* Activity Heatmap button below New Ticket */}
+          {onOpenActivityModal && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenActivityModal()
+                onClose()
+              }}
+              className={`w-full ${onOpenVersionModal ? 'mt-1.5' : 'mt-2'} py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                isDark
+                  ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.04]'
+                  : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50 shadow-2xs'
+              }`}
+              title="View consistency activity heatmap"
+            >
                 <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="7" height="7" rx="1" />
                   <rect x="14" y="3" width="7" height="7" rx="1" />

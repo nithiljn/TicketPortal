@@ -52,7 +52,7 @@ export function ConfirmModal({
     : 'bg-zinc-100 border-zinc-200 text-zinc-800'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in duration-150 select-none">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in duration-150 select-none">
       <div
         className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl transition-all duration-150 ${modalBg}`}
       >

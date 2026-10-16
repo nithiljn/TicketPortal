@@ -26,6 +26,7 @@ const typeDefs = /* GraphQL */ `
     status: TicketStatus!
     priority: TicketPriority!
     category: String!
+    version: String
     projectName: String!
     createdBy: String!
     updatedBy: String!
@@ -65,6 +66,7 @@ const typeDefs = /* GraphQL */ `
     status: TicketStatus
     priority: TicketPriority
     category: String
+    version: String
     projectName: String
     createdBy: String
     isBookmarked: Boolean
@@ -78,6 +80,7 @@ const typeDefs = /* GraphQL */ `
     status: TicketStatus
     priority: TicketPriority
     category: String
+    version: String
     projectName: String
     updatedBy: String
     isBookmarked: Boolean
@@ -124,6 +127,7 @@ const typeDefs = /* GraphQL */ `
     ): [Ticket!]!
     ticket(id: ID, ticketId: String): Ticket
     projects(userEmail: String): [String!]!
+    versions(userEmail: String): [String!]!
     dailyNotes(date: String, userEmail: String): [DailyNote!]!
     expenses(
       userEmail: String
@@ -142,6 +146,8 @@ const typeDefs = /* GraphQL */ `
     updateTicket(id: ID!, input: UpdateTicketInput!): Ticket!
     toggleBookmark(id: ID!): Ticket!
     deleteTicket(id: ID!, userEmail: String): Boolean!
+    createVersion(version: String!, userEmail: String): String!
+    deleteVersion(version: String!, userEmail: String): Boolean!
     createDailyNote(input: CreateDailyNoteInput!): DailyNote!
     updateDailyNote(id: ID!, content: String!, userEmail: String): DailyNote!
     deleteDailyNote(id: ID!, userEmail: String): Boolean!
@@ -165,6 +171,7 @@ interface TicketRow {
   status: string
   priority: string
   category: string
+  version?: string | null
   project_name: string
   created_by: string
   updated_by: string
@@ -236,6 +243,33 @@ function packDescription(desc: string | null, commands?: string | null): string 
   return `${clean}\n\n${COMMANDS_START}\n${cmds}\n${COMMANDS_END}`
 }
 
+const VERSION_TAG_START = '<!-- TICKET_VERSION:'
+const VERSION_TAG_END = ' -->'
+
+function extractVersion(rawDesc: string | null): { cleanDescription: string; version?: string } {
+  if (!rawDesc) return { cleanDescription: '' }
+  const sIdx = rawDesc.indexOf(VERSION_TAG_START)
+  if (sIdx !== -1) {
+    const eIdx = rawDesc.indexOf(VERSION_TAG_END, sIdx)
+    if (eIdx !== -1) {
+      const version = rawDesc.substring(sIdx + VERSION_TAG_START.length, eIdx).trim()
+      const cleanDescription = (rawDesc.substring(0, sIdx) + rawDesc.substring(eIdx + VERSION_TAG_END.length)).trim()
+      return { cleanDescription, version }
+    }
+  }
+  return { cleanDescription: rawDesc }
+}
+
+function packVersion(desc: string | null, version?: string | null): string | null {
+  if (!version) return desc
+  const clean = desc ? desc.replace(/<!-- TICKET_VERSION:.*? -->/g, '').trim() : ''
+  const tag = `${VERSION_TAG_START}${version.trim()}${VERSION_TAG_END}`
+  return clean ? `${clean}\n\n${tag}` : tag
+}
+
+// In-memory fallback version registry per user
+const inMemoryUserVersions = new Map<string, Set<string>>()
+
 interface NoteRow {
   id: string
   date: string
@@ -256,9 +290,10 @@ function formatTicket(row: TicketRow, fallbackSeq?: number) {
   const displayAuthor = formatAuthor(row.created_by)
   const { cleanDescription: rawCleanDesc, commands: extractedCmds } = extractCommands(row.description)
   const { cleanDescription: descWithoutBm, isBookmarked: embeddedBookmark } = extractBookmark(rawCleanDesc)
-  const embeddedId = extractTicketRefId(descWithoutBm)
-  const cleanDescription = descWithoutBm
-    ? descWithoutBm.replace(/<!-- TICKET_REF_ID:.*? -->/g, '').trim()
+  const { cleanDescription: descWithoutVer, version: embeddedVersion } = extractVersion(descWithoutBm)
+  const embeddedId = extractTicketRefId(descWithoutVer)
+  const cleanDescription = descWithoutVer
+    ? descWithoutVer.replace(/<!-- TICKET_REF_ID:.*? -->/g, '').trim()
     : ''
 
   const finalCommands =
@@ -288,6 +323,8 @@ function formatTicket(row: TicketRow, fallbackSeq?: number) {
     resolvedTicketId = String(1000 + (hash % 9000))
   }
 
+  const finalVersion = row.version || embeddedVersion || undefined
+
   return {
     id: row.id,
     ticketId: resolvedTicketId,
@@ -297,6 +334,7 @@ function formatTicket(row: TicketRow, fallbackSeq?: number) {
     status: row.status,
     priority: row.priority,
     category: row.category,
+    version: finalVersion,
     projectName: row.project_name || 'General',
     createdBy: displayAuthor,
     updatedBy: formatAuthor(row.updated_by || row.created_by),
@@ -526,6 +564,51 @@ const resolvers = {
       }
 
       return Array.from(projectSet)
+    },
+
+    versions: async (
+      _: unknown,
+      { userEmail }: { userEmail?: string },
+      context?: GraphQLContext
+    ) => {
+      const email = resolveTargetEmail(userEmail, context) || 'default'
+      const versionSet = new Set<string>(['v1.0.0', 'v1.1.0', 'v2.0.0'])
+
+      // Add user in-memory versions
+      const userVers = inMemoryUserVersions.get(email)
+      if (userVers) {
+        userVers.forEach((v) => versionSet.add(v))
+      }
+
+      // Check persisted user-scoped versions in workspaces table (name format `${email}:::version:::${versionName}`)
+      try {
+        const { data: wData } = await supabase.from('workspaces').select('name')
+        if (wData) {
+          const userPrefix = `${email}:::version:::`
+          wData.forEach((w: { name: string }) => {
+            if (w.name.startsWith(userPrefix)) {
+              versionSet.add(w.name.slice(userPrefix.length))
+            }
+          })
+        }
+      } catch {
+        // ignore
+      }
+
+      // Also extract any versions already assigned to tickets
+      try {
+        const { data: tData } = await supabase.from('tickets').select('description')
+        if (tData) {
+          tData.forEach((t: { description: string | null }) => {
+            const { version } = extractVersion(t.description)
+            if (version) versionSet.add(version)
+          })
+        }
+      } catch {
+        // ignore
+      }
+
+      return Array.from(versionSet)
     },
 
     ticket: async (
@@ -814,6 +897,7 @@ const resolvers = {
           status?: string
           priority?: string
           category?: string
+          version?: string
           projectName?: string
           createdBy?: string
           isBookmarked?: boolean
@@ -850,7 +934,7 @@ const resolvers = {
 
       const assignedTicketId = (input.ticketId && input.ticketId.trim()) || String(nextSeq)
 
-      // 1. First attempt to insert with native 'ticket_id', 'commands', and 'is_bookmarked' columns
+      // 1. First attempt to insert with native columns
       const basePayload: Record<string, unknown> = {
         ticket_id: assignedTicketId,
         title: input.title,
@@ -863,6 +947,9 @@ const resolvers = {
         created_by: context?.currentUser?.email || input.createdBy || 'Nithil',
         updated_by: context?.currentUser?.email || input.createdBy || 'Nithil',
       }
+      if (input.version !== undefined) {
+        basePayload.version = input.version || null
+      }
       if (input.isBookmarked !== undefined) {
         basePayload.is_bookmarked = input.isBookmarked
       }
@@ -874,7 +961,7 @@ const resolvers = {
         .single()
 
       if (error) {
-        // Fallback: If ticket_id, commands, or is_bookmarked column doesn't exist yet on Supabase table (PGRST204)
+        // Fallback: If ticket_id, commands, is_bookmarked, or version column doesn't exist yet on Supabase table (PGRST204)
         delete basePayload.ticket_id
         if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('commands')) {
           delete basePayload.commands
@@ -882,11 +969,17 @@ const resolvers = {
         if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('is_bookmarked')) {
           delete basePayload.is_bookmarked
         }
+        if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('version')) {
+          delete basePayload.version
+        }
 
         let packed = packDescription(input.description || null, input.commands || null)
         packed = packTicketRefId(packed, assignedTicketId)
         if (input.isBookmarked) {
           packed = packBookmark(packed, input.isBookmarked)
+        }
+        if (input.version) {
+          packed = packVersion(packed, input.version)
         }
         basePayload.description = packed
 
@@ -920,6 +1013,7 @@ const resolvers = {
           status?: string
           priority?: string
           category?: string
+          version?: string
           projectName?: string
           updatedBy?: string
           isBookmarked?: boolean
@@ -934,6 +1028,7 @@ const resolvers = {
       if (input.status !== undefined) updateData.status = input.status
       if (input.priority !== undefined) updateData.priority = input.priority
       if (input.category !== undefined) updateData.category = input.category
+      if (input.version !== undefined) updateData.version = input.version || null
       if (input.projectName !== undefined) updateData.project_name = input.projectName
       if (input.updatedBy !== undefined) updateData.updated_by = input.updatedBy
       if (input.isBookmarked !== undefined) updateData.is_bookmarked = input.isBookmarked
@@ -970,6 +1065,16 @@ const resolvers = {
             baseDesc = cur?.description || null
           }
           updateData.description = packBookmark(baseDesc ?? null, input.isBookmarked)
+          shouldRetry = true
+        }
+        if (error.code === 'PGRST204' || error.message?.toLowerCase().includes('version')) {
+          delete updateData.version
+          let baseDesc = (updateData.description as string | undefined) ?? input.description
+          if (baseDesc === undefined) {
+            const { data: cur } = await supabase.from('tickets').select('description').eq('id', id).single()
+            baseDesc = cur?.description || null
+          }
+          updateData.description = packVersion(baseDesc ?? null, input.version)
           shouldRetry = true
         }
 
@@ -1068,6 +1173,53 @@ const resolvers = {
         console.error('Supabase deleteTicket error:', error)
         throw new Error(error.message)
       }
+      return true
+    },
+
+    createVersion: async (
+      _: unknown,
+      { version, userEmail }: { version: string; userEmail?: string },
+      context?: GraphQLContext
+    ) => {
+      const email = resolveTargetEmail(userEmail, context) || 'default'
+      const trimmed = version.trim()
+      if (!trimmed) throw new Error('Version cannot be empty')
+
+      if (!inMemoryUserVersions.has(email)) {
+        inMemoryUserVersions.set(email, new Set(['v1.0.0', 'v1.1.0', 'v2.0.0']))
+      }
+      inMemoryUserVersions.get(email)!.add(trimmed)
+
+      try {
+        const userWorkspaceVersionKey = `${email}:::version:::${trimmed}`
+        await supabase.from('workspaces').insert([{ name: userWorkspaceVersionKey }])
+      } catch {
+        // ignore error if workspaces table unavailable
+      }
+
+      return trimmed
+    },
+
+    deleteVersion: async (
+      _: unknown,
+      { version, userEmail }: { version: string; userEmail?: string },
+      context?: GraphQLContext
+    ) => {
+      const email = resolveTargetEmail(userEmail, context) || 'default'
+      const trimmed = version.trim()
+
+      const userVers = inMemoryUserVersions.get(email)
+      if (userVers) {
+        userVers.delete(trimmed)
+      }
+
+      try {
+        const userWorkspaceVersionKey = `${email}:::version:::${trimmed}`
+        await supabase.from('workspaces').delete().eq('name', userWorkspaceVersionKey)
+      } catch {
+        // ignore
+      }
+
       return true
     },
 

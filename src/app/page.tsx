@@ -1636,7 +1636,7 @@ export default function Home() {
 
               {/* View 4: Daily Work Logs */}
               {activeTab === 'notes' && (
-                <div className="p-4 sm:p-6">
+                <div className="p-2.5 sm:p-6">
                   <DailyNotes
                     notes={dailyNotes}
                     onAddNote={handleAddDailyNote}

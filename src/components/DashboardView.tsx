@@ -551,7 +551,7 @@ export function DashboardView({
                       )}
                     </div>
                     <span className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium border ${themeTag}`}>
-                      @{note.createdBy || 'jamnithil'}
+                      {note.createdBy?.startsWith('@') ? note.createdBy : `@${note.createdBy || 'jamnithil'}`}
                     </span>
                   </div>
 

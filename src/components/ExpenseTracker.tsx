@@ -765,9 +765,9 @@ export function ExpenseTracker({
         </div>
       </div>
 
-      <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto w-full">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
         {/* 1. Header & Actions Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div>
             <div className="flex items-center gap-2.5">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-base transition-all shrink-0 ${
@@ -777,18 +777,18 @@ export function ExpenseTracker({
               }`}>
                 ₹
               </div>
-              <div>
-                <h1 className="text-base sm:text-lg font-bold tracking-tight">
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg font-bold tracking-tight truncate">
                   Expense Tracker
                 </h1>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-zinc-500 truncate">
                   Monitor spending, manage categories, and review daily expenditure
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             {/* Quick Month Filter Selector */}
             <select
               value={activeMonth}
@@ -813,7 +813,7 @@ export function ExpenseTracker({
               type="button"
               onClick={handleDownloadPdf}
               disabled={isGeneratingPdf || filteredExpenses.length === 0}
-              className={`h-8 px-3 rounded-xl border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
+              className={`h-8 px-2.5 sm:px-3 rounded-xl border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
               isDark
                 ? 'bg-zinc-900 border-zinc-800 text-zinc-200 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 disabled:opacity-50'
                 : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300 shadow-2xs disabled:opacity-50'
@@ -835,7 +835,8 @@ export function ExpenseTracker({
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
             )}
-            <span>{isGeneratingPdf ? 'Generating...' : 'Download PDF'}</span>
+            <span className="hidden min-[480px]:inline">{isGeneratingPdf ? 'Generating...' : 'Download PDF'}</span>
+            <span className="min-[480px]:hidden">{isGeneratingPdf ? 'PDF...' : 'PDF'}</span>
           </button>
 
           {/* Manage Categories Button */}
@@ -858,61 +859,61 @@ export function ExpenseTracker({
       </div>
 
       {/* 2. KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Card 1: Total Spent */}
-        <div className={`p-4 rounded-2xl border ${cardBg}`}>
+        <div className={`p-3 sm:p-4 rounded-2xl border ${cardBg}`}>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-400">
+            <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-zinc-400 truncate">
               Total Spent
             </span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono border ${
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono border shrink-0 ${
               isDark ? 'bg-white/[0.04] text-zinc-400 border-white/[0.06]' : 'bg-zinc-100 text-zinc-600 border-zinc-200'
             }`}>
               {stats.count} txns
             </span>
           </div>
-          <div className="text-xl sm:text-2xl font-bold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
+          <div className="text-lg sm:text-2xl font-bold font-mono mt-1 text-zinc-900 dark:text-zinc-100 truncate">
             {formatMoney(stats.totalAmount)}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-1">
+          <div className="text-[10px] sm:text-[11px] text-zinc-500 mt-1 truncate">
             {activeMonth === 'ALL' ? 'Total all time spend' : `Spend for ${formatMonthName(activeMonth)}`}
           </div>
         </div>
 
         {/* Card 2: Today's Spend */}
-        <div className={`p-4 rounded-2xl border ${cardBg}`}>
-          <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-400">
+        <div className={`p-3 sm:p-4 rounded-2xl border ${cardBg}`}>
+          <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-zinc-400 block truncate">
             Today&apos;s Spend
           </span>
-          <div className="text-xl sm:text-2xl font-bold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
+          <div className="text-lg sm:text-2xl font-bold font-mono mt-1 text-zinc-900 dark:text-zinc-100 truncate">
             {formatMoney(stats.todayAmount)}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-1">
-            Recorded expenses for today
+          <div className="text-[10px] sm:text-[11px] text-zinc-500 mt-1 truncate">
+            Recorded for today
           </div>
         </div>
 
         {/* Card 3: Daily Average */}
-        <div className={`p-4 rounded-2xl border ${cardBg}`}>
-          <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-400">
+        <div className={`p-3 sm:p-4 rounded-2xl border ${cardBg}`}>
+          <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-zinc-400 block truncate">
             Daily Average
           </span>
-          <div className="text-xl sm:text-2xl font-bold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
+          <div className="text-lg sm:text-2xl font-bold font-mono mt-1 text-zinc-900 dark:text-zinc-100 truncate">
             {formatMoney(stats.dailyAverage)}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-1">
-            Average spent per active day
+          <div className="text-[10px] sm:text-[11px] text-zinc-500 mt-1 truncate">
+            Average per active day
           </div>
         </div>
 
         {/* Card 4: Top Category */}
-        <div className={`p-4 rounded-2xl border ${cardBg}`}>
+        <div className={`p-3 sm:p-4 rounded-2xl border ${cardBg}`}>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-400">
+            <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-zinc-400 truncate">
               Top Category
             </span>
             {stats.topCategoryPercent > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/10 text-zinc-400 font-mono font-medium">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/10 text-zinc-400 font-mono font-medium shrink-0">
                 {stats.topCategoryPercent}%
               </span>
             )}
@@ -920,7 +921,7 @@ export function ExpenseTracker({
           <div className="text-sm sm:text-base font-bold font-mono truncate mt-1 text-zinc-900 dark:text-zinc-100">
             {stats.topCategory}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-1 font-mono">
+          <div className="text-[10px] sm:text-[11px] text-zinc-500 mt-1 font-mono truncate">
             {stats.topCategoryAmount > 0 ? formatMoney(stats.topCategoryAmount) : 'No data'}
           </div>
         </div>
@@ -1083,7 +1084,7 @@ export function ExpenseTracker({
         </div>
 
         {/* Right: Daily Spending Trend Bars */}
-        <div className={`p-5 rounded-2xl border ${cardBg}`}>
+        <div className={`p-4 sm:p-5 rounded-2xl border ${cardBg}`}>
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-inherit">
             <h3 className="text-xs font-semibold uppercase tracking-wider">
               Daily Spending Trend
@@ -1098,27 +1099,29 @@ export function ExpenseTracker({
               <span>No daily spend trend to display</span>
             </div>
           ) : (
-            <div className="h-44 flex items-end gap-2 pt-6 pb-2 px-1">
-              {dailySpendData.map((d) => (
-                <div key={d.date} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group relative">
-                  {/* Tooltip on Hover */}
-                  <div className="absolute -top-7 hidden group-hover:flex flex-col items-center z-10 pointer-events-none">
-                    <span className="px-1.5 py-0.5 rounded bg-zinc-900 text-white text-[10px] font-mono whitespace-nowrap shadow-lg">
-                      {formatMoney(d.amount)}
+            <div className="overflow-x-auto custom-scrollbar -mx-1 px-1">
+              <div className="h-44 flex items-end gap-2 pt-6 pb-2 px-1 min-w-[280px]">
+                {dailySpendData.map((d) => (
+                  <div key={d.date} className="flex-1 min-w-[24px] flex flex-col items-center gap-1.5 h-full justify-end group relative">
+                    {/* Tooltip on Hover */}
+                    <div className="absolute -top-7 hidden group-hover:flex flex-col items-center z-10 pointer-events-none">
+                      <span className="px-1.5 py-0.5 rounded bg-zinc-900 text-white text-[10px] font-mono whitespace-nowrap shadow-lg">
+                        {formatMoney(d.amount)}
+                      </span>
+                    </div>
+                    {/* Bar */}
+                    <div className="w-full max-w-[28px] bg-zinc-500/10 rounded-t-md flex items-end h-full overflow-hidden">
+                      <div
+                        className="w-full bg-emerald-500 hover:bg-emerald-400 rounded-t-md transition-all duration-300"
+                        style={{ height: `${Math.max(8, d.percentage)}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-mono text-zinc-500 truncate max-w-full">
+                      {d.displayDate}
                     </span>
                   </div>
-                  {/* Bar */}
-                  <div className="w-full max-w-[28px] bg-zinc-500/10 rounded-t-md flex items-end h-full overflow-hidden">
-                    <div
-                      className="w-full bg-emerald-500 hover:bg-emerald-400 rounded-t-md transition-all duration-300"
-                      style={{ height: `${Math.max(8, d.percentage)}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] font-mono text-zinc-500 truncate">
-                    {d.displayDate}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -1197,26 +1200,27 @@ export function ExpenseTracker({
             return (
               <div key={dateStr} className={`rounded-2xl border overflow-hidden ${cardBg}`}>
                 {/* Date Header */}
-                <div className={`px-4 sm:px-5 py-2.5 border-b border-inherit flex items-center justify-between ${
+                <div className={`px-3.5 sm:px-5 py-2.5 border-b border-inherit flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 ${
                   isDark ? 'bg-black/20' : 'bg-zinc-50'
                 }`}>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                       <line x1="16" y1="2" x2="16" y2="6" />
                       <line x1="8" y1="2" x2="8" y2="6" />
                       <line x1="3" y1="10" x2="21" y2="10" />
                     </svg>
-                    <span className="text-xs font-bold font-mono">
-                      {dateStr === now.toISOString().split('T')[0] ? 'Today - ' : ''}
+                    <span className="text-xs font-bold font-mono whitespace-nowrap">
+                      {dateStr === now.toISOString().split('T')[0] ? 'Today • ' : ''}
                       {dateStr}
                     </span>
-                    <span className="text-[11px] text-zinc-500">
-                      ({dayExpenses.length} {dayExpenses.length === 1 ? 'transaction' : 'transactions'})
+                    <span className="text-[11px] text-zinc-500 whitespace-nowrap">
+                      ({dayExpenses.length} {dayExpenses.length === 1 ? 'txn' : 'txns'})
                     </span>
                   </div>
-                  <div className="font-mono text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                    Day Total: {formatMoney(dayTotal)}
+                  <div className="font-mono text-xs font-semibold text-zinc-900 dark:text-zinc-100 whitespace-nowrap">
+                    <span className="text-zinc-500 font-sans text-[11px] font-normal mr-1">Day Total:</span>
+                    {formatMoney(dayTotal)}
                   </div>
                 </div>
 
@@ -1230,13 +1234,13 @@ export function ExpenseTracker({
                       <div
                         key={exp.id}
                         onDoubleClick={() => setViewingExpense(exp)}
-                        className={`p-3.5 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition cursor-pointer select-none ${
+                        className={`p-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 transition cursor-pointer select-none ${
                           isDark ? 'hover:bg-white/[0.04]' : 'hover:bg-zinc-50'
                         }`}
                         title="Double-click to view receipt details"
                       >
                         {/* Left Info */}
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="flex items-start gap-2.5 sm:gap-3 flex-1 min-w-0">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
                             isDark ? 'bg-white/[0.04] border-white/[0.06]' : 'bg-zinc-100 border-zinc-200'
                           }`}>
@@ -1245,11 +1249,11 @@ export function ExpenseTracker({
 
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                              <span className="text-xs font-semibold text-zinc-100 sm:text-zinc-900 dark:text-zinc-100">
+                              <span className="text-xs font-semibold text-zinc-100 sm:text-zinc-900 dark:text-zinc-100 break-words">
                                 {exp.title}
                               </span>
                               {isHigh && (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-md border font-semibold ${
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-md border font-semibold shrink-0 ${
                                   isDark
                                     ? 'bg-white/[0.06] text-zinc-200 border-white/[0.1]'
                                     : 'bg-zinc-100 text-zinc-800 border-zinc-200'
@@ -1257,14 +1261,14 @@ export function ExpenseTracker({
                                   High
                                 </span>
                               )}
-                              <span className={`inline-flex items-center text-[10px] px-2 py-0.5 rounded-md border font-medium ${
+                              <span className={`inline-flex items-center text-[10px] px-2 py-0.5 rounded-md border font-medium shrink-0 ${
                                 isDark
                                   ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]'
                                   : 'bg-zinc-100 text-zinc-700 border-zinc-200'
                               }`}>
                                 {exp.category}
                               </span>
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded-md border font-mono ${
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-md border font-mono shrink-0 ${
                                 isDark
                                   ? 'bg-white/[0.02] text-zinc-400 border-white/[0.06]'
                                   : 'bg-zinc-50 text-zinc-500 border-zinc-200'
@@ -1275,7 +1279,7 @@ export function ExpenseTracker({
 
                             {exp.notes && (
                               <div className="mt-1">
-                                <p className="text-[11px] text-zinc-400 whitespace-pre-line line-clamp-2 leading-relaxed">
+                                <p className="text-[11px] text-zinc-400 whitespace-pre-line line-clamp-2 leading-relaxed break-words">
                                   {exp.notes}
                                 </p>
                               </div>
@@ -1284,17 +1288,17 @@ export function ExpenseTracker({
                         </div>
 
                         {/* Right: Amount & Actions */}
-                        <div className="flex items-center justify-between sm:justify-end gap-3.5 shrink-0 pl-11 sm:pl-0">
-                          <div className="text-right">
-                            <div className="text-sm sm:text-base font-bold font-mono text-zinc-100 sm:text-zinc-900 dark:text-zinc-100">
+                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3.5 shrink-0 pl-10 sm:pl-0">
+                          <div className="text-left sm:text-right">
+                            <div className="text-sm sm:text-base font-bold font-mono text-zinc-100 sm:text-zinc-900 dark:text-zinc-100 whitespace-nowrap">
                               {formatMoney(Number(exp.amount))}
                             </div>
-                            <span className="text-[10px] text-zinc-500">
+                            <span className="text-[10px] text-zinc-500 whitespace-nowrap block">
                               via {methodLabel}
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                             {/* View Details Button */}
                             <button
                               type="button"
@@ -1302,7 +1306,7 @@ export function ExpenseTracker({
                                 e.stopPropagation()
                                 setViewingExpense(exp)
                               }}
-                              className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
+                              className={`h-7.5 px-2 sm:px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
                                 isDark
                                   ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-300 hover:text-white'
                                   : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 hover:text-zinc-950 shadow-2xs'
@@ -1313,7 +1317,7 @@ export function ExpenseTracker({
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                 <circle cx="12" cy="12" r="3" />
                               </svg>
-                              <span>View</span>
+                              <span className="hidden min-[480px]:inline">View</span>
                             </button>
 
                             {/* Edit Button */}
@@ -1323,7 +1327,7 @@ export function ExpenseTracker({
                                 e.stopPropagation()
                                 onEditExpense(exp)
                               }}
-                              className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
+                              className={`h-7.5 px-2 sm:px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
                                 isDark
                                   ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-300 hover:text-white'
                                   : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 hover:text-zinc-950 shadow-2xs'
@@ -1334,7 +1338,7 @@ export function ExpenseTracker({
                                 <path d="M12 20h9" />
                                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                               </svg>
-                              <span>Edit</span>
+                              <span className="hidden min-[480px]:inline">Edit</span>
                             </button>
 
                             {/* Delete Button */}
@@ -1344,7 +1348,7 @@ export function ExpenseTracker({
                                 e.stopPropagation()
                                 onDeleteExpense(exp)
                               }}
-                              className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
+                              className={`h-7.5 px-2 sm:px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
                                 isDark
                                   ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-200'
                                   : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-600 hover:text-zinc-950 shadow-2xs'
@@ -1355,7 +1359,7 @@ export function ExpenseTracker({
                                 <polyline points="3 6 5 6 21 6" />
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                               </svg>
-                              <span>Delete</span>
+                              <span className="hidden min-[480px]:inline">Delete</span>
                             </button>
                           </div>
                         </div>
@@ -1373,37 +1377,37 @@ export function ExpenseTracker({
       {viewingExpense && (
         <div
           onClick={() => setViewingExpense(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className={`w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${
+            className={`w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden flex flex-col max-h-[92vh] ${
               isDark
                 ? 'bg-[#151518] border-white/[0.12] text-zinc-100 shadow-black/80'
                 : 'bg-white border-zinc-200 text-zinc-900 shadow-zinc-500/20'
             }`}
           >
             {/* Modal Header */}
-            <div className={`px-5 py-4 border-b flex items-center justify-between ${
+            <div className={`px-4 sm:px-5 py-3.5 sm:py-4 border-b flex items-center justify-between ${
               isDark ? 'border-white/[0.08] bg-white/[0.02]' : 'border-zinc-100 bg-zinc-50/60'
             }`}>
-              <div className="flex items-center gap-2.5">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
                   isDark ? 'bg-white/[0.04] border-white/[0.08]' : 'bg-zinc-100 border-zinc-200'
                 }`}>
                   {renderPaymentMethodIcon(viewingExpense.paymentMethod)}
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold leading-none">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold leading-none truncate">
                     Expense Details
                   </h3>
-                  <span className="text-[11px] text-zinc-500 mt-1 block font-mono">
+                  <span className="text-[11px] text-zinc-500 mt-1 block font-mono truncate">
                     #{viewingExpense.projectName} • {viewingExpense.date}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -1411,7 +1415,7 @@ export function ExpenseTracker({
                     setViewingExpense(null)
                     onEditExpense(exp)
                   }}
-                  className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition cursor-pointer inline-flex items-center gap-1.5 ${
+                  className={`hidden sm:inline-flex px-2.5 py-1 rounded-lg border text-xs font-medium transition cursor-pointer items-center gap-1.5 ${
                     isDark
                       ? 'border-white/[0.1] hover:bg-white/[0.08] text-zinc-300'
                       : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700'
@@ -1441,71 +1445,71 @@ export function ExpenseTracker({
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 overflow-y-auto space-y-4 custom-scrollbar">
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 sm:space-y-4 custom-scrollbar">
               {/* Hero Amount & Title Card */}
-              <div className={`p-4 rounded-xl border ${
+              <div className={`p-3.5 sm:p-4 rounded-xl border ${
                 isDark ? 'bg-black/30 border-white/[0.06]' : 'bg-zinc-50 border-zinc-200/80'
               }`}>
                 <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1">
                   Total Amount Paid
                 </div>
                 <div className="flex items-baseline justify-between gap-2">
-                  <div className="text-2xl font-extrabold font-mono tracking-tight text-zinc-950 dark:text-white">
+                  <div className="text-xl sm:text-2xl font-extrabold font-mono tracking-tight text-zinc-950 dark:text-white truncate">
                     {formatMoney(Number(viewingExpense.amount))}
                   </div>
-                  <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${
+                  <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border shrink-0 ${
                     isDark ? 'bg-white/[0.06] text-zinc-200 border-white/[0.1]' : 'bg-zinc-200 text-zinc-800 border-zinc-300'
                   }`}>
                     {PAYMENT_METHOD_LABELS[viewingExpense.paymentMethod] || viewingExpense.paymentMethod}
                   </span>
                 </div>
-                <div className="mt-2 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                <div className="mt-2 text-xs sm:text-sm font-medium text-zinc-800 dark:text-zinc-200 break-words">
                   {viewingExpense.title}
                 </div>
               </div>
 
               {/* Transaction Attributes Grid */}
-              <div className="grid grid-cols-2 gap-2.5 text-xs">
-                <div className={`p-3 rounded-xl border ${
+              <div className="grid grid-cols-2 gap-2 sm:gap-2.5 text-xs">
+                <div className={`p-2.5 sm:p-3 rounded-xl border ${
                   isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
                 }`}>
-                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1">
+                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1 truncate">
                     Category
                   </span>
-                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">{viewingExpense.category}</span>
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate block">{viewingExpense.category}</span>
                 </div>
-                <div className={`p-3 rounded-xl border ${
+                <div className={`p-2.5 sm:p-3 rounded-xl border ${
                   isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
                 }`}>
-                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1">
+                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1 truncate">
                     Workspace
                   </span>
-                  <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100">#{viewingExpense.projectName}</span>
+                  <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100 truncate block">#{viewingExpense.projectName}</span>
                 </div>
-                <div className={`p-3 rounded-xl border ${
+                <div className={`p-2.5 sm:p-3 rounded-xl border ${
                   isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
                 }`}>
-                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1">
+                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1 truncate">
                     Date
                   </span>
-                  <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100">{viewingExpense.date}</span>
+                  <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100 truncate block">{viewingExpense.date}</span>
                 </div>
-                <div className={`p-3 rounded-xl border ${
+                <div className={`p-2.5 sm:p-3 rounded-xl border ${
                   isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
                 }`}>
-                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1">
+                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1 truncate">
                     Currency
                   </span>
-                  <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100">{viewingExpense.currency || 'INR'}</span>
+                  <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100 truncate block">{viewingExpense.currency || 'INR'}</span>
                 </div>
               </div>
 
               {/* Receipt Breakdown & Notes Card */}
-              <div className={`p-4 rounded-xl border ${
+              <div className={`p-3.5 sm:p-4 rounded-xl border ${
                 isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
               }`}>
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                     Receipt Breakdown & Remarks
                   </span>
                   {viewingExpense.notes && (
@@ -1533,7 +1537,7 @@ export function ExpenseTracker({
                           }`}
                         >
                           <span className="text-zinc-400 dark:text-zinc-500 font-mono text-xs shrink-0 select-none mt-0.5">•</span>
-                          <span className="flex-1 whitespace-pre-wrap">{cleanContent}</span>
+                          <span className="flex-1 whitespace-pre-wrap break-words">{cleanContent}</span>
                         </div>
                       )
                     })}
@@ -1547,7 +1551,7 @@ export function ExpenseTracker({
             </div>
 
             {/* Modal Footer */}
-            <div className={`p-4 border-t flex items-center justify-between gap-3 ${
+            <div className={`p-3.5 sm:p-4 border-t flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5 ${
               isDark ? 'border-white/[0.08] bg-white/[0.02]' : 'border-zinc-100 bg-zinc-50/60'
             }`}>
               <button
@@ -1557,7 +1561,7 @@ export function ExpenseTracker({
                   setViewingExpense(null)
                   onDeleteExpense(exp)
                 }}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer inline-flex items-center gap-1.5 ${
+                className={`w-full sm:w-auto px-3 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer inline-flex items-center justify-center gap-1.5 ${
                   isDark
                     ? 'border-white/[0.08] hover:border-red-500/30 bg-white/[0.02] hover:bg-red-500/10 text-zinc-400 hover:text-red-400'
                     : 'border-zinc-200 hover:border-red-300 bg-white hover:bg-red-50 text-zinc-600 hover:text-red-600 shadow-2xs'
@@ -1570,7 +1574,18 @@ export function ExpenseTracker({
                 <span>Delete</span>
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setViewingExpense(null)}
+                  className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer text-center ${
+                    isDark
+                      ? 'bg-white/[0.08] hover:bg-white/[0.14] text-zinc-200 border-white/[0.1]'
+                      : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200 shadow-2xs'
+                  }`}
+                >
+                  Close
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -1578,7 +1593,7 @@ export function ExpenseTracker({
                     setViewingExpense(null)
                     onEditExpense(exp)
                   }}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer inline-flex items-center gap-1.5 ${
+                  className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer inline-flex items-center justify-center gap-1.5 ${
                     isDark
                       ? 'bg-white hover:bg-zinc-100 text-zinc-950 border border-white shadow-xs'
                       : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900 shadow-xs'
@@ -1589,17 +1604,6 @@ export function ExpenseTracker({
                     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                   </svg>
                   <span>Edit Expense</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewingExpense(null)}
-                  className={`px-3.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
-                    isDark
-                      ? 'bg-white/[0.08] hover:bg-white/[0.14] text-zinc-200 border-white/[0.1]'
-                      : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200 shadow-2xs'
-                  }`}
-                >
-                  Close
                 </button>
               </div>
             </div>

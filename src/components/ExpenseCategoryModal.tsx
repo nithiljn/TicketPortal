@@ -121,11 +121,11 @@ export function ExpenseCategoryModal({
   const borderBottom = isDark ? 'border-white/[0.06]' : 'border-zinc-200'
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 ${overlayBg} animate-in fade-in duration-150`}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 ${overlayBg} animate-in fade-in duration-150`}>
       <div className={`w-full max-w-lg rounded-2xl border ${modalBg} flex flex-col max-h-[90vh] overflow-hidden`}>
         {/* Header */}
-        <div className={`px-5 py-4 border-b ${borderBottom} flex items-center justify-between`}>
-          <div className="flex items-center gap-2.5">
+        <div className={`px-4 sm:px-5 py-3.5 sm:py-4 border-b ${borderBottom} flex items-center justify-between gap-2.5`}>
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0 ${
               isDark
                 ? 'bg-zinc-800 border border-zinc-700/80 text-white shadow-xs'
@@ -138,16 +138,16 @@ export function ExpenseCategoryModal({
                 <rect x="3" y="14" width="7" height="7" rx="1.5" />
               </svg>
             </div>
-            <div>
-              <h2 className="text-sm font-semibold">Expense Categories</h2>
-              <p className="text-[11px] text-zinc-500">
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold truncate">Expense Categories</h2>
+              <p className="text-[11px] text-zinc-500 truncate">
                 Create & organize custom spending categories
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className={`p-1.5 rounded-lg transition cursor-pointer ${
+            className={`p-1.5 rounded-lg transition cursor-pointer shrink-0 ${
               isDark ? 'text-zinc-400 hover:text-white hover:bg-white/[0.06]' : 'text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100'
             }`}
           >

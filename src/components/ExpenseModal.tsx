@@ -268,11 +268,11 @@ export function ExpenseModal({
   const borderBottom = isDark ? 'border-white/[0.06]' : 'border-zinc-200'
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 ${overlayBg} animate-in fade-in duration-150`}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 ${overlayBg} animate-in fade-in duration-150`}>
       <div className={`w-full max-w-xl rounded-2xl border ${modalBg} flex flex-col max-h-[92vh] overflow-hidden`}>
         {/* Header */}
-        <div className={`px-5 py-4 border-b ${borderBottom} flex items-center justify-between`}>
-          <div className="flex items-center gap-2.5">
+        <div className={`px-4 sm:px-5 py-3.5 sm:py-4 border-b ${borderBottom} flex items-center justify-between gap-2.5`}>
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0 ${
               isDark
                 ? 'bg-zinc-800 border border-zinc-700/80 text-white shadow-xs'
@@ -280,18 +280,18 @@ export function ExpenseModal({
             }`}>
               <span className="font-bold text-sm leading-none select-none font-sans">₹</span>
             </div>
-            <div>
-              <h2 className="text-sm font-semibold">
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold truncate">
                 {expense ? 'Edit Expense' : 'Record New Expense'}
               </h2>
-              <p className="text-[11px] text-zinc-500">
+              <p className="text-[11px] text-zinc-500 truncate">
                 {expense ? 'Update transaction details' : 'Log your spending to track daily & monthly expenses'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className={`p-1.5 rounded-lg transition cursor-pointer ${
+            className={`p-1.5 rounded-lg transition cursor-pointer shrink-0 ${
               isDark ? 'text-zinc-400 hover:text-white hover:bg-white/[0.06]' : 'text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100'
             }`}
           >
@@ -303,7 +303,7 @@ export function ExpenseModal({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 sm:space-y-4 custom-scrollbar">
           {errorMessage && (
             <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
               {errorMessage}

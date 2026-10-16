@@ -93,17 +93,17 @@ export function WorkspaceModal({
   const borderDivider = isDark ? 'border-white/[0.06]' : 'border-zinc-100'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-3 sm:p-4 animate-in fade-in duration-150">
       <div
-        className={`w-full max-w-md rounded-2xl p-5 sm:p-6 shadow-2xl border transition-all animate-in zoom-in-95 duration-150 ${
+        className={`w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-2xl border transition-all animate-in zoom-in-95 duration-150 ${
           isDark
             ? 'bg-[#121215] border-white/[0.08] text-zinc-100'
             : 'bg-white border-zinc-200 text-zinc-900 shadow-xl'
         }`}
       >
         {/* Header */}
-        <div className={`flex items-center justify-between pb-4 border-b ${borderDivider}`}>
-          <div className="flex items-center gap-3">
+        <div className={`flex items-start justify-between gap-2.5 pb-4 border-b ${borderDivider}`}>
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div
               className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                 isDark
@@ -115,9 +115,9 @@ export function WorkspaceModal({
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
               </svg>
             </div>
-            <div>
-              <h2 className="text-sm font-semibold tracking-tight">New Project Workspace</h2>
-              <p className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold tracking-tight truncate">New Project Workspace</h2>
+              <p className={`text-[11px] truncate ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                 Organize and scope tickets under a dedicated workspace
               </p>
             </div>
@@ -125,7 +125,7 @@ export function WorkspaceModal({
           <button
             onClick={onClose}
             type="button"
-            className={`p-1.5 rounded-lg transition cursor-pointer ${
+            className={`p-1.5 rounded-lg transition cursor-pointer shrink-0 ${
               isDark
                 ? 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
                 : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100'

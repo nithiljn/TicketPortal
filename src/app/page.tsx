@@ -95,6 +95,7 @@ export default function Home() {
   const [selectedStatuses, setSelectedStatuses] = useState<TicketStatus[]>([])
   const [selectedPriorities, setSelectedPriorities] = useState<TicketPriority[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedVersions, setSelectedVersions] = useState<string[]>([])
   const [fromDate, setFromDate] = useState<string>('')
   const [toDate, setToDate] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -188,6 +189,20 @@ export default function Home() {
           prev.some((c) => c.toUpperCase() === category.toUpperCase())
             ? prev.filter((c) => c.toUpperCase() !== category.toUpperCase())
             : [...prev, category]
+        )
+      }
+      triggerFilterTransition()
+    },
+    [triggerFilterTransition]
+  )
+
+  const handleSelectVersion = useCallback(
+    (version: string | 'ALL') => {
+      if (version === 'ALL') {
+        setSelectedVersions([])
+      } else {
+        setSelectedVersions((prev) =>
+          prev.includes(version) ? prev.filter((v) => v !== version) : [...prev, version]
         )
       }
       triggerFilterTransition()
@@ -381,13 +396,21 @@ export default function Home() {
         // ignore
       }
 
-      const serverProjects = data.projects || []
-      // Purge any stale 'Ticket Portal' from local cache if server didn't return it for this user
+      const serverProjects = (data.projects || []).filter(
+        (p: string) => !p.startsWith('version:::') && !p.includes(':::version:::')
+      )
+      // Purge any stale 'Ticket Portal' or version entries from local cache if server didn't return it for this user
       const validLocalWs = localWs.filter(
-        (w) => w !== 'Ticket Portal' || serverProjects.includes('Ticket Portal')
+        (w) =>
+          !w.startsWith('version:::') &&
+          !w.includes(':::version:::') &&
+          (w !== 'Ticket Portal' || serverProjects.includes('Ticket Portal'))
       )
       const merged = Array.from(new Set([...serverProjects, ...validLocalWs]))
       setAvailableProjects(merged)
+      if (selectedProject.startsWith('version:::') || selectedProject.includes(':::version:::')) {
+        setSelectedProject('ALL')
+      }
 
       // Sync cleaned workspaces back to localStorage
       try {
@@ -499,6 +522,12 @@ export default function Home() {
       ) {
         return false
       }
+      // Version Filter
+      if (selectedVersions.length > 0) {
+        if (!t.version || !selectedVersions.includes(t.version)) {
+          return false
+        }
+      }
       // Date Range Filter
       if (fromDate) {
         const ticketDate = t.createdAt.split('T')[0]
@@ -522,7 +551,7 @@ export default function Home() {
       }
       return true
     })
-  }, [tickets, showOnlyBookmarked, selectedStatuses, selectedPriorities, selectedCategories, fromDate, toDate, ticketIdFilter])
+  }, [tickets, showOnlyBookmarked, selectedStatuses, selectedPriorities, selectedCategories, selectedVersions, fromDate, toDate, ticketIdFilter])
 
   // Count total bookmarked tickets
   const bookmarkedCount = useMemo(() => {
@@ -547,7 +576,17 @@ export default function Home() {
       categoryCounts[cat] = (categoryCounts[cat] || 0) + 1
     })
 
-    return { total, todo, inProgress, done, blocked, notesCount, categoryCounts }
+    // Version counts
+    const versionCounts: Record<string, number> = {
+      ALL: total,
+    }
+    tickets.forEach((t) => {
+      if (t.version) {
+        versionCounts[t.version] = (versionCounts[t.version] || 0) + 1
+      }
+    })
+
+    return { total, todo, inProgress, done, blocked, notesCount, categoryCounts, versionCounts }
   }, [tickets, dailyNotes])
 
   // Expense available months
@@ -1201,6 +1240,10 @@ export default function Home() {
         onOpenAddExpenseModal={handleOpenAddExpense}
         onOpenActivityModal={() => setIsActivityModalOpen(true)}
         onOpenVersionModal={() => setIsVersionModalOpen(true)}
+        availableVersions={availableVersions}
+        selectedVersions={selectedVersions}
+        onSelectVersion={handleSelectVersion}
+        versionCounts={ticketCounts.versionCounts}
       />
 
       {/* 2. Main Content Canvas */}
@@ -1592,6 +1635,9 @@ export default function Home() {
                   selectedStatuses={selectedStatuses}
                   onRemoveStatus={(st) => handleSelectStatus(st)}
                   onClearAllStatuses={() => setSelectedStatuses([])}
+                  selectedVersions={selectedVersions}
+                  onRemoveVersion={(ver) => handleSelectVersion(ver)}
+                  onClearAllVersions={() => setSelectedVersions([])}
                   ticketIdFilter={ticketIdFilter}
                   onSelectTicketIdFilter={handleSelectTicketIdFilter}
                   onClearTicketIdFilter={handleClearTicketIdFilter}
@@ -1603,6 +1649,7 @@ export default function Home() {
                     setSelectedStatuses([])
                     setSelectedPriorities([])
                     setSelectedCategories([])
+                    setSelectedVersions([])
                     setShowOnlyBookmarked(false)
                     setTicketIdFilter('')
                   }}

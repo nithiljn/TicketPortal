@@ -29,6 +29,11 @@ interface InboxTableProps {
   onClearStatus?: () => void
   onRemoveStatus?: (status: TicketStatus) => void
   onClearAllStatuses?: () => void
+  selectedVersion?: string | 'ALL'
+  selectedVersions?: string[]
+  onClearVersion?: () => void
+  onRemoveVersion?: (version: string) => void
+  onClearAllVersions?: () => void
   ticketIdFilter?: string
   onSelectTicketIdFilter?: (id: string) => void
   onClearTicketIdFilter?: () => void
@@ -76,6 +81,11 @@ export function InboxTable({
   onClearStatus,
   onRemoveStatus,
   onClearAllStatuses,
+  selectedVersion,
+  selectedVersions,
+  onClearVersion,
+  onRemoveVersion,
+  onClearAllVersions,
   ticketIdFilter = '',
   onSelectTicketIdFilter,
   onClearTicketIdFilter,
@@ -100,6 +110,8 @@ export function InboxTable({
     selectedPriorities?.length,
     selectedStatus,
     selectedStatuses?.length,
+    selectedVersion,
+    selectedVersions?.length,
     showOnlyBookmarked,
     ticketIdFilter,
   ])
@@ -129,10 +141,12 @@ export function InboxTable({
   const activeStatuses = selectedStatuses ?? (selectedStatus && selectedStatus !== 'ALL' ? [selectedStatus] : [])
   const activePriorities = selectedPriorities ?? (selectedPriority && selectedPriority !== 'ALL' ? [selectedPriority] : [])
   const activeCategories = selectedCategories ?? (selectedCategory && selectedCategory !== 'ALL' ? [selectedCategory] : [])
+  const activeVersions = selectedVersions ?? (selectedVersion && selectedVersion !== 'ALL' ? [selectedVersion] : [])
   const totalActiveFilters =
     activeStatuses.length +
     activePriorities.length +
     activeCategories.length +
+    activeVersions.length +
     (showOnlyBookmarked ? 1 : 0) +
     (ticketIdFilter?.trim() ? 1 : 0)
 
@@ -365,6 +379,30 @@ export function InboxTable({
                 title={`Remove ${category} filter`}
               >
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </span>
+          ))}
+
+          {/* Active Version Filter Chips */}
+          {activeVersions.map((version) => (
+            <span
+              key={version}
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+            >
+              <span className="text-zinc-500 text-[11px]">Version:</span>
+              <span className="font-mono">{version}</span>
+              <button
+                type="button"
+                onClick={() => onRemoveVersion ? onRemoveVersion(version) : onClearVersion?.()}
+                className={`p-0.5 rounded transition cursor-pointer ${
+                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                }`}
+                title={`Remove ${version} filter`}
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>

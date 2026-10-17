@@ -539,7 +539,9 @@ const resolvers = {
         const { data: tData, error: tError } = await tQuery
         if (!tError && tData) {
           tData.forEach((t: { project_name: string }) => {
-            if (t.project_name) projectSet.add(t.project_name)
+            if (t.project_name && !t.project_name.startsWith('version:::') && !t.project_name.includes(':::version:::')) {
+              projectSet.add(t.project_name)
+            }
           })
         }
       } catch {
@@ -555,7 +557,12 @@ const resolvers = {
           const userPrefix = `${userEmail}:::`
           wData.forEach((w: { name: string }) => {
             if (w.name.startsWith(userPrefix)) {
-              projectSet.add(w.name.slice(userPrefix.length))
+              const workspaceName = w.name.slice(userPrefix.length)
+              if (!workspaceName.startsWith('version:::') && !workspaceName.includes(':::version:::')) {
+                projectSet.add(workspaceName)
+              }
+            } else if (!w.name.includes(':::') && !w.name.startsWith('version:::')) {
+              projectSet.add(w.name)
             }
           })
         }

@@ -169,6 +169,11 @@ interface SidebarProps {
   }
   onOpenCategoryModal?: () => void
   onOpenAddExpenseModal?: () => void
+  availableVersions?: string[]
+  selectedVersion?: string | 'ALL'
+  selectedVersions?: string[]
+  onSelectVersion?: (version: string | 'ALL') => void
+  versionCounts?: Record<string, number>
 }
 
 export function Sidebar({
@@ -225,8 +230,16 @@ export function Sidebar({
   onOpenAddExpenseModal,
   onOpenActivityModal,
   onOpenVersionModal,
+  availableVersions = [],
+  selectedVersion = 'ALL',
+  selectedVersions = [],
+  onSelectVersion,
+  versionCounts,
 }: SidebarProps) {
   const isDark = theme === 'dark'
+  const visibleWorkspaces = availableProjects.filter(
+    (p) => !p.startsWith('version:::') && !p.includes(':::version:::')
+  )
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
 
@@ -435,7 +448,7 @@ export function Sidebar({
               <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                 <span>Workspaces</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-mono">{availableProjects.length}</span>
+                  <span className="font-mono">{visibleWorkspaces.length}</span>
                   {onOpenCreateWorkspaceModal && (
                     <button
                       onClick={onOpenCreateWorkspaceModal}
@@ -472,9 +485,9 @@ export function Sidebar({
                   {selectedProject === 'ALL' && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
                 </button>
 
-                {availableProjects.map((proj) => {
+                {visibleWorkspaces.map((proj) => {
                   const isSelected = selectedProject === proj
-                  const canDelete = availableProjects.length > 1
+                  const canDelete = visibleWorkspaces.length > 1
 
                   return (
                     <div
@@ -789,6 +802,87 @@ export function Sidebar({
                         </svg>
                       </button>
                     )}
+                  </div>
+                </div>
+
+                {/* Version Filter */}
+                <div>
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    <span className="flex items-center gap-1.5">
+                      <svg className="w-3 h-3 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                        <line x1="7" y1="7" x2="7.01" y2="7" />
+                      </svg>
+                      <span>Version Filter</span>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {selectedVersions.length > 0 && onSelectVersion && (
+                        <button
+                          onClick={() => onSelectVersion('ALL')}
+                          className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      )}
+                      {onOpenVersionModal && (
+                        <button
+                          type="button"
+                          onClick={onOpenVersionModal}
+                          className="p-0.5 rounded hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-100 transition cursor-pointer"
+                          title="Manage Versions"
+                        >
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-1 max-h-44 overflow-y-auto pr-0.5 custom-scrollbar">
+                    <button
+                      onClick={() => onSelectVersion?.('ALL')}
+                      className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
+                        selectedVersions.length === 0 ? itemActive : itemHover
+                      }`}
+                    >
+                      <span className={selectedVersions.length === 0 ? 'font-medium' : 'text-zinc-600 dark:text-zinc-400'}>
+                        All Versions
+                      </span>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition ${
+                        selectedVersions.length === 0
+                          ? isDark ? 'bg-white/10 text-white font-medium' : 'bg-zinc-200 text-zinc-900 font-medium'
+                          : isDark ? 'bg-white/[0.04] text-zinc-400' : 'bg-zinc-100 text-zinc-600'
+                      }`}>
+                        {ticketCounts?.total ?? 0}
+                      </span>
+                    </button>
+                    {availableVersions
+                      .filter((v) => !v.startsWith('version:::') && !v.includes(':::version:::'))
+                      .map((ver) => {
+                        const isSelected = selectedVersions.includes(ver)
+                        const count = versionCounts ? (versionCounts[ver] || 0) : 0
+                        return (
+                          <button
+                            key={ver}
+                            onClick={() => onSelectVersion?.(ver)}
+                            className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
+                              isSelected ? itemActive : itemHover
+                            }`}
+                          >
+                            <span className={`font-mono text-xs ${isSelected ? 'font-medium' : 'text-zinc-600 dark:text-zinc-400'}`}>
+                              {ver}
+                            </span>
+                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition ${
+                              isSelected
+                                ? isDark ? 'bg-white/10 text-white font-medium' : 'bg-zinc-200 text-zinc-900 font-medium'
+                                : isDark ? 'bg-white/[0.04] text-zinc-400' : 'bg-zinc-100 text-zinc-600'
+                            }`}>
+                              {count}
+                            </span>
+                          </button>
+                        )
+                      })}
                   </div>
                 </div>
 

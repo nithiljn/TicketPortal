@@ -101,21 +101,22 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
     }
   }
 
-  const containerBg = isDark ? 'bg-[#09090b] text-zinc-100' : 'bg-zinc-50 text-zinc-900'
+  const containerBg = isDark ? 'bg-[#000000] text-[#f5f5f7]' : 'bg-[#f5f5f7] text-[#1d1d1f]'
   const cardBg = isDark
-    ? 'bg-[#121215] border-white/[0.08] shadow-2xl shadow-black/60'
-    : 'bg-white border-zinc-200 shadow-xl'
+    ? 'bg-[#1c1c1e] border-white/[0.08] shadow-2xl'
+    : 'bg-white border-[#e5e5ea] shadow-sm'
   const inputBg = isDark
-    ? 'bg-zinc-900/80 border-white/[0.08] text-white placeholder-zinc-500 focus:border-zinc-400 focus:bg-zinc-900'
-    : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-800 focus:bg-white'
+    ? 'bg-white/[0.04] border-white/[0.08] text-[#f5f5f7] placeholder-[#86868b] focus:border-[#2997ff] focus:ring-1 focus:ring-[#2997ff]/20'
+    : 'bg-white border-[#e5e5ea] text-[#1d1d1f] placeholder-[#86868b] focus:border-[#0071e3] focus:ring-1 focus:ring-[#0071e3]/20 shadow-2xs'
   const oauthBtnBg = isDark
-    ? 'bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] text-zinc-200'
-    : 'bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-800 shadow-xs'
+    ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.04] hover:bg-white/[0.08] text-[#f5f5f7]'
+    : 'border-[#e5e5ea] hover:border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] shadow-2xs'
+  const labelColor = isDark ? 'text-[#a1a1a6]' : 'text-[#86868b]'
 
   return (
     <div
       className={`min-h-screen w-screen flex flex-col justify-center items-center p-4 sm:p-6 transition-colors duration-150 relative ${
-        isDark ? 'selection:bg-sky-500/30 selection:text-white' : 'selection:bg-zinc-900 selection:text-white'
+        isDark ? 'selection:bg-white/20 selection:text-white' : 'selection:bg-zinc-900 selection:text-white'
       } ${containerBg}`}
     >
       {/* Top Bar Theme Toggle */}
@@ -123,35 +124,26 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
         <button
           onClick={onToggleTheme}
           type="button"
-          className={`p-2.5 rounded-xl border text-xs font-mono transition cursor-pointer flex items-center gap-2 ${
-            isDark
-              ? 'bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] text-zinc-300'
-              : 'bg-white border-zinc-200 hover:bg-zinc-100 text-zinc-700 shadow-xs'
-          }`}
+          className="w-9 h-9 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.06] backdrop-blur-md text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white flex items-center justify-center transition active:scale-95 cursor-pointer shadow-2xs"
           title="Toggle theme"
+          aria-label="Toggle theme"
         >
           {isDark ? (
-            <>
-              <svg className="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" />
-                <line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-              </svg>
-              <span className="hidden sm:inline">Light</span>
-            </>
+            <svg className="w-4 h-4 text-[#ebebf5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
           ) : (
-            <>
-              <svg className="w-4 h-4 text-zinc-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-              <span className="hidden sm:inline">Dark</span>
-            </>
+            <svg className="w-4 h-4 text-[#1d1d1f]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
           )}
         </button>
       </div>
@@ -159,9 +151,7 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
       <div className="w-full max-w-md space-y-5">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl border shadow-sm mx-auto ${
-            isDark ? 'bg-zinc-900 border-white/[0.1] text-zinc-100' : 'bg-zinc-900 border-zinc-800 text-zinc-100'
-          }`}>
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full border border-black/[0.08] dark:border-white/[0.1] bg-white dark:bg-white/[0.08] text-[#1d1d1f] dark:text-[#f5f5f7] shadow-sm mx-auto">
             <svg
               className="w-6 h-6"
               viewBox="0 0 24 24"
@@ -175,30 +165,26 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
               <line x1="9" y1="9" x2="9" y2="15" strokeDasharray="2 2" />
             </svg>
           </div>
-          <h1 className={`text-xl sm:text-2xl font-bold tracking-tight ${
-            isDark ? 'text-white' : 'text-zinc-900'
-          }`}>
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-[#f5f5f7]">
             TicketFlow
           </h1>
-          <p className={`text-xs font-medium tracking-normal ${
-            isDark ? 'text-zinc-400' : 'text-zinc-600'
-          }`}>
+          <p className="text-xs text-[#86868b] font-normal tracking-normal max-w-xs mx-auto">
             Maintain your tasks effortlessly & boost daily productivity
           </p>
         </div>
 
         {/* Auth Card */}
-        <div className={`rounded-2xl border p-6 sm:p-7 space-y-5 transition-all ${cardBg}`}>
+        <div className={`rounded-[24px] border p-6 sm:p-8 space-y-5 transition-all ${cardBg}`}>
           {/* OAuth Buttons */}
           <div className="space-y-2.5">
             <button
               type="button"
               disabled={oauthLoading !== null || loading}
               onClick={() => handleOAuth('google')}
-              className={`w-full py-2.5 px-4 rounded-xl border text-xs font-medium flex items-center justify-center gap-2.5 transition cursor-pointer disabled:opacity-50 ${oauthBtnBg}`}
+              className={`w-full h-11 px-4 rounded-full border text-xs font-medium flex items-center justify-center gap-2.5 transition-all duration-150 active:scale-95 cursor-pointer disabled:opacity-50 ${oauthBtnBg}`}
             >
               {oauthLoading === 'google' ? (
-                <svg className="w-4 h-4 animate-spin text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg className="w-4 h-4 animate-spin text-[#86868b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
                   <path d="M12 2a10 10 0 0 1 10 10" />
                 </svg>
@@ -228,17 +214,17 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
 
           {/* Divider */}
           <div className="relative flex items-center justify-center">
-            <div className={`w-full border-t ${isDark ? 'border-white/[0.08]' : 'border-zinc-200'}`} />
-            <span className={`px-2 text-[10px] font-mono uppercase tracking-wider absolute ${
-              isDark ? 'bg-[#121215] text-zinc-500' : 'bg-white text-zinc-500 font-medium'
+            <div className={`w-full border-t ${isDark ? 'border-white/[0.08]' : 'border-black/[0.06]'}`} />
+            <span className={`px-3 text-[10px] font-medium uppercase tracking-wider absolute text-[#86868b] ${
+              isDark ? 'bg-[#1c1c1e]' : 'bg-white'
             }`}>
               or continue with email
             </span>
           </div>
 
-          {/* Sign In / Sign Up Mode Tabs */}
-          <div className={`grid grid-cols-2 p-1 rounded-xl border ${
-            isDark ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-zinc-100 border-zinc-200'
+          {/* Sign In / Sign Up Mode Tabs — Apple Segmented Control */}
+          <div className={`p-1 rounded-full border grid grid-cols-2 gap-1 ${
+            isDark ? 'bg-white/[0.06] border-white/[0.08]' : 'bg-[#f5f5f7] border-black/[0.06]'
           }`}>
             <button
               type="button"
@@ -247,14 +233,14 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
                 setErrorMsg('')
                 setConfirmPassword('')
               }}
-              className={`py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
+              className={`py-1.5 text-xs font-semibold rounded-full transition-all duration-150 cursor-pointer active:scale-95 ${
                 mode === 'signin'
                   ? isDark
-                    ? 'bg-zinc-800 text-white shadow-xs'
-                    : 'bg-white text-zinc-900 shadow-xs'
+                    ? 'bg-white text-zinc-950 shadow-sm'
+                    : 'bg-white text-[#1d1d1f] shadow-xs'
                   : isDark
-                  ? 'text-zinc-400 hover:text-zinc-200'
-                  : 'text-zinc-600 hover:text-zinc-900'
+                  ? 'text-[#86868b] hover:text-white'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
               Sign In
@@ -266,14 +252,14 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
                 setErrorMsg('')
                 setConfirmPassword('')
               }}
-              className={`py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
+              className={`py-1.5 text-xs font-semibold rounded-full transition-all duration-150 cursor-pointer active:scale-95 ${
                 mode === 'signup'
                   ? isDark
-                    ? 'bg-zinc-800 text-white shadow-xs'
-                    : 'bg-white text-zinc-900 shadow-xs'
+                    ? 'bg-white text-zinc-950 shadow-sm'
+                    : 'bg-white text-[#1d1d1f] shadow-xs'
                   : isDark
-                  ? 'text-zinc-400 hover:text-zinc-200'
-                  : 'text-zinc-600 hover:text-zinc-900'
+                  ? 'text-[#86868b] hover:text-white'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
               Create Account
@@ -284,26 +270,20 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
           {errorMsg && (
             <div
               role="alert"
-              className={`px-3 py-2.5 rounded-lg text-xs flex items-center justify-between gap-2.5 border border-l-[3px] border-l-red-500 transition-all animate-in fade-in duration-150 ${
-                isDark
-                  ? 'bg-zinc-900 border-zinc-800 text-zinc-200'
-                  : 'bg-zinc-50 border-zinc-200 text-zinc-800'
-              }`}
+              className="px-3.5 py-2.5 rounded-[12px] text-xs flex items-center justify-between gap-2.5 border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 animate-in fade-in duration-150"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <svg className="w-4 h-4 text-red-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="12" y1="8" x2="12" y2="12" />
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
-                <span className="text-[12px] leading-snug font-medium">{errorMsg}</span>
+                <span className="text-[12px] leading-snug font-medium truncate">{errorMsg}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setErrorMsg('')}
-                className={`p-1 rounded transition cursor-pointer shrink-0 ${
-                  isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800' : 'text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200/60'
-                }`}
+                className="p-1 rounded-full transition cursor-pointer shrink-0 hover:bg-red-500/10"
                 aria-label="Dismiss error"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -315,22 +295,20 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
           )}
 
           {/* Auth Form */}
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' ? (
               <>
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className={`block text-[11px] font-mono font-medium mb-1 uppercase ${
-                      isDark ? 'text-zinc-400' : 'text-zinc-600'
-                    }`}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className={`block text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
                       Unique Username
                     </label>
-                    <span className="text-[10px] font-mono text-zinc-500">
+                    <span className="text-[11px] text-[#86868b]">
                       e.g. @nithil
                     </span>
                   </div>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-zinc-500 select-none">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#86868b] select-none">
                       @
                     </span>
                     <input
@@ -341,15 +319,13 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
                       onChange={(e) =>
                         setName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
                       }
-                      className={`w-full pl-8 pr-3.5 py-2.5 text-xs rounded-xl border outline-none font-mono transition ${inputBg}`}
+                      className={`w-full h-11 pl-8 pr-3.5 text-xs rounded-[12px] border outline-none font-mono transition-all duration-150 ${inputBg}`}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className={`block text-[11px] font-mono font-medium mb-1 uppercase ${
-                    isDark ? 'text-zinc-400' : 'text-zinc-600'
-                  }`}>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelColor}`}>
                     Email Address
                   </label>
                   <input
@@ -358,15 +334,13 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
                     placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className={`w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none transition ${inputBg}`}
+                    className={`w-full h-11 px-3.5 text-xs rounded-[12px] border outline-none transition-all duration-150 ${inputBg}`}
                   />
                 </div>
               </>
             ) : (
               <div>
-                <label className={`block text-[11px] font-mono font-medium mb-1 uppercase ${
-                  isDark ? 'text-zinc-400' : 'text-zinc-600'
-                }`}>
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelColor}`}>
                   Username or Email
                 </label>
                 <input
@@ -375,213 +349,207 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
                   placeholder="nithil or name@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none transition ${inputBg}`}
+                  className={`w-full h-11 px-3.5 text-xs rounded-[12px] border outline-none transition-all duration-150 ${inputBg}`}
                 />
               </div>
             )}
 
             <div>
-              <label className={`block text-[11px] font-mono font-medium mb-1 uppercase ${
-                  isDark ? 'text-zinc-400' : 'text-zinc-600'
-                }`}>
-                  Password
+              <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelColor}`}>
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`w-full h-11 pl-3.5 pr-10 text-xs rounded-[12px] border outline-none transition-all duration-150 ${inputBg}`}
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition cursor-pointer text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 active:scale-90"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+
+              {/* Password strength and requirements */}
+              {mode === 'signup' && (
+                <div className="space-y-2.5 pt-2.5">
+                  {password.length > 0 && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-[#86868b]">
+                          Password strength
+                        </span>
+                        <span className={`font-semibold ${
+                          isPasswordStrong
+                            ? 'text-emerald-500 dark:text-emerald-400'
+                            : passwordStrengthScore === 2
+                            ? 'text-[#0071e3] dark:text-[#2997ff]'
+                            : 'text-[#86868b]'
+                        }`}>
+                          {isPasswordStrong ? 'Strong' : passwordStrengthScore === 2 ? 'Medium' : 'Weak'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5 h-1">
+                        <div
+                          className={`h-full rounded-full transition-all duration-200 ${
+                            passwordStrengthScore >= 1
+                              ? isPasswordStrong ? 'bg-emerald-500' : 'bg-[#0071e3] dark:bg-[#2997ff]'
+                              : isDark ? 'bg-white/[0.08]' : 'bg-black/[0.06]'
+                          }`}
+                        />
+                        <div
+                          className={`h-full rounded-full transition-all duration-200 ${
+                            passwordStrengthScore >= 2
+                              ? isPasswordStrong ? 'bg-emerald-500' : 'bg-[#0071e3] dark:bg-[#2997ff]'
+                              : isDark ? 'bg-white/[0.08]' : 'bg-black/[0.06]'
+                          }`}
+                        />
+                        <div
+                          className={`h-full rounded-full transition-all duration-200 ${
+                            passwordStrengthScore >= 3
+                              ? 'bg-emerald-500'
+                              : isDark ? 'bg-white/[0.08]' : 'bg-black/[0.06]'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-1 pt-0.5">
+                    <div className={`flex items-center gap-2 text-[11px] transition ${
+                      passwordHasMinLen
+                        ? 'text-emerald-500 dark:text-emerald-400 font-medium'
+                        : 'text-[#86868b]'
+                    }`}>
+                      {passwordHasMinLen ? (
+                        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        <span className={`w-1.5 h-1.5 ml-1 mr-1 rounded-full ${isDark ? 'bg-white/20' : 'bg-black/20'}`} />
+                      )}
+                      <span>At least 8 characters</span>
+                    </div>
+
+                    <div className={`flex items-center gap-2 text-[11px] transition ${
+                      passwordHasNumber
+                        ? 'text-emerald-500 dark:text-emerald-400 font-medium'
+                        : 'text-[#86868b]'
+                    }`}>
+                      {passwordHasNumber ? (
+                        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        <span className={`w-1.5 h-1.5 ml-1 mr-1 rounded-full ${isDark ? 'bg-white/20' : 'bg-black/20'}`} />
+                      )}
+                      <span>At least 1 number (0-9)</span>
+                    </div>
+
+                    <div className={`flex items-center gap-2 text-[11px] transition ${
+                      passwordHasSpecial
+                        ? 'text-emerald-500 dark:text-emerald-400 font-medium'
+                        : 'text-[#86868b]'
+                    }`}>
+                      {passwordHasSpecial ? (
+                        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        <span className={`w-1.5 h-1.5 ml-1 mr-1 rounded-full ${isDark ? 'bg-white/20' : 'bg-black/20'}`} />
+                      )}
+                      <span>At least 1 special character (!@#$)</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Confirm Password in Create Account mode */}
+            {mode === 'signup' && (
+              <div>
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelColor}`}>
+                  Confirm Password
                 </label>
                 <div className="relative">
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showConfirmPassword ? 'text' : 'password'}
                     required
                     placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={`w-full pl-3.5 pr-10 py-2.5 text-xs rounded-xl border outline-none transition ${inputBg}`}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full h-11 pl-3.5 pr-10 text-xs rounded-[12px] border outline-none transition-all duration-150 ${inputBg} ${
+                      confirmPassword.length > 0 && passwordsMatch
+                        ? 'border-emerald-500/60 focus:border-emerald-500'
+                        : ''
+                    }`}
                   />
                   <button
                     type="button"
                     tabIndex={-1}
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg transition cursor-pointer ${
-                      isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'
-                    }`}
-                    title={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition cursor-pointer text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 active:scale-90"
+                    title={showConfirmPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? (
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    {showConfirmPassword ? (
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                         <line x1="1" y1="1" x2="23" y2="23" />
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                         <circle cx="12" cy="12" r="3" />
                       </svg>
                     )}
                   </button>
                 </div>
-
-                {/* Password strength and requirements */}
-                {mode === 'signup' && (
-                  <div className="space-y-2.5 pt-2">
-                    {password.length > 0 && (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className={isDark ? 'text-zinc-400' : 'text-zinc-500'}>
-                            Password strength
-                          </span>
-                          <span className={`font-medium ${
-                            isPasswordStrong
-                              ? 'text-emerald-500'
-                              : isDark ? 'text-zinc-400' : 'text-zinc-500'
-                          }`}>
-                            {isPasswordStrong ? 'Strong' : passwordStrengthScore === 2 ? 'Medium' : 'Weak'}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1.5 h-1">
-                          <div
-                            className={`h-full rounded-full transition-all duration-200 ${
-                              passwordStrengthScore >= 1
-                                ? 'bg-emerald-500'
-                                : isDark ? 'bg-zinc-800' : 'bg-zinc-200'
-                            }`}
-                          />
-                          <div
-                            className={`h-full rounded-full transition-all duration-200 ${
-                              passwordStrengthScore >= 2
-                                ? 'bg-emerald-500'
-                                : isDark ? 'bg-zinc-800' : 'bg-zinc-200'
-                            }`}
-                          />
-                          <div
-                            className={`h-full rounded-full transition-all duration-200 ${
-                              passwordStrengthScore >= 3
-                                ? 'bg-emerald-500'
-                                : isDark ? 'bg-zinc-800' : 'bg-zinc-200'
-                            }`}
-                          />
-                        </div>
-                      </div>
+                {confirmPassword.length > 0 && (
+                  <p className={`mt-1.5 text-[11px] flex items-center gap-1.5 transition ${
+                    passwordsMatch
+                      ? 'text-emerald-500 dark:text-emerald-400 font-medium'
+                      : 'text-[#86868b]'
+                  }`}>
+                    {passwordsMatch ? (
+                      <>
+                        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span>Passwords match</span>
+                      </>
+                    ) : (
+                      <span>Passwords do not match yet</span>
                     )}
-
-                    <div className="space-y-1 pt-0.5">
-                      <div className={`flex items-center gap-2 text-[11px] transition ${
-                        passwordHasMinLen
-                          ? 'text-emerald-500 font-medium'
-                          : isDark ? 'text-zinc-500' : 'text-zinc-400'
-                      }`}>
-                        {passwordHasMinLen ? (
-                          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        ) : (
-                          <span className={`w-1.5 h-1.5 ml-1 mr-1 rounded-full ${isDark ? 'bg-zinc-700' : 'bg-zinc-300'}`} />
-                        )}
-                        <span>At least 8 characters</span>
-                      </div>
-
-                      <div className={`flex items-center gap-2 text-[11px] transition ${
-                        passwordHasNumber
-                          ? 'text-emerald-500 font-medium'
-                          : isDark ? 'text-zinc-500' : 'text-zinc-400'
-                      }`}>
-                        {passwordHasNumber ? (
-                          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        ) : (
-                          <span className={`w-1.5 h-1.5 ml-1 mr-1 rounded-full ${isDark ? 'bg-zinc-700' : 'bg-zinc-300'}`} />
-                        )}
-                        <span>At least 1 number (0-9)</span>
-                      </div>
-
-                      <div className={`flex items-center gap-2 text-[11px] transition ${
-                        passwordHasSpecial
-                          ? 'text-emerald-500 font-medium'
-                          : isDark ? 'text-zinc-500' : 'text-zinc-400'
-                      }`}>
-                        {passwordHasSpecial ? (
-                          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        ) : (
-                          <span className={`w-1.5 h-1.5 ml-1 mr-1 rounded-full ${isDark ? 'bg-zinc-700' : 'bg-zinc-300'}`} />
-                        )}
-                        <span>At least 1 special character (!@#$)</span>
-                      </div>
-                    </div>
-                  </div>
+                  </p>
                 )}
               </div>
-
-              {/* Confirm Password in Create Account mode */}
-              {mode === 'signup' && (
-                <div>
-                  <label className={`block text-[11px] font-mono font-medium mb-1 uppercase ${
-                    isDark ? 'text-zinc-400' : 'text-zinc-600'
-                  }`}>
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      required
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className={`w-full pl-3.5 pr-10 py-2.5 text-xs rounded-xl border outline-none transition ${inputBg} ${
-                        confirmPassword.length > 0 && passwordsMatch
-                          ? 'border-emerald-500/60 focus:border-emerald-500'
-                          : ''
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg transition cursor-pointer ${
-                        isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'
-                      }`}
-                      title={showConfirmPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showConfirmPassword ? (
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                          <line x1="1" y1="1" x2="23" y2="23" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  {confirmPassword.length > 0 && (
-                    <p className={`mt-1.5 text-[11px] flex items-center gap-1.5 transition ${
-                      passwordsMatch
-                        ? 'text-emerald-500 font-medium'
-                        : isDark ? 'text-zinc-500' : 'text-zinc-400'
-                    }`}>
-                      {passwordsMatch ? (
-                        <>
-                          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                          <span>Passwords match</span>
-                        </>
-                      ) : (
-                        <span>Passwords do not match yet</span>
-                      )}
-                    </p>
-                  )}
-                </div>
-              )}
+            )}
 
             <button
               type="submit"
               disabled={loading || oauthLoading !== null}
-              className={`w-full h-10.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-150 cursor-pointer flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 active:scale-[0.99] ${
+              className={`w-full h-11 rounded-full text-xs font-semibold tracking-normal transition-all duration-150 cursor-pointer flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 ${
                 isDark
-                  ? 'bg-zinc-100 hover:bg-white text-zinc-950 shadow-white/5'
-                  : 'bg-zinc-900 hover:bg-zinc-800 text-white shadow-zinc-900/10'
+                  ? 'bg-white hover:bg-zinc-100 text-zinc-950 shadow-sm'
+                  : 'bg-zinc-950 hover:bg-zinc-800 text-white shadow-sm'
               }`}
             >
               {loading ? (
@@ -595,7 +563,7 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
               ) : mode === 'signin' ? (
                 <div className="flex items-center gap-1.5">
                   <span>Sign In</span>
-                  <svg className="w-3.5 h-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="w-3.5 h-3.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="5" y1="12" x2="19" y2="12" />
                     <polyline points="12 5 19 12 12 19" />
                   </svg>
@@ -603,7 +571,7 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
               ) : (
                 <div className="flex items-center gap-1.5">
                   <span>Create Account</span>
-                  <svg className="w-3.5 h-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="w-3.5 h-3.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="5" y1="12" x2="19" y2="12" />
                     <polyline points="12 5 19 12 12 19" />
                   </svg>
@@ -614,10 +582,8 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
         </div>
 
         {/* Footer info */}
-        <p className={`text-center text-[11px] font-mono tracking-wide ${
-          isDark ? 'text-zinc-500' : 'text-zinc-500'
-        }`}>
-          TicketFlow • Designed for focused task momentum & daily execution
+        <p className="text-center text-xs text-[#86868b] tracking-normal">
+          TicketFlow • Crafted for focused task momentum & daily execution
         </p>
       </div>
     </div>

@@ -567,24 +567,33 @@ export function ExpenseTracker({
     }
   }
 
-  // Styles
+  // Apple Design System Surface & Card Tokens (DESIGN.md)
   const cardBg = isDark
-    ? 'bg-[#111114] border-white/[0.06] text-zinc-100'
-    : 'bg-white border-zinc-200 text-zinc-900'
+    ? 'bg-[#1c1c1e] border-white/[0.08] text-white shadow-xs'
+    : 'bg-white border-[#e5e5ea] text-[#1d1d1f] shadow-xs'
   const filterBtnBg = isDark
-    ? 'bg-black/40 border-white/[0.08] text-zinc-300'
-    : 'bg-zinc-50 border-zinc-200 text-zinc-700'
-  const pillActive = isDark
-    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 font-semibold'
-    : 'bg-emerald-50 border-emerald-300 text-emerald-700 font-semibold'
-  const subHeaderBorder = isDark ? 'border-white/[0.06] bg-[#09090b]' : 'border-zinc-200 bg-white'
-  const subHeaderTitle = isDark ? 'text-zinc-200 font-semibold' : 'text-zinc-800 font-semibold'
-  const categoryBadge = isDark
-    ? 'bg-white/[0.03] border-white/[0.08] text-zinc-300'
-    : 'bg-zinc-50 border-zinc-200 text-zinc-700'
+    ? 'bg-[#1c1c1e] border-white/[0.1] text-[#f5f5f7]'
+    : 'bg-white border-[#e5e5ea] text-[#1d1d1f] shadow-xs'
+  const subHeaderBorder = isDark
+    ? 'border-white/[0.08] bg-[#000000]/80 backdrop-blur-md'
+    : 'border-[#e5e5ea] bg-white/80 backdrop-blur-md'
+  const subHeaderTitle = isDark ? 'text-white font-semibold' : 'text-[#1d1d1f] font-semibold'
+  const appleCapsule = isDark
+    ? 'bg-white/[0.08] border-white/[0.08] text-[#f5f5f7]'
+    : 'bg-[#f5f5f7] border-black/[0.06] text-[#1d1d1f]'
+  const progressTrack = isDark ? 'bg-white/[0.08]' : 'bg-[#e5e5ea]'
+  const appleGhostBtn = isDark
+    ? 'border-white/[0.1] hover:border-white/[0.2] bg-white/[0.04] hover:bg-white/[0.08] text-white'
+    : 'border-[#e5e5ea] hover:border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] shadow-xs'
+  const appleActionBtn = isDark
+    ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.04] hover:bg-white/[0.08] text-[#f5f5f7]'
+    : 'border-[#e5e5ea] hover:border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] shadow-2xs'
+  const appleDeleteBtn = isDark
+    ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.04] hover:bg-white/[0.08] text-[#86868b] hover:text-[#ff453a]'
+    : 'border-[#e5e5ea] hover:border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#ff3b30] shadow-2xs'
 
   return (
-    <div className="flex flex-col flex-1 min-w-0">
+    <div className="flex flex-col flex-1 min-w-0 bg-[#f5f5f7] dark:bg-[#000000] font-sans">
       {/* Sub-header inside view (Matches InboxTable filtration bar) */}
       <div className={`px-4 sm:px-6 py-2.5 sm:py-3 border-b flex items-center justify-between text-xs shrink-0 ${subHeaderBorder}`}>
         <div className="flex items-center gap-2 flex-wrap">
@@ -592,27 +601,25 @@ export function ExpenseTracker({
             {selectedProject === 'ALL' ? 'All Workspaces' : selectedProject}
           </span>
           <span className={isDark ? 'text-zinc-600' : 'text-zinc-300'}>•</span>
-          <span className="font-mono text-[11px] text-zinc-500">
+          <span className="text-[11px] text-[#86868b] dark:text-[#a1a1a6]">
             {filteredExpenses.length} {filteredExpenses.length === 1 ? 'item' : 'items'}
           </span>
 
           {/* Active Workspace Filter Chip */}
           {selectedProject !== 'ALL' && (
             <span
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+              className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-normal border ${appleCapsule}`}
             >
-              <span className="text-zinc-500 text-[11px]">Workspace:</span>
+              <span className="text-[#86868b] dark:text-[#a1a1a6] text-[11px]">Workspace:</span>
               <span className="truncate max-w-[140px] sm:max-w-[200px]">{selectedProject}</span>
               {onSelectWorkspace && (
                 <button
                   type="button"
                   onClick={handleClearWorkspace}
-                  className={`p-0.5 rounded transition cursor-pointer ${
-                    isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
-                  }`}
+                  className="w-3.5 h-3.5 rounded-full flex items-center justify-center transition-opacity hover:opacity-100 opacity-60 cursor-pointer ml-0.5"
                   title="Reset to All Workspaces"
                 >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
@@ -624,19 +631,17 @@ export function ExpenseTracker({
           {/* Active Month Filter Chip */}
           {activeMonth !== 'ALL' && (
             <span
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+              className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-normal border ${appleCapsule}`}
             >
-              <span className="text-zinc-500 text-[11px]">Month:</span>
+              <span className="text-[#86868b] dark:text-[#a1a1a6] text-[11px]">Month:</span>
               <span>{formatMonthName(activeMonth)}</span>
               <button
                 type="button"
                 onClick={handleClearMonth}
-                className={`p-0.5 rounded transition cursor-pointer ${
-                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
-                }`}
+                className="w-3.5 h-3.5 rounded-full flex items-center justify-center transition-opacity hover:opacity-100 opacity-60 cursor-pointer ml-0.5"
                 title="Reset to All Time"
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -647,19 +652,17 @@ export function ExpenseTracker({
           {/* Active Category Filter Chip */}
           {activeCategory !== 'ALL' && (
             <span
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+              className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-normal border ${appleCapsule}`}
             >
-              <span className="text-zinc-500 text-[11px]">Category:</span>
+              <span className="text-[#86868b] dark:text-[#a1a1a6] text-[11px]">Category:</span>
               <span className="truncate max-w-[140px] sm:max-w-[200px]">{activeCategory}</span>
               <button
                 type="button"
                 onClick={handleClearCategory}
-                className={`p-0.5 rounded transition cursor-pointer ${
-                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
-                }`}
+                className="w-3.5 h-3.5 rounded-full flex items-center justify-center transition-opacity hover:opacity-100 opacity-60 cursor-pointer ml-0.5"
                 title={`Remove ${activeCategory} filter`}
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -670,19 +673,17 @@ export function ExpenseTracker({
           {/* Active Payment Method Filter Chip */}
           {activePaymentMethod !== 'ALL' && (
             <span
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+              className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-normal border ${appleCapsule}`}
             >
-              <span className="text-zinc-500 text-[11px]">Payment:</span>
+              <span className="text-[#86868b] dark:text-[#a1a1a6] text-[11px]">Payment:</span>
               <span>{PAYMENT_METHOD_LABELS[activePaymentMethod] || activePaymentMethod}</span>
               <button
                 type="button"
                 onClick={handleClearPaymentMethod}
-                className={`p-0.5 rounded transition cursor-pointer ${
-                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
-                }`}
+                className="w-3.5 h-3.5 rounded-full flex items-center justify-center transition-opacity hover:opacity-100 opacity-60 cursor-pointer ml-0.5"
                 title="Remove payment method filter"
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -693,10 +694,10 @@ export function ExpenseTracker({
           {/* Active Amount Range Filter Chip */}
           {(minAmount || maxAmount) && (
             <span
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+              className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-normal border ${appleCapsule}`}
             >
-              <span className="text-zinc-500 text-[11px]">Amount:</span>
-              <span className="font-mono">
+              <span className="text-[#86868b] dark:text-[#a1a1a6] text-[11px]">Amount:</span>
+              <span>
                 {minAmount && maxAmount
                   ? `₹${minAmount} - ₹${maxAmount}`
                   : minAmount
@@ -706,12 +707,10 @@ export function ExpenseTracker({
               <button
                 type="button"
                 onClick={handleClearAmount}
-                className={`p-0.5 rounded transition cursor-pointer ${
-                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
-                }`}
+                className="w-3.5 h-3.5 rounded-full flex items-center justify-center transition-opacity hover:opacity-100 opacity-60 cursor-pointer ml-0.5"
                 title="Remove amount range filter"
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -722,19 +721,17 @@ export function ExpenseTracker({
           {/* Active Search Query Filter Chip */}
           {searchQuery && searchQuery.trim() && (
             <span
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+              className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-normal border ${appleCapsule}`}
             >
-              <span className="text-zinc-500 text-[11px]">Search:</span>
+              <span className="text-[#86868b] dark:text-[#a1a1a6] text-[11px]">Search:</span>
               <span className="truncate max-w-[140px] sm:max-w-[200px]">&quot;{searchQuery.trim()}&quot;</span>
               <button
                 type="button"
                 onClick={handleClearSearch}
-                className={`p-0.5 rounded transition cursor-pointer ${
-                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
-                }`}
+                className="w-3.5 h-3.5 rounded-full flex items-center justify-center transition-opacity hover:opacity-100 opacity-60 cursor-pointer ml-0.5"
                 title="Clear search query"
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -747,8 +744,8 @@ export function ExpenseTracker({
             <button
               type="button"
               onClick={handleClearAll}
-              className={`text-[11px] font-medium transition cursor-pointer underline ml-1 ${
-                isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-800'
+              className={`text-[11px] font-normal transition cursor-pointer underline ml-1 ${
+                isDark ? 'text-[#86868b] hover:text-white' : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
               Clear all
@@ -758,30 +755,30 @@ export function ExpenseTracker({
 
         {/* Right side: Filtered Spend Summary */}
         <div className="hidden sm:flex items-center gap-2 shrink-0">
-          <span className="text-[11px] text-zinc-500">Filtered Total:</span>
-          <span className="font-mono font-semibold text-xs text-zinc-900 dark:text-zinc-100">
+          <span className="text-[11px] text-[#86868b] dark:text-[#a1a1a6]">Filtered Total:</span>
+          <span className="font-semibold text-xs text-[#1d1d1f] dark:text-white">
             {formatMoney(stats.totalAmount)}
           </span>
         </div>
       </div>
 
-      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
-        {/* 1. Header & Actions Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto w-full">
+        {/* 1. Header & Actions Bar (Apple Style) */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2.5">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-base transition-all shrink-0 ${
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-base shrink-0 border ${
                 isDark
-                  ? 'bg-zinc-800 border border-zinc-700/80 text-white shadow-xs'
-                  : 'bg-zinc-900 border border-zinc-800 text-white shadow-xs'
+                  ? 'bg-white/[0.08] border-white/[0.1] text-white'
+                  : 'bg-[#f5f5f7] border-black/[0.08] text-[#1d1d1f]'
               }`}>
                 ₹
               </div>
               <div className="min-w-0">
-                <h1 className="text-base sm:text-lg font-bold tracking-tight truncate">
+                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white truncate">
                   Expense Tracker
                 </h1>
-                <p className="text-xs text-zinc-500 truncate">
+                <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] truncate mt-0.5">
                   Monitor spending, manage categories, and review daily expenditure
                 </p>
               </div>
@@ -793,11 +790,7 @@ export function ExpenseTracker({
             <select
               value={activeMonth}
               onChange={(e) => handleMonthChange(e.target.value)}
-              className={`h-8 px-2.5 rounded-xl border text-xs font-medium focus:outline-none cursor-pointer transition ${
-                isDark
-                  ? 'bg-zinc-900 border-zinc-800 text-zinc-200 hover:border-zinc-700'
-                  : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300 shadow-2xs'
-              }`}
+              className={`h-8.5 px-3.5 rounded-full border text-xs font-medium focus:outline-none cursor-pointer transition active:scale-95 ${filterBtnBg}`}
               title="Filter expenses by month"
             >
               <option value="ALL">All Time</option>
@@ -808,139 +801,136 @@ export function ExpenseTracker({
               ))}
             </select>
 
-            {/* Download PDF Report Button (Left side of Categories) */}
+            {/* Download PDF Report Button */}
             <button
               type="button"
               onClick={handleDownloadPdf}
               disabled={isGeneratingPdf || filteredExpenses.length === 0}
-              className={`h-8 px-2.5 sm:px-3 rounded-xl border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
-              isDark
-                ? 'bg-zinc-900 border-zinc-800 text-zinc-200 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 disabled:opacity-50'
-                : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300 shadow-2xs disabled:opacity-50'
-            }`}
-            title={
-              filteredExpenses.length === 0
-                ? 'No expenses to export'
-                : `Download ${activeMonth !== 'ALL' ? formatMonthName(activeMonth) : 'current'} expense report as PDF`
-            }
-          >
-            {isGeneratingPdf ? (
-              <svg className="w-3.5 h-3.5 animate-spin text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="16" />
-              </svg>
-            ) : (
-              <svg className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-            )}
-            <span className="hidden min-[480px]:inline">{isGeneratingPdf ? 'Generating...' : 'Download PDF'}</span>
-            <span className="min-[480px]:hidden">{isGeneratingPdf ? 'PDF...' : 'PDF'}</span>
-          </button>
+              className={`h-8.5 px-3.5 rounded-full border text-xs font-medium transition-all duration-150 active:scale-95 cursor-pointer inline-flex items-center gap-1.5 ${appleGhostBtn} disabled:opacity-50`}
+              title={
+                filteredExpenses.length === 0
+                  ? 'No expenses to export'
+                  : `Download ${activeMonth !== 'ALL' ? formatMonthName(activeMonth) : 'current'} expense report as PDF`
+              }
+            >
+              {isGeneratingPdf ? (
+                <svg className="w-3.5 h-3.5 animate-spin text-[#86868b] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="16" />
+                </svg>
+              ) : (
+                <svg className="w-3.5 h-3.5 text-[#86868b] dark:text-[#a1a1a6] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              )}
+              <span className="hidden min-[480px]:inline">{isGeneratingPdf ? 'Generating...' : 'Download PDF'}</span>
+              <span className="min-[480px]:hidden">{isGeneratingPdf ? 'PDF...' : 'PDF'}</span>
+            </button>
 
-          {/* Manage Categories Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onOpenCategoryManager}
-            leftIcon={
-              <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {/* Manage Categories Button */}
+            <button
+              type="button"
+              onClick={onOpenCategoryManager}
+              className={`h-8.5 px-3.5 rounded-full border text-xs font-medium transition-all duration-150 active:scale-95 cursor-pointer inline-flex items-center gap-1.5 ${appleGhostBtn}`}
+            >
+              <svg className="w-3.5 h-3.5 text-[#86868b] dark:text-[#a1a1a6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="7" height="7" rx="1.5" />
                 <rect x="14" y="3" width="7" height="7" rx="1.5" />
                 <rect x="14" y="14" width="7" height="7" rx="1.5" />
                 <rect x="3" y="14" width="7" height="7" rx="1.5" />
               </svg>
-            }
-          >
-            Categories
-          </Button>
-        </div>
-      </div>
-
-      {/* 2. KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        {/* Card 1: Total Spent */}
-        <div className={`p-3 sm:p-4 rounded-2xl border ${cardBg}`}>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-zinc-400 truncate">
-              Total Spent
-            </span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono border shrink-0 ${
-              isDark ? 'bg-white/[0.04] text-zinc-400 border-white/[0.06]' : 'bg-zinc-100 text-zinc-600 border-zinc-200'
-            }`}>
-              {stats.count} txns
-            </span>
-          </div>
-          <div className="text-lg sm:text-2xl font-bold font-mono mt-1 text-zinc-900 dark:text-zinc-100 truncate">
-            {formatMoney(stats.totalAmount)}
-          </div>
-          <div className="text-[10px] sm:text-[11px] text-zinc-500 mt-1 truncate">
-            {activeMonth === 'ALL' ? 'Total all time spend' : `Spend for ${formatMonthName(activeMonth)}`}
+              <span>Categories</span>
+            </button>
           </div>
         </div>
 
-        {/* Card 2: Today's Spend */}
-        <div className={`p-3 sm:p-4 rounded-2xl border ${cardBg}`}>
-          <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-zinc-400 block truncate">
-            Today&apos;s Spend
-          </span>
-          <div className="text-lg sm:text-2xl font-bold font-mono mt-1 text-zinc-900 dark:text-zinc-100 truncate">
-            {formatMoney(stats.todayAmount)}
-          </div>
-          <div className="text-[10px] sm:text-[11px] text-zinc-500 mt-1 truncate">
-            Recorded for today
-          </div>
-        </div>
-
-        {/* Card 3: Daily Average */}
-        <div className={`p-3 sm:p-4 rounded-2xl border ${cardBg}`}>
-          <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-zinc-400 block truncate">
-            Daily Average
-          </span>
-          <div className="text-lg sm:text-2xl font-bold font-mono mt-1 text-zinc-900 dark:text-zinc-100 truncate">
-            {formatMoney(stats.dailyAverage)}
-          </div>
-          <div className="text-[10px] sm:text-[11px] text-zinc-500 mt-1 truncate">
-            Average per active day
-          </div>
-        </div>
-
-        {/* Card 4: Top Category */}
-        <div className={`p-3 sm:p-4 rounded-2xl border ${cardBg}`}>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-zinc-400 truncate">
-              Top Category
-            </span>
-            {stats.topCategoryPercent > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/10 text-zinc-400 font-mono font-medium shrink-0">
-                {stats.topCategoryPercent}%
+        {/* 2. KPI Cards Grid (Apple Store Utility Cards Style) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          {/* Card 1: Total Spent */}
+          <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] truncate">
+                Total Spent
               </span>
-            )}
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+                {stats.count} txns
+              </span>
+            </div>
+            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
+              {formatMoney(stats.totalAmount)}
+            </div>
+            <div className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-1.5 truncate">
+              {activeMonth === 'ALL' ? 'Total all time spend' : `Spend for ${formatMonthName(activeMonth)}`}
+            </div>
           </div>
-          <div className="text-sm sm:text-base font-bold font-mono truncate mt-1 text-zinc-900 dark:text-zinc-100">
-            {stats.topCategory}
+
+          {/* Card 2: Today's Spend */}
+          <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] block truncate">
+              Today&apos;s Spend
+            </span>
+            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
+              {formatMoney(stats.todayAmount)}
+            </div>
+            <div className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-1.5 truncate">
+              Recorded for today
+            </div>
           </div>
-          <div className="text-[10px] sm:text-[11px] text-zinc-500 mt-1 font-mono truncate">
-            {stats.topCategoryAmount > 0 ? formatMoney(stats.topCategoryAmount) : 'No data'}
+
+          {/* Card 3: Daily Average */}
+          <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] block truncate">
+              Daily Average
+            </span>
+            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
+              {formatMoney(stats.dailyAverage)}
+            </div>
+            <div className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-1.5 truncate">
+              Average per active day
+            </div>
+          </div>
+
+          {/* Card 4: Top Category */}
+          <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] truncate">
+                Top Category
+              </span>
+              {stats.topCategoryPercent > 0 && (
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+                  {stats.topCategoryPercent}%
+                </span>
+              )}
+            </div>
+            <div className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
+              {stats.topCategory}
+            </div>
+            <div className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-1.5 truncate font-normal">
+              {stats.topCategoryAmount > 0 ? formatMoney(stats.topCategoryAmount) : 'No data'}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 3. Analytics Section: Donut Chart + Daily Spend Bars */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Left: Category Circular Donut Chart */}
-        <div className={`p-5 rounded-2xl border ${cardBg}`}>
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-inherit">
-            <h3 className="text-xs font-semibold uppercase tracking-wider">
-              Category Distribution
-            </h3>
-            <span className="text-[11px] font-mono text-zinc-500">
-              {donutSegments.length} categories
-            </span>
-          </div>
+        {/* 3. Analytics Section: Donut Chart + Daily Spend Bars */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+          {/* Left: Category Circular Donut Chart */}
+          <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-inherit">
+              <div>
+                <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
+                  Category Distribution
+                </h3>
+                <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
+                  Breakdown of spending across categories
+                </p>
+              </div>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+                {donutSegments.length} categories
+              </span>
+            </div>
 
-          {donutSegments.length === 0 ? (
+            {donutSegments.length === 0 ? (
             <div className="h-44 flex flex-col items-center justify-center text-zinc-500 text-xs">
               <span>No expenses recorded for this period</span>
             </div>
@@ -1084,18 +1074,23 @@ export function ExpenseTracker({
         </div>
 
         {/* Right: Daily Spending Trend Bars */}
-        <div className={`p-4 sm:p-5 rounded-2xl border ${cardBg}`}>
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-inherit">
-            <h3 className="text-xs font-semibold uppercase tracking-wider">
-              Daily Spending Trend
-            </h3>
-            <span className="text-[11px] font-mono text-zinc-500">
+        <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+          <div className="flex items-center justify-between pb-4 mb-4 border-b border-inherit">
+            <div>
+              <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
+                Daily Spending Trend
+              </h3>
+              <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
+                Day by day expenditure pattern
+              </p>
+            </div>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
               Recent Activity
             </span>
           </div>
 
           {dailySpendData.length === 0 ? (
-            <div className="h-44 flex flex-col items-center justify-center text-zinc-500 text-xs">
+            <div className="h-44 flex flex-col items-center justify-center text-[#86868b] dark:text-[#a1a1a6] text-xs">
               <span>No daily spend trend to display</span>
             </div>
           ) : (
@@ -1105,18 +1100,18 @@ export function ExpenseTracker({
                   <div key={d.date} className="flex-1 min-w-[24px] flex flex-col items-center gap-1.5 h-full justify-end group relative">
                     {/* Tooltip on Hover */}
                     <div className="absolute -top-7 hidden group-hover:flex flex-col items-center z-10 pointer-events-none">
-                      <span className="px-1.5 py-0.5 rounded bg-zinc-900 text-white text-[10px] font-mono whitespace-nowrap shadow-lg">
+                      <span className="px-2 py-0.5 rounded-full bg-zinc-900 text-white text-[10px] font-medium whitespace-nowrap shadow-lg">
                         {formatMoney(d.amount)}
                       </span>
                     </div>
-                    {/* Bar */}
-                    <div className="w-full max-w-[28px] bg-zinc-500/10 rounded-t-md flex items-end h-full overflow-hidden">
+                    {/* Bar (Apple Health Green Rounded Bar) */}
+                    <div className={`w-full max-w-[28px] ${progressTrack} rounded-full flex items-end h-full overflow-hidden`}>
                       <div
-                        className="w-full bg-emerald-500 hover:bg-emerald-400 rounded-t-md transition-all duration-300"
+                        className="w-full bg-[#34c759] hover:bg-[#30b753] rounded-full transition-all duration-300"
                         style={{ height: `${Math.max(8, d.percentage)}%` }}
                       />
                     </div>
-                    <span className="text-[10px] font-mono text-zinc-500 truncate max-w-full">
+                    <span className="text-[10px] text-[#86868b] dark:text-[#a1a1a6] truncate max-w-full">
                       {d.displayDate}
                     </span>
                   </div>
@@ -1127,15 +1122,15 @@ export function ExpenseTracker({
         </div>
       </div>
 
-      {/* 4. Grouped Expenses List */}
+      {/* 4. Grouped Expenses List (Apple Style Transactions Inbox) */}
       <div className="space-y-4">
         {/* Section Header with Count & Sort */}
         <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          <div className="flex items-center gap-2.5">
+            <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
               Transactions
             </h3>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-zinc-500/10 text-zinc-400">
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border ${appleCapsule}`}>
               {filteredExpenses.length !== expenses.length
                 ? `${filteredExpenses.length} of ${expenses.length}`
                 : filteredExpenses.length}
@@ -1144,7 +1139,7 @@ export function ExpenseTracker({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className={`rounded-lg border px-2.5 py-1 text-xs focus:outline-none cursor-pointer ${filterBtnBg}`}
+            className={`rounded-full border px-3.5 py-1.5 text-xs font-medium focus:outline-none cursor-pointer transition active:scale-95 ${filterBtnBg}`}
           >
             <option value="date-desc">Sort: Newest Date</option>
             <option value="date-asc">Sort: Oldest Date</option>
@@ -1154,17 +1149,17 @@ export function ExpenseTracker({
         </div>
 
         {filteredExpenses.length === 0 ? (
-          <div className={`p-12 rounded-2xl border text-center ${cardBg} space-y-3`}>
-            <div className="w-12 h-12 rounded-2xl bg-zinc-500/10 flex items-center justify-center mx-auto text-zinc-400">
+          <div className={`p-12 rounded-[20px] border text-center ${cardBg} space-y-3`}>
+            <div className="w-12 h-12 rounded-full bg-[#f5f5f7] dark:bg-white/[0.08] flex items-center justify-center mx-auto text-[#86868b]">
               <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <rect x="2" y="5" width="20" height="14" rx="2" />
                 <line x1="2" y1="10" x2="22" y2="10" />
               </svg>
             </div>
-            <h3 className="text-sm font-semibold">
+            <h3 className="text-sm font-semibold text-[#1d1d1f] dark:text-white">
               {activeFiltersCount > 0 ? 'No matching expenses found' : 'No expenses found'}
             </h3>
-            <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+            <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] max-w-sm mx-auto">
               {activeFiltersCount > 0
                 ? 'No transactions match your active filters. Try adjusting your filters or clear them to view all expenses.'
                 : 'No transactions match the selected filters or month. Try adjusting your filter or add a new expense.'}
@@ -1174,11 +1169,7 @@ export function ExpenseTracker({
                 <button
                   type="button"
                   onClick={handleClearAll}
-                  className={`px-3.5 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition ${
-                    isDark
-                      ? 'border-zinc-700 hover:bg-zinc-800 text-zinc-200'
-                      : 'border-zinc-300 hover:bg-zinc-100 text-zinc-800 shadow-2xs'
-                  }`}
+                  className={`px-4 py-2 rounded-full border text-xs font-medium cursor-pointer transition active:scale-95 ${appleGhostBtn}`}
                 >
                   Clear all filters
                 </button>
@@ -1186,7 +1177,7 @@ export function ExpenseTracker({
               <button
                 type="button"
                 onClick={onAddExpense}
-                className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1.5"
+                className="px-4 py-2 rounded-full bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-medium cursor-pointer inline-flex items-center gap-1.5 active:scale-95 shadow-xs"
               >
                 <span>Record First Expense</span>
               </button>
@@ -1198,28 +1189,28 @@ export function ExpenseTracker({
             const dayTotal = dayExpenses.reduce((s, e) => s + Number(e.amount), 0)
 
             return (
-              <div key={dateStr} className={`rounded-2xl border overflow-hidden ${cardBg}`}>
+              <div key={dateStr} className={`rounded-[20px] border overflow-hidden transition-all duration-200 ${cardBg}`}>
                 {/* Date Header */}
-                <div className={`px-3.5 sm:px-5 py-2.5 border-b border-inherit flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 ${
-                  isDark ? 'bg-black/20' : 'bg-zinc-50'
+                <div className={`px-5 py-3 border-b border-inherit flex flex-wrap items-center justify-between gap-2 ${
+                  isDark ? 'bg-[#242426]' : 'bg-[#fafafc]'
                 }`}>
-                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                    <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <svg className="w-3.5 h-3.5 text-[#86868b] dark:text-[#a1a1a6] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                       <line x1="16" y1="2" x2="16" y2="6" />
                       <line x1="8" y1="2" x2="8" y2="6" />
                       <line x1="3" y1="10" x2="21" y2="10" />
                     </svg>
-                    <span className="text-xs font-bold font-mono whitespace-nowrap">
+                    <span className="text-xs font-semibold text-[#1d1d1f] dark:text-white whitespace-nowrap">
                       {dateStr === now.toISOString().split('T')[0] ? 'Today • ' : ''}
                       {dateStr}
                     </span>
-                    <span className="text-[11px] text-zinc-500 whitespace-nowrap">
+                    <span className="text-[11px] text-[#86868b] dark:text-[#a1a1a6] whitespace-nowrap">
                       ({dayExpenses.length} {dayExpenses.length === 1 ? 'txn' : 'txns'})
                     </span>
                   </div>
-                  <div className="font-mono text-xs font-semibold text-zinc-900 dark:text-zinc-100 whitespace-nowrap">
-                    <span className="text-zinc-500 font-sans text-[11px] font-normal mr-1">Day Total:</span>
+                  <div className="text-xs font-semibold text-[#1d1d1f] dark:text-white whitespace-nowrap">
+                    <span className="text-[#86868b] dark:text-[#a1a1a6] text-[11px] font-normal mr-1.5">Day Total:</span>
                     {formatMoney(dayTotal)}
                   </div>
                 </div>
@@ -1234,45 +1225,33 @@ export function ExpenseTracker({
                       <div
                         key={exp.id}
                         onDoubleClick={() => setViewingExpense(exp)}
-                        className={`p-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 transition cursor-pointer select-none ${
-                          isDark ? 'hover:bg-white/[0.04]' : 'hover:bg-zinc-50'
+                        className={`p-3.5 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition cursor-pointer select-none ${
+                          isDark ? 'hover:bg-white/[0.04]' : 'hover:bg-[#f5f5f7]/60'
                         }`}
                         title="Double-click to view receipt details"
                       >
                         {/* Left Info */}
-                        <div className="flex items-start gap-2.5 sm:gap-3 flex-1 min-w-0">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
-                            isDark ? 'bg-white/[0.04] border-white/[0.06]' : 'bg-zinc-100 border-zinc-200'
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border ${
+                            isDark ? 'bg-white/[0.06] border-white/[0.08]' : 'bg-[#f5f5f7] border-black/[0.04]'
                           }`}>
                             {renderPaymentMethodIcon(exp.paymentMethod)}
                           </div>
 
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                              <span className="text-xs font-semibold text-zinc-100 sm:text-zinc-900 dark:text-zinc-100 break-words">
+                              <span className="text-xs sm:text-sm font-semibold text-[#1d1d1f] dark:text-white break-words">
                                 {exp.title}
                               </span>
                               {isHigh && (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-md border font-semibold shrink-0 ${
-                                  isDark
-                                    ? 'bg-white/[0.06] text-zinc-200 border-white/[0.1]'
-                                    : 'bg-zinc-100 text-zinc-800 border-zinc-200'
-                                }`}>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium border bg-[#ff3b30]/10 border-[#ff3b30]/20 text-[#ff3b30] shrink-0">
                                   High
                                 </span>
                               )}
-                              <span className={`inline-flex items-center text-[10px] px-2 py-0.5 rounded-md border font-medium shrink-0 ${
-                                isDark
-                                  ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]'
-                                  : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                              }`}>
+                              <span className={`inline-flex items-center text-[10px] px-2.5 py-0.5 rounded-full border font-normal shrink-0 ${appleCapsule}`}>
                                 {exp.category}
                               </span>
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded-md border font-mono shrink-0 ${
-                                isDark
-                                  ? 'bg-white/[0.02] text-zinc-400 border-white/[0.06]'
-                                  : 'bg-zinc-50 text-zinc-500 border-zinc-200'
-                              }`}>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full border shrink-0 ${appleCapsule}`}>
                                 #{exp.projectName}
                               </span>
                             </div>
@@ -1290,10 +1269,10 @@ export function ExpenseTracker({
                         {/* Right: Amount & Actions */}
                         <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3.5 shrink-0 pl-10 sm:pl-0">
                           <div className="text-left sm:text-right">
-                            <div className="text-sm sm:text-base font-bold font-mono text-zinc-100 sm:text-zinc-900 dark:text-zinc-100 whitespace-nowrap">
+                            <div className="text-sm sm:text-base font-semibold font-mono text-[#1d1d1f] dark:text-[#f5f5f7] whitespace-nowrap">
                               {formatMoney(Number(exp.amount))}
                             </div>
-                            <span className="text-[10px] text-zinc-500 whitespace-nowrap block">
+                            <span className="text-[11px] text-[#86868b] dark:text-[#a1a1a6] whitespace-nowrap block">
                               via {methodLabel}
                             </span>
                           </div>
@@ -1306,14 +1285,10 @@ export function ExpenseTracker({
                                 e.stopPropagation()
                                 setViewingExpense(exp)
                               }}
-                              className={`h-7.5 px-2 sm:px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
-                                isDark
-                                  ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-300 hover:text-white'
-                                  : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 hover:text-zinc-950 shadow-2xs'
-                              }`}
+                              className={`h-7.5 px-2.5 sm:px-3 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer inline-flex items-center gap-1.5 ${appleActionBtn}`}
                               title="View Details"
                             >
-                              <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <svg className="w-3.5 h-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                 <circle cx="12" cy="12" r="3" />
                               </svg>
@@ -1327,14 +1302,10 @@ export function ExpenseTracker({
                                 e.stopPropagation()
                                 onEditExpense(exp)
                               }}
-                              className={`h-7.5 px-2 sm:px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
-                                isDark
-                                  ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-300 hover:text-white'
-                                  : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 hover:text-zinc-950 shadow-2xs'
-                              }`}
+                              className={`h-7.5 px-2.5 sm:px-3 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer inline-flex items-center gap-1.5 ${appleActionBtn}`}
                               title="Edit Expense"
                             >
-                              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <svg className="w-3.5 h-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M12 20h9" />
                                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                               </svg>
@@ -1348,14 +1319,10 @@ export function ExpenseTracker({
                                 e.stopPropagation()
                                 onDeleteExpense(exp)
                               }}
-                              className={`h-7.5 px-2 sm:px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${
-                                isDark
-                                  ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-200'
-                                  : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-600 hover:text-zinc-950 shadow-2xs'
-                              }`}
+                              className={`h-7.5 px-2.5 sm:px-3 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer inline-flex items-center gap-1.5 ${appleDeleteBtn}`}
                               title="Delete Expense"
                             >
-                              <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <svg className="w-3.5 h-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <polyline points="3 6 5 6 21 6" />
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                               </svg>
@@ -1377,37 +1344,37 @@ export function ExpenseTracker({
       {viewingExpense && (
         <div
           onClick={() => setViewingExpense(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-md transition-opacity"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className={`w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden flex flex-col max-h-[92vh] ${
+            className={`w-full max-w-lg rounded-[24px] border shadow-2xl overflow-hidden flex flex-col max-h-[92vh] ${
               isDark
-                ? 'bg-[#151518] border-white/[0.12] text-zinc-100 shadow-black/80'
-                : 'bg-white border-zinc-200 text-zinc-900 shadow-zinc-500/20'
+                ? 'bg-[#1c1c1e] border-white/[0.12] text-[#f5f5f7] shadow-black/80'
+                : 'bg-white border-[#e5e5ea] text-[#1d1d1f] shadow-2xl'
             }`}
           >
             {/* Modal Header */}
-            <div className={`px-4 sm:px-5 py-3.5 sm:py-4 border-b flex items-center justify-between ${
-              isDark ? 'border-white/[0.08] bg-white/[0.02]' : 'border-zinc-100 bg-zinc-50/60'
+            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between ${
+              isDark ? 'border-white/[0.08] bg-[#1c1c1e]' : 'border-[#e5e5ea] bg-white'
             }`}>
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
-                  isDark ? 'bg-white/[0.04] border-white/[0.08]' : 'bg-zinc-100 border-zinc-200'
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border ${
+                  isDark ? 'bg-white/[0.06] border-white/[0.08] text-white' : 'bg-[#f5f5f7] border-black/[0.06] text-[#1d1d1f]'
                 }`}>
                   {renderPaymentMethodIcon(viewingExpense.paymentMethod)}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-sm font-semibold leading-none truncate">
+                  <h3 className="text-sm font-semibold leading-none truncate tracking-tight">
                     Expense Details
                   </h3>
-                  <span className="text-[11px] text-zinc-500 mt-1 block font-mono truncate">
+                  <span className="text-[11px] text-[#86868b] dark:text-[#a1a1a6] mt-1 block truncate">
                     #{viewingExpense.projectName} • {viewingExpense.date}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -1415,11 +1382,7 @@ export function ExpenseTracker({
                     setViewingExpense(null)
                     onEditExpense(exp)
                   }}
-                  className={`hidden sm:inline-flex px-2.5 py-1 rounded-lg border text-xs font-medium transition cursor-pointer items-center gap-1.5 ${
-                    isDark
-                      ? 'border-white/[0.1] hover:bg-white/[0.08] text-zinc-300'
-                      : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700'
-                  }`}
+                  className={`hidden sm:inline-flex px-3 py-1 rounded-full border text-xs font-medium transition cursor-pointer items-center gap-1.5 active:scale-95 ${appleActionBtn}`}
                   title="Edit this expense"
                 >
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1431,12 +1394,10 @@ export function ExpenseTracker({
                 <button
                   type="button"
                   onClick={() => setViewingExpense(null)}
-                  className={`p-1.5 rounded-lg transition cursor-pointer ${
-                    isDark ? 'hover:bg-white/[0.08] text-zinc-400 hover:text-white' : 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900'
-                  }`}
+                  className={`w-8 h-8 rounded-full border flex items-center justify-center transition cursor-pointer active:scale-95 ${appleGhostBtn}`}
                   title="Close modal"
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
@@ -1445,75 +1406,73 @@ export function ExpenseTracker({
             </div>
 
             {/* Modal Body */}
-            <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 sm:space-y-4 custom-scrollbar">
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-4 custom-scrollbar">
               {/* Hero Amount & Title Card */}
-              <div className={`p-3.5 sm:p-4 rounded-xl border ${
-                isDark ? 'bg-black/30 border-white/[0.06]' : 'bg-zinc-50 border-zinc-200/80'
+              <div className={`p-4 rounded-[16px] border ${
+                isDark ? 'bg-white/[0.04] border-white/[0.08]' : 'bg-[#f5f5f7] border-[#e5e5ea]'
               }`}>
-                <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1">
+                <div className="text-[11px] font-normal uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] mb-1">
                   Total Amount Paid
                 </div>
                 <div className="flex items-baseline justify-between gap-2">
-                  <div className="text-xl sm:text-2xl font-extrabold font-mono tracking-tight text-zinc-950 dark:text-white truncate">
+                  <div className="text-2xl sm:text-3xl font-semibold font-mono tracking-tight text-[#1d1d1f] dark:text-[#f5f5f7] truncate">
                     {formatMoney(Number(viewingExpense.amount))}
                   </div>
-                  <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border shrink-0 ${
-                    isDark ? 'bg-white/[0.06] text-zinc-200 border-white/[0.1]' : 'bg-zinc-200 text-zinc-800 border-zinc-300'
-                  }`}>
+                  <span className={`px-3 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
                     {PAYMENT_METHOD_LABELS[viewingExpense.paymentMethod] || viewingExpense.paymentMethod}
                   </span>
                 </div>
-                <div className="mt-2 text-xs sm:text-sm font-medium text-zinc-800 dark:text-zinc-200 break-words">
+                <div className="mt-2.5 text-sm font-medium text-[#1d1d1f] dark:text-[#f5f5f7] break-words">
                   {viewingExpense.title}
                 </div>
               </div>
 
               {/* Transaction Attributes Grid */}
-              <div className="grid grid-cols-2 gap-2 sm:gap-2.5 text-xs">
-                <div className={`p-2.5 sm:p-3 rounded-xl border ${
-                  isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
+                <div className={`p-3 rounded-[14px] border ${
+                  isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-[#f5f5f7]/60 border-[#e5e5ea]'
                 }`}>
-                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1 truncate">
+                  <span className="block text-[11px] text-[#86868b] dark:text-[#a1a1a6] mb-1 truncate">
                     Category
                   </span>
-                  <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate block">{viewingExpense.category}</span>
+                  <span className="font-medium text-[#1d1d1f] dark:text-[#f5f5f7] truncate block">{viewingExpense.category}</span>
                 </div>
-                <div className={`p-2.5 sm:p-3 rounded-xl border ${
-                  isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
+                <div className={`p-3 rounded-[14px] border ${
+                  isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-[#f5f5f7]/60 border-[#e5e5ea]'
                 }`}>
-                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1 truncate">
+                  <span className="block text-[11px] text-[#86868b] dark:text-[#a1a1a6] mb-1 truncate">
                     Workspace
                   </span>
-                  <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100 truncate block">#{viewingExpense.projectName}</span>
+                  <span className="font-medium font-mono text-[#1d1d1f] dark:text-[#f5f5f7] truncate block">#{viewingExpense.projectName}</span>
                 </div>
-                <div className={`p-2.5 sm:p-3 rounded-xl border ${
-                  isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
+                <div className={`p-3 rounded-[14px] border ${
+                  isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-[#f5f5f7]/60 border-[#e5e5ea]'
                 }`}>
-                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1 truncate">
+                  <span className="block text-[11px] text-[#86868b] dark:text-[#a1a1a6] mb-1 truncate">
                     Date
                   </span>
-                  <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100 truncate block">{viewingExpense.date}</span>
+                  <span className="font-medium font-mono text-[#1d1d1f] dark:text-[#f5f5f7] truncate block">{viewingExpense.date}</span>
                 </div>
-                <div className={`p-2.5 sm:p-3 rounded-xl border ${
-                  isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
+                <div className={`p-3 rounded-[14px] border ${
+                  isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-[#f5f5f7]/60 border-[#e5e5ea]'
                 }`}>
-                  <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-mono mb-1 truncate">
+                  <span className="block text-[11px] text-[#86868b] dark:text-[#a1a1a6] mb-1 truncate">
                     Currency
                   </span>
-                  <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100 truncate block">{viewingExpense.currency || 'INR'}</span>
+                  <span className="font-medium font-mono text-[#1d1d1f] dark:text-[#f5f5f7] truncate block">{viewingExpense.currency || 'INR'}</span>
                 </div>
               </div>
 
               {/* Receipt Breakdown & Notes Card */}
-              <div className={`p-3.5 sm:p-4 rounded-xl border ${
-                isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/50 border-zinc-200/70'
+              <div className={`p-4 rounded-[16px] border ${
+                isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-[#f5f5f7]/60 border-[#e5e5ea]'
               }`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-[11px] font-semibold tracking-tight text-[#86868b] dark:text-[#a1a1a6]">
                     Receipt Breakdown & Remarks
                   </span>
                   {viewingExpense.notes && (
-                    <span className="text-[10px] font-mono text-zinc-500">
+                    <span className="text-[11px] text-[#86868b] dark:text-[#a1a1a6]">
                       {viewingExpense.notes.split('\n').filter((l) => l.trim().length > 0).length} entries
                     </span>
                   )}
@@ -1530,20 +1489,20 @@ export function ExpenseTracker({
                       return (
                         <div
                           key={idx}
-                          className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs leading-relaxed transition ${
+                          className={`flex items-start gap-2.5 p-2.5 rounded-[12px] border text-xs leading-relaxed transition ${
                             isDark
-                              ? 'bg-black/30 border-white/[0.05] text-zinc-300'
-                              : 'bg-white border-zinc-200/70 text-zinc-800'
+                              ? 'bg-black/40 border-white/[0.06] text-[#f5f5f7]'
+                              : 'bg-white border-[#e5e5ea] text-[#1d1d1f]'
                           }`}
                         >
-                          <span className="text-zinc-400 dark:text-zinc-500 font-mono text-xs shrink-0 select-none mt-0.5">•</span>
+                          <span className="text-[#86868b] dark:text-[#a1a1a6] text-xs shrink-0 select-none mt-0.5">•</span>
                           <span className="flex-1 whitespace-pre-wrap break-words">{cleanContent}</span>
                         </div>
                       )
                     })}
                   </div>
                 ) : (
-                  <p className="text-xs text-zinc-500 italic py-1">
+                  <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] italic py-1">
                     No receipt remarks or breakdown notes recorded for this transaction.
                   </p>
                 )}
@@ -1551,8 +1510,8 @@ export function ExpenseTracker({
             </div>
 
             {/* Modal Footer */}
-            <div className={`p-3.5 sm:p-4 border-t flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5 ${
-              isDark ? 'border-white/[0.08] bg-white/[0.02]' : 'border-zinc-100 bg-zinc-50/60'
+            <div className={`p-4 sm:p-5 border-t flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5 ${
+              isDark ? 'border-white/[0.08] bg-[#1c1c1e]' : 'border-[#e5e5ea] bg-white'
             }`}>
               <button
                 type="button"
@@ -1561,11 +1520,7 @@ export function ExpenseTracker({
                   setViewingExpense(null)
                   onDeleteExpense(exp)
                 }}
-                className={`w-full sm:w-auto px-3 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer inline-flex items-center justify-center gap-1.5 ${
-                  isDark
-                    ? 'border-white/[0.08] hover:border-red-500/30 bg-white/[0.02] hover:bg-red-500/10 text-zinc-400 hover:text-red-400'
-                    : 'border-zinc-200 hover:border-red-300 bg-white hover:bg-red-50 text-zinc-600 hover:text-red-600 shadow-2xs'
-                }`}
+                className={`w-full sm:w-auto px-4 py-2 rounded-full border text-xs font-medium transition cursor-pointer inline-flex items-center justify-center gap-1.5 active:scale-95 ${appleDeleteBtn}`}
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="3 6 5 6 21 6" />
@@ -1578,11 +1533,7 @@ export function ExpenseTracker({
                 <button
                   type="button"
                   onClick={() => setViewingExpense(null)}
-                  className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer text-center ${
-                    isDark
-                      ? 'bg-white/[0.08] hover:bg-white/[0.14] text-zinc-200 border-white/[0.1]'
-                      : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200 shadow-2xs'
-                  }`}
+                  className={`flex-1 sm:flex-none px-4 py-2 rounded-full border text-xs font-medium transition cursor-pointer text-center active:scale-95 ${appleGhostBtn}`}
                 >
                   Close
                 </button>
@@ -1593,11 +1544,7 @@ export function ExpenseTracker({
                     setViewingExpense(null)
                     onEditExpense(exp)
                   }}
-                  className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer inline-flex items-center justify-center gap-1.5 ${
-                    isDark
-                      ? 'bg-white hover:bg-zinc-100 text-zinc-950 border border-white shadow-xs'
-                      : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900 shadow-xs'
-                  }`}
+                  className="flex-1 sm:flex-none px-4 py-2 rounded-full text-xs font-medium transition cursor-pointer inline-flex items-center justify-center gap-1.5 active:scale-95 bg-[#0071e3] hover:bg-[#0077ed] text-white shadow-xs"
                 >
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M12 20h9" />

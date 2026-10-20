@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { Expense, PaymentMethod } from '@/types'
-import { Button } from '@/components/Button'
 
 interface ExpenseModalProps {
   isOpen: boolean
@@ -256,46 +255,52 @@ export function ExpenseModal({
     }
   }
 
-  // Theme-aware styles
-  const overlayBg = 'bg-black/60 backdrop-blur-sm'
+  // Apple Design System Surface & Input Tokens (DESIGN.md)
+  const overlayBg = 'bg-black/40 backdrop-blur-md'
   const modalBg = isDark
-    ? 'bg-[#111114] border-white/[0.08] text-zinc-100 shadow-2xl'
-    : 'bg-white border-zinc-200 text-zinc-900 shadow-xl'
+    ? 'bg-[#1c1c1e] border-white/[0.08] text-[#f5f5f7] shadow-2xl'
+    : 'bg-white border-[#e5e5ea] text-[#1d1d1f] shadow-2xl'
+  const cardSectionBg = isDark
+    ? 'bg-white/[0.03] border-white/[0.08]'
+    : 'bg-[#f5f5f7] border-[#e5e5ea]'
   const inputBg = isDark
-    ? 'bg-black/40 border-white/[0.08] text-zinc-100 placeholder-zinc-500 focus:border-emerald-500/60'
-    : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-emerald-500'
-  const labelColor = isDark ? 'text-zinc-300' : 'text-zinc-700'
-  const borderBottom = isDark ? 'border-white/[0.06]' : 'border-zinc-200'
+    ? 'bg-white/[0.04] border-white/[0.08] text-[#f5f5f7] placeholder-[#86868b] focus:border-[#2997ff] focus:ring-1 focus:ring-[#2997ff]/20'
+    : 'bg-white border-[#e5e5ea] text-[#1d1d1f] placeholder-[#86868b] focus:border-[#0071e3] focus:ring-1 focus:ring-[#0071e3]/20 shadow-2xs'
+  const labelColor = isDark ? 'text-[#a1a1a6]' : 'text-[#86868b]'
+  const borderBottom = isDark ? 'border-white/[0.08]' : 'border-[#e5e5ea]'
+  const appleGhostBtn = isDark
+    ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.04] hover:bg-white/[0.08] text-[#f5f5f7]'
+    : 'border-[#e5e5ea] hover:border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] shadow-2xs'
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 ${overlayBg} animate-in fade-in duration-150`}>
-      <div className={`w-full max-w-xl rounded-2xl border ${modalBg} flex flex-col max-h-[92vh] overflow-hidden`}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 ${overlayBg} animate-in fade-in duration-150`}>
+      <div className={`w-full max-w-xl rounded-[24px] border ${modalBg} flex flex-col max-h-[92vh] overflow-hidden`}>
         {/* Header */}
-        <div className={`px-4 sm:px-5 py-3.5 sm:py-4 border-b ${borderBottom} flex items-center justify-between gap-2.5`}>
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+        <div className={`px-5 sm:px-6 py-4 border-b ${borderBottom} flex items-center justify-between gap-3`}>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 border ${
               isDark
-                ? 'bg-zinc-800 border border-zinc-700/80 text-white shadow-xs'
-                : 'bg-zinc-900 border border-zinc-800 text-white shadow-xs'
+                ? 'bg-white/[0.08] border-white/[0.1] text-white'
+                : 'bg-[#f5f5f7] border-black/[0.08] text-[#1d1d1f]'
             }`}>
-              <span className="font-bold text-sm leading-none select-none font-sans">₹</span>
+              <span className="font-semibold text-sm leading-none select-none font-sans">₹</span>
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold truncate">
+              <h2 className="text-sm font-semibold tracking-tight truncate">
                 {expense ? 'Edit Expense' : 'Record New Expense'}
               </h2>
-              <p className="text-[11px] text-zinc-500 truncate">
+              <p className="text-[11px] text-[#86868b] dark:text-[#a1a1a6] truncate mt-0.5">
                 {expense ? 'Update transaction details' : 'Log your spending to track daily & monthly expenses'}
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className={`p-1.5 rounded-lg transition cursor-pointer shrink-0 ${
-              isDark ? 'text-zinc-400 hover:text-white hover:bg-white/[0.06]' : 'text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100'
-            }`}
+            className="w-8 h-8 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-[#f5f5f7] dark:bg-white/[0.06] hover:bg-[#e5e5ea] dark:hover:bg-white/[0.12] text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white flex items-center justify-center transition cursor-pointer shrink-0 active:scale-95"
+            title="Close"
           >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -303,17 +308,15 @@ export function ExpenseModal({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 sm:space-y-4 custom-scrollbar">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 custom-scrollbar">
           {errorMessage && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+            <div className="p-3.5 rounded-[12px] bg-[#ff3b30]/10 border border-[#ff3b30]/20 text-[#ff3b30] dark:text-[#ff453a] text-xs">
               {errorMessage}
             </div>
           )}
 
           {/* Amount & Currency (Hero Input with Quick Calculator) */}
-          <div className={`p-4 rounded-xl border ${
-            isDark ? 'bg-black/30 border-white/[0.06]' : 'bg-zinc-50/80 border-zinc-200'
-          }`}>
+          <div className={`p-4 sm:p-4.5 rounded-[18px] border ${cardSectionBg}`}>
             <div className="flex items-center justify-between mb-2">
               <label className={`block text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
                 Expense Amount *
@@ -321,18 +324,14 @@ export function ExpenseModal({
               <button
                 type="button"
                 onClick={() => setShowCalculator((prev) => !prev)}
-                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border transition-colors cursor-pointer select-none ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-normal border transition-all duration-150 cursor-pointer select-none active:scale-95 ${
                   showCalculator
-                    ? isDark
-                      ? 'bg-white/[0.12] text-white border-white/[0.2]'
-                      : 'bg-zinc-200 text-zinc-900 border-zinc-300'
-                    : isDark
-                      ? 'bg-white/[0.04] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] border-white/[0.08]'
-                      : 'bg-zinc-100 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 border-zinc-200'
+                    ? 'bg-[#0071e3] text-white border-[#0071e3]'
+                    : appleGhostBtn
                 }`}
                 title="Toggle quick calculator"
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-3.5 h-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="4" y="2" width="16" height="20" rx="2" />
                   <line x1="8" y1="6" x2="16" y2="6" />
                   <line x1="16" y1="14" x2="16" y2="18" />
@@ -342,12 +341,12 @@ export function ExpenseModal({
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <div className="relative shrink-0 w-24">
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className={`w-full rounded-lg border px-2.5 py-2 text-xs font-semibold focus:outline-none cursor-pointer ${inputBg}`}
+                  className={`w-full rounded-[12px] border px-2.5 py-2 text-xs font-semibold focus:outline-none cursor-pointer transition ${inputBg}`}
                 >
                   <option value="INR">₹ INR</option>
                   <option value="USD">$ USD</option>
@@ -356,7 +355,7 @@ export function ExpenseModal({
                 </select>
               </div>
               <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400 font-mono">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#86868b] font-mono pointer-events-none">
                   {currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£'}
                 </span>
                 <input
@@ -367,28 +366,28 @@ export function ExpenseModal({
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className={`w-full rounded-lg border pl-7 pr-3 py-2 text-base font-bold font-mono focus:outline-none ${inputBg}`}
+                  className={`w-full rounded-[12px] border pl-7 pr-3 py-2 text-base font-semibold font-mono focus:outline-none transition ${inputBg}`}
                 />
               </div>
             </div>
 
             {/* Quick Calculator Keypad Widget */}
             {showCalculator && (
-              <div className={`mt-3 pt-3 border-t ${isDark ? 'border-white/[0.08]' : 'border-zinc-200'}`}>
+              <div className={`mt-3 pt-3 border-t ${borderBottom}`}>
                 {/* Calculator Display */}
-                <div className={`p-2.5 rounded-lg border mb-2 flex items-center justify-between font-mono ${
-                  isDark ? 'bg-black/50 border-white/[0.08]' : 'bg-white border-zinc-200'
+                <div className={`p-2.5 rounded-[12px] border mb-2.5 flex items-center justify-between font-mono ${
+                  isDark ? 'bg-black/50 border-white/[0.08]' : 'bg-white border-[#e5e5ea]'
                 }`}>
                   <input
                     type="text"
                     value={calcExpression}
                     onChange={(e) => handleCalcInputChange(e.target.value)}
                     placeholder="Type e.g. 40 + 25 + 15"
-                    className="bg-transparent border-none outline-none text-xs flex-1 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-0 font-mono"
+                    className="bg-transparent border-none outline-none text-xs flex-1 text-[#1d1d1f] dark:text-[#f5f5f7] placeholder-[#86868b] focus:ring-0 font-mono"
                   />
                   <div className="text-right shrink-0 pl-2">
-                    <span className="text-xs text-zinc-500 mr-1">=</span>
-                    <span className="text-sm font-bold text-zinc-950 dark:text-white font-mono">
+                    <span className="text-xs text-[#86868b] mr-1">=</span>
+                    <span className="text-sm font-semibold text-[#1d1d1f] dark:text-[#f5f5f7] font-mono">
                       {calcResult !== null ? calcResult.toFixed(2) : '0.00'}
                     </span>
                   </div>
@@ -397,43 +396,41 @@ export function ExpenseModal({
                 {/* Keypad Grid */}
                 <div className="grid grid-cols-4 gap-1.5 mb-2.5">
                   {[
-                    { label: 'C', val: 'C', cls: 'text-zinc-600 dark:text-zinc-300 hover:text-red-600 dark:hover:text-red-400 font-semibold' },
-                    { label: '(', val: '(', cls: 'text-zinc-500 dark:text-zinc-400' },
-                    { label: ')', val: ')', cls: 'text-zinc-500 dark:text-zinc-400' },
-                    { label: '÷', val: ' / ', cls: 'text-zinc-800 dark:text-zinc-200 font-bold' },
+                    { label: 'C', val: 'C', cls: 'text-[#ff3b30] dark:text-[#ff453a] font-semibold' },
+                    { label: '(', val: '(', cls: 'text-[#86868b]' },
+                    { label: ')', val: ')', cls: 'text-[#86868b]' },
+                    { label: '÷', val: ' / ', cls: 'text-[#1d1d1f] dark:text-[#f5f5f7] font-semibold' },
                     { label: '7', val: '7' },
                     { label: '8', val: '8' },
                     { label: '9', val: '9' },
-                    { label: '×', val: ' * ', cls: 'text-zinc-800 dark:text-zinc-200 font-bold' },
+                    { label: '×', val: ' * ', cls: 'text-[#1d1d1f] dark:text-[#f5f5f7] font-semibold' },
                     { label: '4', val: '4' },
                     { label: '5', val: '5' },
                     { label: '6', val: '6' },
-                    { label: '-', val: ' - ', cls: 'text-zinc-800 dark:text-zinc-200 font-bold' },
+                    { label: '-', val: ' - ', cls: 'text-[#1d1d1f] dark:text-[#f5f5f7] font-semibold' },
                     { label: '1', val: '1' },
                     { label: '2', val: '2' },
                     { label: '3', val: '3' },
-                    { label: '+', val: ' + ', cls: 'text-zinc-800 dark:text-zinc-200 font-bold' },
+                    { label: '+', val: ' + ', cls: 'text-[#1d1d1f] dark:text-[#f5f5f7] font-semibold' },
                     { label: '0', val: '0' },
                     { label: '.', val: '.' },
-                    { label: '⌫', val: 'BACK', cls: 'text-zinc-500 dark:text-zinc-400' },
+                    { label: '⌫', val: 'BACK', cls: 'text-[#86868b]' },
                     {
                       label: '=',
                       val: '=',
-                      cls: isDark
-                        ? 'bg-white text-zinc-950 hover:bg-zinc-100 font-bold border-white'
-                        : 'bg-zinc-900 text-white hover:bg-zinc-800 font-bold border-zinc-900',
+                      cls: 'bg-[#0071e3] hover:bg-[#0077ed] text-white font-bold border-[#0071e3]',
                     },
                   ].map((btn, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => handleCalcKeyPress(btn.val)}
-                      className={`h-7 rounded-md text-xs font-mono transition-colors cursor-pointer select-none border ${
+                      className={`h-7.5 rounded-[10px] text-xs font-mono transition-all duration-150 cursor-pointer select-none active:scale-95 border ${
                         btn.cls && btn.cls.includes('bg-')
                           ? btn.cls
                           : isDark
-                            ? 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.06] text-zinc-200'
-                            : 'bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-800'
+                            ? 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.06] text-[#f5f5f7]'
+                            : 'bg-white hover:bg-[#f5f5f7] border-[#e5e5ea] text-[#1d1d1f]'
                       } ${btn.cls || ''}`}
                     >
                       {btn.label}
@@ -447,11 +444,7 @@ export function ExpenseModal({
                     type="button"
                     onClick={handleApplyCalcToAmount}
                     disabled={calcResult === null || calcResult <= 0}
-                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold disabled:opacity-40 transition cursor-pointer ${
-                      isDark
-                        ? 'bg-white hover:bg-zinc-100 text-zinc-950 border border-white shadow-xs'
-                        : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900 shadow-xs'
-                    }`}
+                    className="flex-1 py-1.5 px-3.5 rounded-full text-xs font-medium disabled:opacity-40 transition cursor-pointer active:scale-95 bg-[#0071e3] hover:bg-[#0077ed] text-white shadow-xs"
                   >
                     Set as Amount ({calcResult !== null ? `${currency === 'INR' ? '₹' : currency} ${calcResult.toFixed(2)}` : '0.00'})
                   </button>
@@ -459,11 +452,7 @@ export function ExpenseModal({
                     type="button"
                     onClick={handleAppendCalcToNotes}
                     disabled={calcResult === null || calcResult <= 0}
-                    className={`py-1.5 px-2.5 rounded-lg text-xs font-medium border transition cursor-pointer disabled:opacity-40 ${
-                      isDark
-                        ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-200 border-white/[0.1]'
-                        : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200 shadow-2xs'
-                    }`}
+                    className={`py-1.5 px-3 rounded-full text-xs font-medium border transition cursor-pointer disabled:opacity-40 active:scale-95 ${appleGhostBtn}`}
                     title="Insert total breakdown into notes"
                   >
                     + Add to Notes
@@ -484,7 +473,7 @@ export function ExpenseModal({
               placeholder="e.g. AWS Cloud Hosting, Team Lunch, Office Chairs..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className={`w-full rounded-lg border px-3 py-2 text-xs focus:outline-none ${inputBg}`}
+              className={`w-full rounded-[12px] border px-3.5 py-2 text-xs focus:outline-none transition ${inputBg}`}
             />
           </div>
 
@@ -499,7 +488,7 @@ export function ExpenseModal({
                 <button
                   type="button"
                   onClick={() => setIsAddingCategory(!isAddingCategory)}
-                  className="text-[10px] text-emerald-500 hover:text-emerald-400 font-medium cursor-pointer"
+                  className="text-xs text-[#0071e3] dark:text-[#2997ff] hover:underline font-normal cursor-pointer transition-colors"
                 >
                   {isAddingCategory ? 'Cancel' : '+ New Category'}
                 </button>
@@ -512,13 +501,13 @@ export function ExpenseModal({
                     placeholder="New category..."
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
-                    className={`flex-1 rounded-lg border px-2.5 py-1.5 text-xs focus:outline-none ${inputBg}`}
+                    className={`flex-1 rounded-[12px] border px-3 py-1.5 text-xs focus:outline-none transition ${inputBg}`}
                   />
                   <button
                     type="button"
                     onClick={handleQuickAddCategory}
                     disabled={catLoading || !newCatName.trim()}
-                    className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer disabled:opacity-50"
+                    className="px-3.5 py-1.5 rounded-full bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-medium cursor-pointer disabled:opacity-50 active:scale-95 transition-all shadow-xs"
                   >
                     Add
                   </button>
@@ -527,7 +516,7 @@ export function ExpenseModal({
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className={`w-full rounded-lg border px-3 py-2 text-xs focus:outline-none cursor-pointer ${inputBg}`}
+                  className={`w-full rounded-[12px] border px-3.5 py-2 text-xs focus:outline-none cursor-pointer transition ${inputBg}`}
                 >
                   {categories.map((c) => (
                     <option key={c} value={c}>
@@ -546,7 +535,7 @@ export function ExpenseModal({
               <select
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
-                className={`w-full rounded-lg border px-3 py-2 text-xs focus:outline-none cursor-pointer ${inputBg}`}
+                className={`w-full rounded-[12px] border px-3.5 py-2 text-xs focus:outline-none cursor-pointer transition ${inputBg}`}
               >
                 {availableProjects.map((p) => (
                   <option key={p} value={p}>
@@ -567,7 +556,7 @@ export function ExpenseModal({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className={`w-full rounded-lg border px-3 py-2 text-xs font-mono focus:outline-none ${inputBg}`}
+                className={`w-full rounded-[12px] border px-3.5 py-2 text-xs font-mono focus:outline-none transition ${inputBg}`}
               />
             </div>
 
@@ -578,7 +567,7 @@ export function ExpenseModal({
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                className={`w-full rounded-lg border px-3 py-2 text-xs focus:outline-none cursor-pointer ${inputBg}`}
+                className={`w-full rounded-[12px] border px-3.5 py-2 text-xs focus:outline-none cursor-pointer transition ${inputBg}`}
               >
                 {PAYMENT_METHODS.map((pm) => (
                   <option key={pm.id} value={pm.id}>
@@ -600,9 +589,7 @@ export function ExpenseModal({
                 onClick={() => {
                   setNotes((prev) => (prev ? `${prev}\n• ` : '• '))
                 }}
-                className={`text-[11px] font-medium transition cursor-pointer select-none inline-flex items-center gap-1 ${
-                  isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-900'
-                }`}
+                className="text-xs text-[#0071e3] dark:text-[#2997ff] hover:underline font-normal cursor-pointer select-none inline-flex items-center gap-1 transition-colors"
               >
                 <span>+ Add Bullet (•)</span>
               </button>
@@ -613,32 +600,39 @@ export function ExpenseModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               onKeyDown={handleNotesKeyDown}
-              className={`w-full rounded-lg border px-3 py-2 text-xs focus:outline-none min-h-[96px] max-h-[190px] resize-y overflow-y-auto leading-relaxed custom-scrollbar ${inputBg}`}
+              className={`w-full rounded-[14px] border p-3.5 text-xs focus:outline-none min-h-[96px] max-h-[190px] resize-y overflow-y-auto leading-relaxed custom-scrollbar transition ${inputBg}`}
             />
-            <p className="mt-1 text-[10px] text-zinc-500">
+            <p className="mt-1.5 text-[11px] text-[#86868b] dark:text-[#a1a1a6]">
               Tip: Press Enter on a bullet line to automatically continue the next bullet.
             </p>
           </div>
 
           {/* Footer Actions */}
-          <div className={`pt-3 border-t ${borderBottom} flex items-center justify-end gap-2.5`}>
-            <Button
+          <div className={`pt-4 border-t ${borderBottom} flex items-center justify-end gap-2.5`}>
+            <button
               type="button"
-              variant="secondary"
-              size="sm"
               onClick={onClose}
               disabled={loading}
+              className={`px-4 py-2 rounded-full border text-xs font-medium cursor-pointer active:scale-95 transition-all ${appleGhostBtn} disabled:opacity-50`}
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               type="submit"
-              variant="ticket"
-              size="sm"
-              isLoading={loading}
+              disabled={loading}
+              className="px-5 py-2 rounded-full text-xs font-medium cursor-pointer active:scale-95 transition-all inline-flex items-center justify-center gap-1.5 bg-[#0071e3] hover:bg-[#0077ed] text-white shadow-xs disabled:opacity-50"
             >
-              {expense ? 'Update Expense' : 'Add Expense'}
-            </Button>
+              {loading ? (
+                <>
+                  <svg className="w-3.5 h-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="16" />
+                  </svg>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <span>{expense ? 'Update Expense' : 'Add Expense'}</span>
+              )}
+            </button>
           </div>
         </form>
       </div>

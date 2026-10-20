@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Ticket, TicketStatus, TicketPriority } from '@/types'
-import { Button } from '@/components/Button'
 
 interface TicketModalProps {
   isOpen: boolean
@@ -244,107 +243,103 @@ export function TicketModal({
     }
   }
 
-  // Theme styles
+  // Apple Design System Surface & Input Tokens (DESIGN.md)
+  const overlayBg = 'bg-black/40 backdrop-blur-md'
   const modalBg = isDark
-    ? 'bg-[#121215] border-white/[0.08] text-zinc-100'
-    : 'bg-white border-zinc-200 text-zinc-900'
-  const headerBorder = isDark ? 'border-white/[0.06]' : 'border-zinc-200'
+    ? 'bg-[#1c1c1e] border-white/[0.08] text-[#f5f5f7]'
+    : 'bg-white border-[#e5e5ea] text-[#1d1d1f]'
+  const cardSectionBg = isDark
+    ? 'bg-white/[0.03] border-white/[0.08]'
+    : 'bg-[#f5f5f7] border-[#e5e5ea]'
   const inputBg = isDark
-    ? 'bg-black/40 border-white/[0.08] text-zinc-100 placeholder-zinc-500 focus:border-white/[0.2] focus:ring-1 focus:ring-white/[0.05]'
-    : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-200'
-  const labelColor = isDark ? 'text-zinc-400' : 'text-zinc-600'
-  const cancelBtn = isDark
-    ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 border border-white/[0.08]'
-    : 'bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 shadow-xs'
-  const getStatusBadge = (st: TicketStatus) => {
-    const pill = isDark
-      ? 'bg-white/[0.04] text-zinc-200 border-white/[0.08]'
-      : 'bg-zinc-100/80 text-zinc-800 border-zinc-200'
+    ? 'bg-white/[0.04] border-white/[0.08] text-[#f5f5f7] placeholder-[#86868b] focus:border-[#2997ff] focus:ring-1 focus:ring-[#2997ff]/20'
+    : 'bg-white border-[#e5e5ea] text-[#1d1d1f] placeholder-[#86868b] focus:border-[#0071e3] focus:ring-1 focus:ring-[#0071e3]/20 shadow-2xs'
+  const labelColor = isDark ? 'text-[#a1a1a6]' : 'text-[#86868b]'
+  const borderBottom = isDark ? 'border-white/[0.08]' : 'border-[#e5e5ea]'
+  const appleGhostBtn = isDark
+    ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.04] hover:bg-white/[0.08] text-[#f5f5f7]'
+    : 'border-[#e5e5ea] hover:border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] shadow-2xs'
+  const appleCapsule = isDark
+    ? 'bg-white/[0.08] text-[#f5f5f7] border-white/[0.08]'
+    : 'bg-[#f5f5f7] text-[#1d1d1f] border-black/[0.06]'
 
-    switch (st) {
-      case 'TODO':
-        return (
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill}`}>
-            <svg className="w-3 h-3 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="3 3">
-              <circle cx="12" cy="12" r="9" />
-            </svg>
-            To Do
-          </span>
-        )
-      case 'IN_PROGRESS':
-        return (
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill}`}>
-            <svg className="w-3 h-3 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="12" cy="12" r="9" strokeDasharray="14 14" />
-            </svg>
-            In Progress
-          </span>
-        )
-      case 'DONE':
-        return (
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill}`}>
-            <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            Completed
-          </span>
-        )
-      case 'BLOCKED':
-        return (
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill}`}>
-            <svg className="w-3 h-3 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <circle cx="12" cy="12" r="9" />
-              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-            </svg>
-            Blocked
-          </span>
-        )
-    }
+  const getStatusBadge = (st: TicketStatus) => {
+    const icon = {
+      TODO: (
+        <svg className="w-3 h-3 opacity-50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <circle cx="12" cy="12" r="9" strokeDasharray="3 3" />
+        </svg>
+      ),
+      IN_PROGRESS: (
+        <svg className="w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <circle cx="12" cy="12" r="9" strokeDasharray="14 14" />
+        </svg>
+      ),
+      DONE: (
+        <svg className="w-3 h-3 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ),
+      BLOCKED: (
+        <svg className="w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+          <circle cx="12" cy="12" r="9" />
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+        </svg>
+      ),
+    }[st]
+
+    const label = {
+      TODO: 'To Do',
+      IN_PROGRESS: 'In Progress',
+      DONE: 'Completed',
+      BLOCKED: 'Blocked',
+    }[st]
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-normal border ${appleCapsule}`}>
+        {icon}
+        {label}
+      </span>
+    )
   }
 
   const getPriorityBadge = (pr: TicketPriority) => {
-    const pill = isDark
-      ? 'bg-white/[0.04] border-white/[0.08]'
-      : 'bg-zinc-100/80 border-zinc-200'
+    const icon = {
+      URGENT: (
+        <svg className="w-3 h-3 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <path d="M12 3v13M12 20v1" />
+        </svg>
+      ),
+      HIGH: (
+        <svg className="w-3 h-3 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="18 15 12 9 6 15" />
+        </svg>
+      ),
+      MEDIUM: (
+        <svg className="w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      ),
+      LOW: (
+        <svg className="w-3 h-3 opacity-50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      ),
+    }[pr]
 
-    switch (pr) {
-      case 'URGENT':
-        return (
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill} text-rose-600 dark:text-rose-400`}>
-            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 3v13M12 20v1" strokeLinecap="round" />
-            </svg>
-            Urgent
-          </span>
-        )
-      case 'HIGH':
-        return (
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill} text-amber-600 dark:text-amber-400`}>
-            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="18 15 12 9 6 15" />
-            </svg>
-            High
-          </span>
-        )
-      case 'MEDIUM':
-        return (
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill} text-zinc-600 dark:text-zinc-400`}>
-            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Medium
-          </span>
-        )
-      case 'LOW':
-        return (
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${pill} text-zinc-500 dark:text-zinc-400`}>
-            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-            Low
-          </span>
-        )
-    }
+    const label = {
+      URGENT: 'Urgent',
+      HIGH: 'High',
+      MEDIUM: 'Medium',
+      LOW: 'Low',
+    }[pr]
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-normal border ${appleCapsule}`}>
+        {icon}
+        {label}
+      </span>
+    )
   }
 
   const formatDateTime = (dateStr?: string) => {
@@ -366,9 +361,9 @@ export function TicketModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-2.5 sm:p-6 overflow-y-auto animate-in fade-in duration-150">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 ${overlayBg} overflow-y-auto animate-in fade-in duration-150`}>
       <div
-        className={`w-full max-w-2xl sm:max-w-3xl rounded-2xl border shadow-2xl p-4 sm:p-7 max-h-[92vh] overflow-y-auto transition-all ${modalBg}`}
+        className={`w-full max-w-2xl sm:max-w-3xl rounded-[24px] border shadow-2xl p-5 sm:p-7 max-h-[92vh] overflow-y-auto transition-all ${modalBg}`}
       >
         {/* ======================================================== */}
         {/* MODE 1: READ-ONLY VIEW MODE                              */}
@@ -376,12 +371,12 @@ export function TicketModal({
         {!isEditing && existingTicket ? (
           <div>
             {/* View Header */}
-            <div className={`pb-4 border-b ${headerBorder}`}>
+            <div className={`pb-4 border-b ${borderBottom}`}>
               <div className="flex items-start justify-between gap-2.5">
-                <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                <div className="flex items-start gap-3 min-w-0">
                   <div
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      isDark ? 'bg-zinc-800 border border-zinc-700 text-white' : 'bg-zinc-900 border border-zinc-800 text-white shadow-xs'
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                      isDark ? 'bg-white/[0.08] border border-white/[0.1] text-[#f5f5f7]' : 'bg-[#f5f5f7] border border-black/[0.08] text-[#1d1d1f]'
                     }`}
                   >
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -393,22 +388,20 @@ export function TicketModal({
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <h2 className="text-base sm:text-lg font-semibold tracking-tight">
+                      <h2 className="text-base sm:text-lg font-semibold tracking-tight text-[#1d1d1f] dark:text-[#f5f5f7]">
                         Ticket Details
                       </h2>
                       {(existingTicket.ticketId || existingTicket.id) && (
-                        <span className="font-mono text-xs font-semibold px-1.5 py-0.5 rounded-md border bg-zinc-100 dark:bg-white/[0.06] text-zinc-700 dark:text-zinc-200 border-zinc-200 dark:border-white/[0.08] shrink-0">
+                        <span className={`font-mono text-xs font-normal px-2.5 py-0.5 rounded-full border ${appleCapsule} shrink-0`}>
                           #{existingTicket.ticketId || existingTicket.id.slice(0, 4)}
                         </span>
                       )}
-                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md border font-semibold shrink-0 ${
-                        isDark ? 'bg-white/[0.04] text-zinc-400 border-white/[0.08]' : 'bg-zinc-100 text-zinc-600 border-zinc-200'
-                      }`}>
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border shrink-0 ${appleCapsule}`}>
                         View Only
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-500 mt-0.5 truncate">
-                      Workspace: <span className="font-semibold text-zinc-700 dark:text-zinc-300">{existingTicket.projectName}</span>
+                    <p className="text-xs text-[#86868b] mt-0.5 truncate">
+                      Workspace: <span className="font-medium text-[#1d1d1f] dark:text-[#f5f5f7]">{existingTicket.projectName}</span>
                     </p>
                   </div>
                 </div>
@@ -420,14 +413,12 @@ export function TicketModal({
                       <button
                         type="button"
                         onClick={() => onToggleBookmark(existingTicket)}
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-xl flex items-center gap-1.5 border transition cursor-pointer shadow-2xs ${
+                        className={`px-3.5 py-1.5 text-xs font-normal rounded-full flex items-center gap-1.5 border transition-all duration-150 active:scale-95 cursor-pointer ${
                           existingTicket.isBookmarked
                             ? isDark
-                              ? 'bg-white/[0.1] border-white/[0.2] text-white'
-                              : 'bg-zinc-900 border-zinc-900 text-white'
-                            : isDark
-                              ? 'bg-white/[0.04] border-white/[0.08] hover:border-white/[0.15] text-zinc-300 hover:text-white'
-                              : 'bg-zinc-100 border-zinc-200 hover:border-zinc-300 text-zinc-700 hover:text-zinc-900'
+                              ? 'bg-white border-white text-zinc-950 shadow-sm'
+                              : 'bg-zinc-950 border-zinc-950 text-white shadow-sm'
+                            : appleGhostBtn
                         }`}
                         title={existingTicket.isBookmarked ? 'Remove bookmark' : 'Bookmark this ticket'}
                       >
@@ -446,10 +437,10 @@ export function TicketModal({
                     <button
                       type="button"
                       onClick={() => setIsEditing(true)}
-                      className={`px-3 py-1.5 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition cursor-pointer shadow-xs ${
+                      className={`px-4 py-1.5 text-xs font-semibold rounded-full flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer shadow-sm ${
                         isDark
-                          ? 'bg-white hover:bg-zinc-200 text-zinc-950'
-                          : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                          ? 'bg-white hover:bg-zinc-100 text-zinc-950'
+                          : 'bg-zinc-950 hover:bg-zinc-800 text-white'
                       }`}
                       title="Click to edit this ticket"
                     >
@@ -464,7 +455,7 @@ export function TicketModal({
                   <button
                     onClick={onClose}
                     type="button"
-                    className="text-zinc-400 hover:text-zinc-200 p-1.5 rounded-lg hover:bg-white/[0.06] transition cursor-pointer"
+                    className="w-8 h-8 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-[#f5f5f7] dark:bg-white/[0.06] text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white flex items-center justify-center transition cursor-pointer active:scale-95"
                     title="Close (Esc)"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -476,19 +467,17 @@ export function TicketModal({
               </div>
 
               {/* Mobile Quick Action Buttons Bar */}
-              <div className="flex sm:hidden items-center gap-2 mt-3 pt-3 border-t border-white/[0.06]">
+              <div className="flex sm:hidden items-center gap-2 mt-3 pt-3 border-t border-black/[0.04] dark:border-white/[0.06]">
                 {onToggleBookmark && existingTicket && (
                   <button
                     type="button"
                     onClick={() => onToggleBookmark(existingTicket)}
-                    className={`flex-1 py-2 px-3 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 border transition cursor-pointer shadow-2xs ${
+                    className={`flex-1 py-2 px-3 text-xs font-normal rounded-full flex items-center justify-center gap-1.5 border transition-all duration-150 active:scale-95 cursor-pointer ${
                       existingTicket.isBookmarked
                         ? isDark
-                          ? 'bg-white/[0.1] border-white/[0.2] text-white'
-                          : 'bg-zinc-900 border-zinc-900 text-white'
-                        : isDark
-                          ? 'bg-white/[0.04] border-white/[0.08] hover:border-white/[0.15] text-zinc-300 hover:text-white'
-                          : 'bg-zinc-100 border-zinc-200 hover:border-zinc-300 text-zinc-700 hover:text-zinc-900'
+                          ? 'bg-white border-white text-zinc-950 shadow-sm'
+                          : 'bg-zinc-950 border-zinc-950 text-white shadow-sm'
+                        : appleGhostBtn
                     }`}
                   >
                     <svg
@@ -506,10 +495,10 @@ export function TicketModal({
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className={`flex-1 py-2 px-3 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs ${
+                  className={`flex-1 py-2 px-3 text-xs font-semibold rounded-full flex items-center justify-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer shadow-sm ${
                     isDark
-                      ? 'bg-white hover:bg-zinc-200 text-zinc-950'
-                      : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                      ? 'bg-white hover:bg-zinc-100 text-zinc-950'
+                      : 'bg-zinc-950 hover:bg-zinc-800 text-white'
                   }`}
                 >
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -527,27 +516,21 @@ export function TicketModal({
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 {getStatusBadge(existingTicket.status)}
                 {getPriorityBadge(existingTicket.priority)}
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border ${
-                  isDark ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]' : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                }`}>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono border ${appleCapsule}`}>
                   <svg className="w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
                     <line x1="7" y1="7" x2="7.01" y2="7" />
                   </svg>
                   {existingTicket.category || 'DEV'}
                 </span>
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border ${
-                  isDark ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]' : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                }`}>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono border ${appleCapsule}`}>
                   <svg className="w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                   </svg>
                   <span>{existingTicket.projectName}</span>
                 </span>
                 {existingTicket.version && (
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border ${
-                    isDark ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]' : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                  }`}>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono border ${appleCapsule}`}>
                     <svg className="w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
                       <line x1="7" y1="7" x2="7.01" y2="7" />
@@ -559,21 +542,19 @@ export function TicketModal({
 
               {/* Title Display */}
               <div>
-                <h1 className="text-base sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-snug break-words">
+                <h1 className="text-base sm:text-xl font-semibold tracking-tight text-[#1d1d1f] dark:text-[#f5f5f7] leading-snug break-words">
                   {existingTicket.title}
                 </h1>
               </div>
 
               {/* Description Display Card */}
-              <div className={`rounded-xl border p-3.5 sm:p-4 space-y-2.5 ${
-                isDark ? 'bg-black/30 border-white/[0.08]' : 'bg-zinc-50 border-zinc-200'
-              }`}>
+              <div className={`rounded-[16px] border p-3.5 sm:p-4 space-y-2.5 ${cardSectionBg}`}>
                 <div className="flex items-center justify-between">
-                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868b]">
                     Description & Task Details
                   </span>
                   {existingTicket.description && (
-                    <span className="text-[10px] font-mono text-zinc-500">
+                    <span className="text-[10px] font-mono text-[#86868b]">
                       {existingTicket.description.split('\n').filter((l) => l.trim().length > 0).length} entries
                     </span>
                   )}
@@ -590,41 +571,39 @@ export function TicketModal({
                         return (
                           <div
                             key={idx}
-                            className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs leading-relaxed transition ${
+                            className={`flex items-start gap-2.5 p-2 rounded-[10px] border text-xs leading-relaxed transition ${
                               isDark
-                                ? 'bg-black/30 border-white/[0.05] text-zinc-300'
-                                : 'bg-white border-zinc-200/70 text-zinc-800'
+                                ? 'bg-black/20 border-white/[0.05] text-[#ebebf5]'
+                                : 'bg-white border-black/[0.06] text-[#1d1d1f]'
                             }`}
                           >
-                            <span className="text-zinc-400 dark:text-zinc-500 font-mono text-xs shrink-0 select-none mt-0.5">•</span>
+                            <span className="text-[#86868b] font-mono text-xs shrink-0 select-none mt-0.5">•</span>
                             <span className="flex-1 whitespace-pre-wrap font-sans break-words">{cleanContent}</span>
                           </div>
                         )
                       })}
                     </div>
                   ) : (
-                    <div className="max-h-56 overflow-y-auto pr-1 custom-scrollbar text-xs sm:text-sm whitespace-pre-wrap leading-relaxed text-zinc-800 dark:text-zinc-200 font-sans break-words">
+                    <div className="max-h-56 overflow-y-auto pr-1 custom-scrollbar text-xs sm:text-sm whitespace-pre-wrap leading-relaxed text-[#1d1d1f] dark:text-[#f5f5f7] font-sans break-words">
                       {existingTicket.description}
                     </div>
                   )
                 ) : (
-                  <p className="text-xs italic text-zinc-400 font-sans">
+                  <p className="text-xs italic text-[#86868b] font-sans">
                     No description provided for this ticket.
                   </p>
                 )}
               </div>
 
               {/* Commands & Extra Details Display Card */}
-              <div className={`rounded-xl border p-3.5 sm:p-4 space-y-2.5 ${
-                isDark ? 'bg-black/30 border-white/[0.08]' : 'bg-zinc-50 border-zinc-200'
-              }`}>
+              <div className={`rounded-[16px] border p-3.5 sm:p-4 space-y-2.5 ${cardSectionBg}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868b]">
                       Commands & Extra Details
                     </span>
                     {existingTicket.commands && (
-                      <span className="text-[10px] font-mono text-zinc-500">
+                      <span className="text-[10px] font-mono text-[#86868b]">
                         {existingTicket.commands.split('\n').filter((l) => l.trim().length > 0).length} entries
                       </span>
                     )}
@@ -633,23 +612,19 @@ export function TicketModal({
                     <button
                       type="button"
                       onClick={() => handleCopyCommands(existingTicket.commands || '')}
-                      className={`h-7 sm:h-8 px-2.5 sm:px-3 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition cursor-pointer border ${
-                        isDark
-                          ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-200 border-white/[0.08]'
-                          : 'bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-200 shadow-2xs'
-                      }`}
+                      className={`h-7 px-3 rounded-full text-xs font-mono font-medium flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer border ${appleGhostBtn}`}
                       title="Copy to clipboard"
                     >
                       {copiedCommands ? (
                         <>
-                          <svg className="w-3 h-3 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <svg className="w-3 h-3 text-[#2997ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
-                          <span className="text-emerald-400 font-medium">Copied!</span>
+                          <span className="text-[#2997ff] font-medium">Copied!</span>
                         </>
                       ) : (
                         <>
-                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <svg className="w-3 h-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                           </svg>
@@ -676,15 +651,13 @@ export function TicketModal({
                       return (
                         <div
                           key={idx}
-                          className={`flex items-start gap-2.5 p-2 rounded-lg border font-mono text-xs leading-relaxed transition ${
+                          className={`flex items-start gap-2.5 p-2 rounded-[10px] border font-mono text-xs leading-relaxed transition ${
                             isDark
-                              ? 'bg-black/40 border-white/[0.05] text-zinc-200'
-                              : 'bg-zinc-100/80 border-zinc-200 text-zinc-800'
+                              ? 'bg-black/30 border-white/[0.05] text-[#ebebf5]'
+                              : 'bg-white border-black/[0.06] text-[#1d1d1f]'
                           }`}
                         >
-                          <span className={`font-mono text-xs shrink-0 select-none mt-0.5 ${
-                            isCmd ? 'text-emerald-500 font-semibold' : 'text-zinc-400 dark:text-zinc-500'
-                          }`}>
+                          <span className="font-mono text-xs shrink-0 select-none mt-0.5 text-[#86868b] font-semibold">
                             {isCmd ? '$' : '•'}
                           </span>
                           <span className="flex-1 whitespace-pre-wrap select-all break-all">{cleanContent}</span>
@@ -693,7 +666,7 @@ export function TicketModal({
                     })}
                   </div>
                 ) : (
-                  <p className="text-xs italic text-zinc-400 font-sans">
+                  <p className="text-xs italic text-[#86868b] font-sans">
                     No commands or extra details stored for this ticket.
                   </p>
                 )}
@@ -701,29 +674,29 @@ export function TicketModal({
 
               {/* Metadata Details Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-                <div className={`p-3 rounded-xl border ${isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/70 border-zinc-200'}`}>
-                  <span className="block text-[10px] text-zinc-400 font-semibold uppercase tracking-wider mb-1">
+                <div className={`p-3.5 rounded-[16px] border ${cardSectionBg}`}>
+                  <span className="block text-[10px] text-[#86868b] font-semibold uppercase tracking-wider mb-1">
                     Assignee / Author
                   </span>
-                  <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate block">
+                  <span className="text-xs font-medium text-[#1d1d1f] dark:text-[#f5f5f7] truncate block">
                     {existingTicket.updatedBy || existingTicket.createdBy || 'James Nithil'}
                   </span>
                 </div>
 
-                <div className={`p-3 rounded-xl border ${isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/70 border-zinc-200'}`}>
-                  <span className="block text-[10px] text-zinc-400 font-semibold uppercase tracking-wider mb-1">
+                <div className={`p-3.5 rounded-[16px] border ${cardSectionBg}`}>
+                  <span className="block text-[10px] text-[#86868b] font-semibold uppercase tracking-wider mb-1">
                     Created At
                   </span>
-                  <span className="text-xs font-mono text-zinc-600 dark:text-zinc-400 block truncate">
+                  <span className="text-xs font-mono text-[#86868b] block truncate">
                     {formatDateTime(existingTicket.createdAt)}
                   </span>
                 </div>
 
-                <div className={`p-3 rounded-xl border ${isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50/70 border-zinc-200'}`}>
-                  <span className="block text-[10px] text-zinc-400 font-semibold uppercase tracking-wider mb-1">
+                <div className={`p-3.5 rounded-[16px] border ${cardSectionBg}`}>
+                  <span className="block text-[10px] text-[#86868b] font-semibold uppercase tracking-wider mb-1">
                     Last Updated
                   </span>
-                  <span className="text-xs font-mono text-zinc-600 dark:text-zinc-400 block truncate">
+                  <span className="text-xs font-mono text-[#86868b] block truncate">
                     {existingTicket.updatedAt ? formatDateTime(existingTicket.updatedAt) : 'Just now'}
                   </span>
                 </div>
@@ -731,9 +704,9 @@ export function TicketModal({
             </div>
 
             {/* View Mode Footer */}
-            <div className={`flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 mt-5 sm:mt-6 border-t ${headerBorder}`}>
-              <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 justify-center sm:justify-start">
-                <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <div className={`flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 mt-5 sm:mt-6 border-t ${borderBottom}`}>
+              <div className="flex items-center gap-1.5 text-[11px] text-[#86868b] justify-center sm:justify-start">
+                <svg className="w-3.5 h-3.5 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
@@ -744,17 +717,17 @@ export function TicketModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className={`flex-1 sm:flex-none px-4 py-2 text-xs font-medium rounded-xl transition cursor-pointer text-center ${cancelBtn}`}
+                  className={`flex-1 sm:flex-none px-5 py-2 text-xs font-medium rounded-full transition-all duration-150 active:scale-95 cursor-pointer text-center ${appleGhostBtn}`}
                 >
                   Close
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className={`flex-1 sm:flex-none px-5 py-2 text-xs font-semibold rounded-xl shadow-sm transition active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 ${
+                  className={`flex-1 sm:flex-none px-5 py-2 text-xs font-semibold rounded-full shadow-sm transition-all duration-150 active:scale-95 cursor-pointer flex items-center justify-center gap-2 ${
                     isDark
-                      ? 'bg-white hover:bg-zinc-200 text-zinc-950'
-                      : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                      ? 'bg-white hover:bg-zinc-100 text-zinc-950'
+                      : 'bg-zinc-950 hover:bg-zinc-800 text-white'
                   }`}
                 >
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -772,12 +745,12 @@ export function TicketModal({
           /* ======================================================== */
           <div>
             {/* Header */}
-            <div className={`pb-4 border-b ${headerBorder}`}>
+            <div className={`pb-4 border-b ${borderBottom}`}>
               <div className="flex items-start justify-between gap-2.5">
-                <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                <div className="flex items-start gap-3 min-w-0">
                   <div
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      isDark ? 'bg-zinc-800 border border-zinc-700 text-white' : 'bg-zinc-900 border border-zinc-800 text-white shadow-xs'
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                      isDark ? 'bg-white/[0.08] border border-white/[0.1] text-[#f5f5f7]' : 'bg-[#f5f5f7] border border-black/[0.08] text-[#1d1d1f]'
                     }`}
                   >
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -789,16 +762,16 @@ export function TicketModal({
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <h2 className="text-base sm:text-lg font-semibold tracking-tight truncate">
+                      <h2 className="text-base sm:text-lg font-semibold tracking-tight truncate text-[#1d1d1f] dark:text-[#f5f5f7]">
                         {existingTicket ? 'Edit Ticket' : 'Create New Ticket'}
                       </h2>
                       {existingTicket && (existingTicket.ticketId || existingTicket.id) && (
-                        <span className="font-mono text-xs font-semibold px-1.5 py-0.5 rounded-md border bg-zinc-100 dark:bg-white/[0.06] text-zinc-700 dark:text-zinc-200 border-zinc-200 dark:border-white/[0.08] shrink-0">
+                        <span className={`font-mono text-xs font-normal px-2.5 py-0.5 rounded-full border ${appleCapsule} shrink-0`}>
                           #{existingTicket.ticketId || existingTicket.id.slice(0, 4)}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-zinc-500 mt-0.5 truncate">
+                    <p className="text-xs text-[#86868b] mt-0.5 truncate">
                       {existingTicket
                         ? 'Update ticket details and maintain your project status'
                         : 'Specify ticket details, assign workspace, and track delivery'}
@@ -811,7 +784,7 @@ export function TicketModal({
                     <button
                       type="button"
                       onClick={() => setIsEditing(false)}
-                      className={`hidden sm:inline-flex px-3 py-1.5 text-xs font-medium rounded-xl transition cursor-pointer ${cancelBtn}`}
+                      className={`hidden sm:inline-flex px-3.5 py-1.5 text-xs font-medium rounded-full transition-all duration-150 active:scale-95 cursor-pointer ${appleGhostBtn}`}
                     >
                       Back to View
                     </button>
@@ -819,7 +792,7 @@ export function TicketModal({
                   <button
                     onClick={onClose}
                     type="button"
-                    className="text-zinc-400 hover:text-zinc-200 p-1.5 rounded-lg hover:bg-white/[0.06] transition cursor-pointer"
+                    className="w-8 h-8 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-[#f5f5f7] dark:bg-white/[0.06] text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white flex items-center justify-center transition cursor-pointer active:scale-95"
                     title="Close (Esc)"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -831,11 +804,11 @@ export function TicketModal({
               </div>
 
               {existingTicket && (
-                <div className="sm:hidden mt-3 pt-3 border-t border-white/[0.06]">
+                <div className="sm:hidden mt-3 pt-3 border-t border-black/[0.04] dark:border-white/[0.06]">
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className={`w-full py-2 px-3 text-xs font-medium rounded-xl transition cursor-pointer text-center ${cancelBtn}`}
+                    className={`w-full py-2 px-3 text-xs font-medium rounded-full transition-all duration-150 active:scale-95 cursor-pointer text-center ${appleGhostBtn}`}
                   >
                     Back to View
                   </button>
@@ -845,10 +818,10 @@ export function TicketModal({
 
             {error && (
               <div
-                className={`mt-4 px-3.5 py-2.5 rounded-xl border text-xs flex items-center justify-between gap-3 animate-in fade-in duration-150 ${
+                className={`mt-4 px-3.5 py-2.5 rounded-[12px] border text-xs flex items-center justify-between gap-3 animate-in fade-in duration-150 ${
                   isDark
-                    ? 'bg-white/[0.03] border-white/[0.08] text-zinc-300'
-                    : 'bg-zinc-50 border-zinc-200 text-zinc-800'
+                    ? 'bg-white/[0.03] border-white/[0.08] text-[#f5f5f7]'
+                    : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#1d1d1f]'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -858,7 +831,7 @@ export function TicketModal({
                 <button
                   type="button"
                   onClick={() => setError('')}
-                  className="text-zinc-400 hover:text-zinc-200 p-0.5 rounded transition cursor-pointer shrink-0"
+                  className="text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white p-0.5 rounded-full transition cursor-pointer shrink-0"
                   title="Dismiss"
                 >
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -880,27 +853,27 @@ export function TicketModal({
                     <select
                       value={projectName}
                       onChange={(e) => setProjectName(e.target.value)}
-                      className={`w-full h-10 rounded-xl border px-3 py-2 text-xs font-medium focus:outline-none transition cursor-pointer appearance-none ${inputBg}`}
+                      className={`w-full h-10 rounded-[12px] border px-3 py-2 text-xs font-medium focus:outline-none transition cursor-pointer appearance-none ${inputBg}`}
                     >
                       {availableProjects.length === 0 ? (
-                        <option value="General" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>
+                        <option value="General" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>
                           General
                         </option>
                       ) : (
                         availableProjects.map((proj) => (
-                          <option key={proj} value={proj} className={isDark ? 'bg-[#18181b]' : 'bg-white'}>
+                          <option key={proj} value={proj} className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>
                             {proj}
                           </option>
                         ))
                       )}
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-400">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#86868b]">
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="6 9 12 15 18 9" />
                       </svg>
                     </div>
                   </div>
-                  <p className="mt-1 text-[10px] text-zinc-500">
+                  <p className="mt-1 text-[10px] text-[#86868b]">
                     Grouping workspace.
                   </p>
                 </div>
@@ -913,23 +886,23 @@ export function TicketModal({
                     <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className={`w-full h-10 rounded-xl border px-3 py-2 text-xs font-medium focus:outline-none transition cursor-pointer appearance-none ${inputBg}`}
+                      className={`w-full h-10 rounded-[12px] border px-3 py-2 text-xs font-medium focus:outline-none transition cursor-pointer appearance-none ${inputBg}`}
                     >
-                      <option value="DEV" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>DEV</option>
-                      <option value="FEATURE" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>FEATURE</option>
-                      <option value="BUG" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>BUG</option>
-                      <option value="DATABASE" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>DATABASE</option>
-                      <option value="MEETING" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>MEETING</option>
-                      <option value="LEARNING" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>LEARNING</option>
-                      <option value="PERSONAL" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>PERSONAL</option>
+                      <option value="DEV" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>DEV</option>
+                      <option value="FEATURE" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>FEATURE</option>
+                      <option value="BUG" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>BUG</option>
+                      <option value="DATABASE" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>DATABASE</option>
+                      <option value="MEETING" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>MEETING</option>
+                      <option value="LEARNING" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>LEARNING</option>
+                      <option value="PERSONAL" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>PERSONAL</option>
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-400">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#86868b]">
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="6 9 12 15 18 9" />
                       </svg>
                     </div>
                   </div>
-                  <p className="mt-1 text-[10px] text-zinc-500">
+                  <p className="mt-1 text-[10px] text-[#86868b]">
                     Domain of the task.
                   </p>
                 </div>
@@ -944,7 +917,7 @@ export function TicketModal({
                         type="button"
                         onClick={onOpenCreateVersionModal}
                         className={`text-[10px] font-medium transition cursor-pointer ${
-                          isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-900'
+                          isDark ? 'text-[#2997ff] hover:underline' : 'text-[#0071e3] hover:underline'
                         }`}
                         title="Create new version"
                       >
@@ -956,29 +929,29 @@ export function TicketModal({
                     <select
                       value={version}
                       onChange={(e) => setVersion(e.target.value)}
-                      className={`w-full h-10 rounded-xl border px-3 py-2 text-xs font-mono font-medium focus:outline-none transition cursor-pointer appearance-none ${inputBg}`}
+                      className={`w-full h-10 rounded-[12px] border px-3 py-2 text-xs font-mono font-medium focus:outline-none transition cursor-pointer appearance-none ${inputBg}`}
                     >
-                      <option value="" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>
+                      <option value="" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>
                         None (Unassigned)
                       </option>
                       {version && !availableVersions.includes(version) && (
-                        <option value={version} className={isDark ? 'bg-[#18181b]' : 'bg-white'}>
+                        <option value={version} className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>
                           {version}
                         </option>
                       )}
                       {availableVersions.map((v) => (
-                        <option key={v} value={v} className={isDark ? 'bg-[#18181b]' : 'bg-white'}>
+                        <option key={v} value={v} className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>
                           {v}
                         </option>
                       ))}
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-400">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#86868b]">
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="6 9 12 15 18 9" />
                       </svg>
                     </div>
                   </div>
-                  <p className="mt-1 text-[10px] text-zinc-500">
+                  <p className="mt-1 text-[10px] text-[#86868b]">
                     Optional release tag.
                   </p>
                 </div>
@@ -994,7 +967,7 @@ export function TicketModal({
                   placeholder="e.g. Implement OAuth authentication flow and JWT validation"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className={`w-full h-11 rounded-xl border px-3.5 text-xs sm:text-sm font-medium focus:outline-none transition ${inputBg}`}
+                  className={`w-full h-11 rounded-[12px] border px-3.5 text-xs sm:text-sm font-medium focus:outline-none transition ${inputBg}`}
                   required
                 />
               </div>
@@ -1010,13 +983,9 @@ export function TicketModal({
                     onClick={() => {
                       setDescription((prev) => (prev ? `${prev}\n• ` : '• '))
                     }}
-                    className={`h-8 px-3 rounded-lg border text-xs font-medium transition cursor-pointer select-none inline-flex items-center gap-1.5 ${
-                      isDark
-                        ? 'bg-white/[0.05] hover:bg-white/[0.1] border-white/[0.08] text-zinc-200'
-                        : 'bg-white hover:bg-zinc-100 border-zinc-200 text-zinc-800 shadow-2xs'
-                    }`}
+                    className={`h-7 px-3 rounded-full border text-xs font-medium transition-all duration-150 active:scale-95 cursor-pointer select-none inline-flex items-center gap-1.5 ${appleGhostBtn}`}
                   >
-                    <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="w-3.5 h-3.5 text-[#86868b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <line x1="12" y1="5" x2="12" y2="19" />
                       <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
@@ -1029,9 +998,9 @@ export function TicketModal({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   onKeyDown={handleDescriptionKeyDown}
-                  className={`w-full rounded-xl border p-3.5 text-xs sm:text-sm focus:outline-none transition min-h-[100px] max-h-[220px] resize-y overflow-y-auto leading-relaxed custom-scrollbar font-sans ${inputBg}`}
+                  className={`w-full rounded-[12px] border p-3.5 text-xs sm:text-sm focus:outline-none transition min-h-[100px] max-h-[220px] resize-y overflow-y-auto leading-relaxed custom-scrollbar font-sans ${inputBg}`}
                 />
-                <p className="mt-1 text-[10px] text-zinc-500">
+                <p className="mt-1 text-[10px] text-[#86868b]">
                   Tip: Press Enter on a bullet line to automatically continue the next bullet.
                 </p>
               </div>
@@ -1048,13 +1017,9 @@ export function TicketModal({
                       onClick={() => {
                         setCommands((prev) => (prev ? `${prev}\n• ` : '• '))
                       }}
-                      className={`h-8 px-3 rounded-lg border text-xs font-medium transition cursor-pointer select-none inline-flex items-center gap-1.5 ${
-                        isDark
-                          ? 'bg-white/[0.05] hover:bg-white/[0.1] border-white/[0.08] text-zinc-200'
-                          : 'bg-white hover:bg-zinc-100 border-zinc-200 text-zinc-800 shadow-2xs'
-                      }`}
+                      className={`h-7 px-3 rounded-full border text-xs font-medium transition-all duration-150 active:scale-95 cursor-pointer select-none inline-flex items-center gap-1.5 ${appleGhostBtn}`}
                     >
-                      <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg className="w-3.5 h-3.5 text-[#86868b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <line x1="12" y1="5" x2="12" y2="19" />
                         <line x1="5" y1="12" x2="19" y2="12" />
                       </svg>
@@ -1065,13 +1030,9 @@ export function TicketModal({
                       onClick={() => {
                         setCommands((prev) => (prev ? `${prev}\n$ ` : '$ '))
                       }}
-                      className={`h-8 px-3 rounded-lg border text-xs font-medium transition cursor-pointer select-none inline-flex items-center gap-1.5 ${
-                        isDark
-                          ? 'bg-white/[0.05] hover:bg-white/[0.1] border-white/[0.08] text-zinc-200'
-                          : 'bg-white hover:bg-zinc-100 border-zinc-200 text-zinc-800 shadow-2xs'
-                      }`}
+                      className={`h-7 px-3 rounded-full border text-xs font-medium transition-all duration-150 active:scale-95 cursor-pointer select-none inline-flex items-center gap-1.5 ${appleGhostBtn}`}
                     >
-                      <span className="font-mono text-xs font-semibold text-zinc-400">$</span>
+                      <span className="font-mono text-xs font-semibold text-[#86868b]">$</span>
                       <span>Add Command</span>
                     </button>
                   </div>
@@ -1082,9 +1043,9 @@ export function TicketModal({
                   value={commands}
                   onChange={(e) => setCommands(e.target.value)}
                   onKeyDown={handleCommandsKeyDown}
-                  className={`w-full rounded-xl border p-3.5 text-xs sm:text-sm focus:outline-none transition min-h-[100px] max-h-[220px] resize-y overflow-y-auto leading-relaxed custom-scrollbar font-mono ${inputBg}`}
+                  className={`w-full rounded-[12px] border p-3.5 text-xs sm:text-sm focus:outline-none transition min-h-[100px] max-h-[220px] resize-y overflow-y-auto leading-relaxed custom-scrollbar font-mono ${inputBg}`}
                 />
-                <p className="mt-1 text-[10px] text-zinc-500">
+                <p className="mt-1 text-[10px] text-[#86868b]">
                   Tip: Press Enter on a bullet (•) or command ($) line to automatically continue on the next line.
                 </p>
               </div>
@@ -1099,14 +1060,14 @@ export function TicketModal({
                     <select
                       value={status}
                       onChange={(e) => setStatus(e.target.value as TicketStatus)}
-                      className={`w-full h-10 rounded-xl border px-3 py-2 text-xs font-medium focus:outline-none transition cursor-pointer appearance-none ${inputBg}`}
+                      className={`w-full h-10 rounded-[12px] border px-3 py-2 text-xs font-medium focus:outline-none transition cursor-pointer appearance-none ${inputBg}`}
                     >
-                      <option value="TODO" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>To Do</option>
-                      <option value="IN_PROGRESS" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>In Progress</option>
-                      <option value="DONE" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>Completed</option>
-                      <option value="BLOCKED" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>Blocked</option>
+                      <option value="TODO" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>To Do</option>
+                      <option value="IN_PROGRESS" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>In Progress</option>
+                      <option value="DONE" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>Completed</option>
+                      <option value="BLOCKED" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>Blocked</option>
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-400">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#86868b]">
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="6 9 12 15 18 9" />
                       </svg>
@@ -1122,14 +1083,14 @@ export function TicketModal({
                     <select
                       value={priority}
                       onChange={(e) => setPriority(e.target.value as TicketPriority)}
-                      className={`w-full h-10 rounded-xl border px-3 py-2 text-xs font-medium focus:outline-none transition cursor-pointer appearance-none ${inputBg}`}
+                      className={`w-full h-10 rounded-[12px] border px-3 py-2 text-xs font-medium focus:outline-none transition cursor-pointer appearance-none ${inputBg}`}
                     >
-                      <option value="LOW" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>Low</option>
-                      <option value="MEDIUM" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>Medium</option>
-                      <option value="HIGH" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>High</option>
-                      <option value="URGENT" className={isDark ? 'bg-[#18181b]' : 'bg-white'}>Urgent</option>
+                      <option value="LOW" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>Low</option>
+                      <option value="MEDIUM" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>Medium</option>
+                      <option value="HIGH" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>High</option>
+                      <option value="URGENT" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>Urgent</option>
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-400">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#86868b]">
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="6 9 12 15 18 9" />
                       </svg>
@@ -1146,25 +1107,23 @@ export function TicketModal({
                     value={author}
                     onChange={(e) => setAuthor(e.target.value)}
                     placeholder="James Nithil"
-                    className={`w-full h-10 rounded-xl border px-3 py-2 text-xs font-medium focus:outline-none transition ${inputBg}`}
+                    className={`w-full h-10 rounded-[12px] border px-3.5 py-2 text-xs font-medium focus:outline-none transition ${inputBg}`}
                   />
                 </div>
               </div>
 
               {/* Footer & Actions */}
-              <div className={`flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t ${headerBorder}`}>
-                <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] font-mono text-[10px]">
+              <div className={`flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t ${borderBottom}`}>
+                <div className="flex items-center gap-1.5 text-[11px] text-[#86868b]">
+                  <kbd className="px-1.5 py-0.5 rounded-md bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.08] font-mono text-[10px]">
                     ⌘ / Ctrl + Enter
                   </kbd>
                   <span>to quickly save</span>
                 </div>
 
                 <div className="flex items-center justify-end gap-2.5">
-                  <Button
+                  <button
                     type="button"
-                    variant="secondary"
-                    size="md"
                     onClick={() => {
                       if (existingTicket) {
                         setIsEditing(false)
@@ -1172,22 +1131,24 @@ export function TicketModal({
                         onClose()
                       }
                     }}
+                    className={`px-5 py-2 text-xs font-medium rounded-full transition-all duration-150 active:scale-95 cursor-pointer text-center ${appleGhostBtn}`}
                   >
                     Cancel
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     type="submit"
-                    variant="ticket"
-                    size="md"
-                    isLoading={loading}
-                    leftIcon={
+                    disabled={loading}
+                    className="px-5 py-2 text-xs font-semibold rounded-full bg-[#0071e3] hover:bg-[#0077ed] text-white active:scale-95 shadow-sm transition-all duration-150 cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
-                    }
-                  >
-                    {existingTicket ? 'Save Changes' : 'Create Ticket'}
-                  </Button>
+                    )}
+                    <span>{existingTicket ? 'Save Changes' : 'Create Ticket'}</span>
+                  </button>
                 </div>
               </div>
             </form>

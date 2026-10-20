@@ -8,6 +8,7 @@ interface DeleteWorkspaceModalProps {
   onClose: () => void
   workspaceName: string
   ticketCount?: number
+  itemType?: 'ticket' | 'expense'
   onConfirmDelete: (workspaceName: string) => Promise<void>
   theme: 'dark' | 'light'
 }
@@ -17,6 +18,7 @@ export function DeleteWorkspaceModal({
   onClose,
   workspaceName,
   ticketCount = 0,
+  itemType = 'ticket',
   onConfirmDelete,
   theme,
 }: DeleteWorkspaceModalProps) {
@@ -147,7 +149,7 @@ export function DeleteWorkspaceModal({
               Irreversible Action
             </span>
             <p className="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
-              This action cannot be undone. All {ticketCount > 0 ? `${ticketCount} ticket(s)` : 'tickets'} scoped under this workspace will be removed.
+              This action cannot be undone. All {ticketCount > 0 ? `${ticketCount} ${itemType}(s)` : `${itemType}s`} scoped under this workspace will be removed.
             </p>
           </div>
         </div>

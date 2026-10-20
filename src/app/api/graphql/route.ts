@@ -126,7 +126,7 @@ const typeDefs = /* GraphQL */ `
       userEmail: String
     ): [Ticket!]!
     ticket(id: ID, ticketId: String): Ticket
-    projects(userEmail: String): [String!]!
+    projects(userEmail: String, type: String): [String!]!
     versions(userEmail: String): [String!]!
     dailyNotes(date: String, userEmail: String): [DailyNote!]!
     expenses(
@@ -151,7 +151,7 @@ const typeDefs = /* GraphQL */ `
     createDailyNote(input: CreateDailyNoteInput!): DailyNote!
     updateDailyNote(id: ID!, content: String!, userEmail: String): DailyNote!
     deleteDailyNote(id: ID!, userEmail: String): Boolean!
-    createWorkspace(name: String!, userEmail: String): String!
+    createWorkspace(name: String!, type: String, userEmail: String): String!
     deleteWorkspace(name: String!, userEmail: String): Boolean!
     createExpense(input: CreateExpenseInput!): Expense!
     updateExpense(id: ID!, input: UpdateExpenseInput!, userEmail: String): Expense!
@@ -514,7 +514,7 @@ const resolvers = {
 
     projects: async (
       _: unknown,
-      args: { userEmail?: string },
+      args: { userEmail?: string; type?: string },
       context?: GraphQLContext
     ) => {
       const projectSet = new Set<string>()
@@ -523,8 +523,35 @@ const resolvers = {
         return []
       }
       const prefix = userEmail.split('@')[0]
+      const filterType = args.type ? args.type.toUpperCase() : 'ALL'
 
-      // 1. Check user-specific tickets for project names
+      // 1. Gather expense projects for this user
+      const expenseProjectSet = new Set<string>()
+      try {
+        let eQuery = supabase.from('expenses').select('project_name')
+        if (userEmail === 'admin@ticketflow.io') {
+          eQuery = eQuery.or(
+            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+          )
+        } else {
+          eQuery = eQuery.or(
+            `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+          )
+        }
+        const { data: eData } = await eQuery
+        if (eData) {
+          eData.forEach((e: { project_name: string }) => {
+            if (e.project_name && !e.project_name.startsWith('version:::') && !e.project_name.includes(':::version:::')) {
+              expenseProjectSet.add(e.project_name)
+            }
+          })
+        }
+      } catch {
+        // Expenses table error
+      }
+
+      // 2. Gather ticket projects for this user
+      const ticketProjectSet = new Set<string>()
       try {
         let tQuery = supabase.from('tickets').select('project_name')
         if (userEmail === 'admin@ticketflow.io') {
@@ -540,7 +567,7 @@ const resolvers = {
         if (!tError && tData) {
           tData.forEach((t: { project_name: string }) => {
             if (t.project_name && !t.project_name.startsWith('version:::') && !t.project_name.includes(':::version:::')) {
-              projectSet.add(t.project_name)
+              ticketProjectSet.add(t.project_name)
             }
           })
         }
@@ -548,26 +575,79 @@ const resolvers = {
         // Tickets table error
       }
 
-      // 2. Also check persisted user-scoped workspaces in Supabase
+      // 3. Check persisted user-scoped workspaces in Supabase (with type column support and fallback)
+      const workspaceRows: { name: string; type?: string | null }[] = []
       try {
-        const { data: wData, error: wError } = await supabase
+        const { data: wDataWithType, error: wErrorWithType } = await supabase
           .from('workspaces')
-          .select('name')
-        if (!wError && wData) {
-          const userPrefix = `${userEmail}:::`
-          wData.forEach((w: { name: string }) => {
-            if (w.name.startsWith(userPrefix)) {
-              const workspaceName = w.name.slice(userPrefix.length)
-              if (!workspaceName.startsWith('version:::') && !workspaceName.includes(':::version:::')) {
-                projectSet.add(workspaceName)
-              }
-            } else if (!w.name.includes(':::') && !w.name.startsWith('version:::')) {
-              projectSet.add(w.name)
-            }
-          })
+          .select('name, type')
+        if (!wErrorWithType && wDataWithType) {
+          workspaceRows.push(...wDataWithType)
+        } else {
+          const { data: wDataOnlyName } = await supabase
+            .from('workspaces')
+            .select('name')
+          if (wDataOnlyName) {
+            workspaceRows.push(...wDataOnlyName)
+          }
         }
       } catch {
         // Workspaces table error
+      }
+
+      const userPrefix = `${userEmail}:::`
+      const userWorkspaces: { name: string; type: 'TICKET' | 'EXPENSE' }[] = []
+
+      workspaceRows.forEach((w) => {
+        let cleanName = ''
+        if (w.name.startsWith(userPrefix)) {
+          cleanName = w.name.slice(userPrefix.length)
+        } else if (!w.name.includes(':::')) {
+          cleanName = w.name
+        }
+
+        if (cleanName && !cleanName.startsWith('version:::') && !cleanName.includes(':::version:::')) {
+          let wsType: 'TICKET' | 'EXPENSE' = 'TICKET'
+          if (w.type) {
+            wsType = w.type.toUpperCase() === 'EXPENSE' ? 'EXPENSE' : 'TICKET'
+          } else {
+            // Fallback before type column is added in Supabase
+            if (
+              expenseProjectSet.has(cleanName) ||
+              cleanName.toLowerCase().includes('expense') ||
+              cleanName.toLowerCase().includes('budget') ||
+              cleanName.toLowerCase().startsWith('exp_') ||
+              cleanName.toLowerCase().startsWith('exp-')
+            ) {
+              wsType = 'EXPENSE'
+            } else {
+              wsType = 'TICKET'
+            }
+          }
+          userWorkspaces.push({ name: cleanName, type: wsType })
+        }
+      })
+
+      if (filterType === 'EXPENSE') {
+        expenseProjectSet.forEach((p) => projectSet.add(p))
+        userWorkspaces.filter((w) => w.type === 'EXPENSE').forEach((w) => projectSet.add(w.name))
+        if (projectSet.size === 0) {
+          projectSet.add('General')
+        }
+      } else if (filterType === 'TICKET') {
+        ticketProjectSet.forEach((p) => projectSet.add(p))
+        userWorkspaces.filter((w) => w.type === 'TICKET').forEach((w) => projectSet.add(w.name))
+        // Exclude pure expense workspaces from ticket list
+        expenseProjectSet.forEach((expProj) => {
+          if (!ticketProjectSet.has(expProj) && !userWorkspaces.some((w) => w.name === expProj && w.type === 'TICKET')) {
+            projectSet.delete(expProj)
+          }
+        })
+      } else {
+        // ALL
+        ticketProjectSet.forEach((p) => projectSet.add(p))
+        expenseProjectSet.forEach((p) => projectSet.add(p))
+        userWorkspaces.forEach((w) => projectSet.add(w.name))
       }
 
       return Array.from(projectSet)
@@ -1320,7 +1400,7 @@ const resolvers = {
 
     createWorkspace: async (
       _: unknown,
-      { name, userEmail }: { name: string; userEmail?: string },
+      { name, type, userEmail }: { name: string; type?: string; userEmail?: string },
       context?: GraphQLContext
     ) => {
       const trimmed = name.trim()
@@ -1330,12 +1410,21 @@ const resolvers = {
 
       const email = resolveTargetEmail(userEmail, context)
       const scopedName = email ? `${email}:::${trimmed}` : trimmed
+      const wsType = type && type.toUpperCase() === 'EXPENSE' ? 'EXPENSE' : 'TICKET'
 
-      // Upsert so duplicate names across different users never error
+      // Upsert with type column; fallback gracefully if type column not yet in Supabase
       try {
-        await supabase
+        const { error } = await supabase
           .from('workspaces')
-          .upsert({ name: scopedName }, { onConflict: 'name', ignoreDuplicates: true })
+          .upsert(
+            { name: scopedName, type: wsType },
+            { onConflict: 'name', ignoreDuplicates: true }
+          )
+        if (error) {
+          await supabase
+            .from('workspaces')
+            .upsert({ name: scopedName }, { onConflict: 'name', ignoreDuplicates: true })
+        }
       } catch (err) {
         console.warn('Workspaces table insert notice:', err)
       }
@@ -1371,6 +1460,22 @@ const resolvers = {
           }
         }
         await tQuery
+
+        // Delete expenses belonging to this workspace for this user
+        if (email) {
+          const prefix = email.split('@')[0]
+          let eQuery = supabase.from('expenses').delete().eq('project_name', name)
+          if (email === 'admin@ticketflow.io') {
+            eQuery = eQuery.or(
+              'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+            )
+          } else {
+            eQuery = eQuery.or(
+              `created_by.eq.${email},created_by.eq.@${prefix},created_by.eq.${prefix}`
+            )
+          }
+          await eQuery
+        }
       } catch (err) {
         console.warn('Workspaces table delete notice:', err)
       }

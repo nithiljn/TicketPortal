@@ -446,7 +446,7 @@ export function Sidebar({
             {/* Workspaces Facet */}
             <div>
               <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                <span>Workspaces</span>
+                <span>{activeTab === 'expenses' ? 'Expense Folders' : 'Workspaces'}</span>
                 <div className="flex items-center gap-1.5">
                   <span className="font-mono">{visibleWorkspaces.length}</span>
                   {onOpenCreateWorkspaceModal && (
@@ -454,7 +454,7 @@ export function Sidebar({
                       onClick={onOpenCreateWorkspaceModal}
                       type="button"
                       className="p-0.5 rounded hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-100 transition cursor-pointer"
-                      title="Create new project workspace"
+                      title={activeTab === 'expenses' ? 'Create new expense workspace' : 'Create new project workspace'}
                     >
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <line x1="12" y1="5" x2="12" y2="19" />
@@ -480,7 +480,9 @@ export function Sidebar({
                       <line x1="2" y1="12" x2="22" y2="12" />
                       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z" />
                     </svg>
-                    <span className="truncate">All Workspaces</span>
+                    <span className="truncate">
+                      {activeTab === 'expenses' ? 'All Expense Folders' : 'All Workspaces'}
+                    </span>
                   </div>
                   {selectedProject === 'ALL' && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
                 </button>

@@ -35,6 +35,7 @@ export default function Home() {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [availableProjects, setAvailableProjects] = useState<string[]>([])
+  const [availableExpenseProjects, setAvailableExpenseProjects] = useState<string[]>([])
   const [availableVersions, setAvailableVersions] = useState<string[]>([])
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false)
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false)
@@ -103,6 +104,7 @@ export default function Home() {
   const [ticketIdFilter, setTicketIdFilter] = useState('')
 
   // Expense Specific Filters
+  const [selectedExpenseProject, setSelectedExpenseProject] = useState<string>('ALL')
   const [selectedExpenseCategory, setSelectedExpenseCategory] = useState<string | 'ALL'>('ALL')
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | 'ALL'>('ALL')
   const [selectedExpenseMonth, setSelectedExpenseMonth] = useState<string>('ALL')
@@ -150,6 +152,13 @@ export default function Home() {
       setSelectedProject(workspace)
     },
     [selectedProject]
+  )
+
+  const handleSelectExpenseWorkspace = useCallback(
+    (workspace: string) => {
+      setSelectedExpenseProject(workspace)
+    },
+    []
   )
 
   const handleSelectStatus = useCallback(
@@ -319,7 +328,8 @@ export default function Home() {
 
       const query = /* GraphQL */ `
         query GetPortalData($projectName: String, $search: String, $userEmail: String) {
-          projects(userEmail: $userEmail)
+          projects(userEmail: $userEmail, type: "TICKET")
+          expenseProjects: projects(userEmail: $userEmail, type: "EXPENSE")
           versions(userEmail: $userEmail)
           tickets(projectName: $projectName, search: $search, userEmail: $userEmail) {
             id
@@ -365,6 +375,7 @@ export default function Home() {
 
       const data = await fetchGraphQL<{
         projects: string[]
+        expenseProjects?: string[]
         versions?: string[]
         tickets: Ticket[]
         dailyNotes: DailyNote[]
@@ -382,39 +393,78 @@ export default function Home() {
       setExpenses(data.expenses || [])
       setExpenseCategories(data.expenseCategories || [])
 
-      // Merge with user-specific locally stored workspaces
-      let localWs: string[] = []
-      const storageKey = `tp_workspaces_${user.email.toLowerCase()}`
+      // 1. Process Expense Workspaces
+      const serverExpenseProjects = (data.expenseProjects || []).filter(
+        (p: string) => !p.startsWith('version:::') && !p.includes(':::version:::')
+      )
+      let localExpenseWs: string[] = []
+      const expenseStorageKey = `tp_expense_workspaces_${user.email.toLowerCase()}`
       try {
-        const stored = localStorage.getItem(storageKey)
+        const stored = localStorage.getItem(expenseStorageKey)
         if (stored) {
-          localWs = JSON.parse(stored)
+          localExpenseWs = JSON.parse(stored)
         }
-        // Clean legacy un-scoped workspaces cache
+      } catch {
+        // ignore
+      }
+      const expensesInList = (data.expenses || []).map((e: Expense) => e.projectName).filter(Boolean)
+      const mergedExpenseProjects = Array.from(
+        new Set([...serverExpenseProjects, ...localExpenseWs, ...expensesInList])
+      ).filter((w) => !w.startsWith('version:::') && !w.includes(':::version:::'))
+      if (mergedExpenseProjects.length === 0) {
+        mergedExpenseProjects.push('Expense_data')
+      }
+      setAvailableExpenseProjects(mergedExpenseProjects)
+      if (selectedExpenseProject.startsWith('version:::') || selectedExpenseProject.includes(':::version:::')) {
+        setSelectedExpenseProject('ALL')
+      }
+      try {
+        localStorage.setItem(expenseStorageKey, JSON.stringify(mergedExpenseProjects))
+      } catch {
+        // ignore
+      }
+
+      // 2. Process Ticket Workspaces
+      const expenseWsSet = new Set(mergedExpenseProjects.map((w) => w.toLowerCase()))
+      let localTicketWs: string[] = []
+      const ticketStorageKey = `tp_workspaces_${user.email.toLowerCase()}`
+      try {
+        const stored = localStorage.getItem(ticketStorageKey)
+        if (stored) {
+          localTicketWs = JSON.parse(stored)
+        }
         localStorage.removeItem('tp_workspaces')
       } catch {
         // ignore
       }
 
-      const serverProjects = (data.projects || []).filter(
-        (p: string) => !p.startsWith('version:::') && !p.includes(':::version:::')
+      const serverTicketProjects = (data.projects || []).filter(
+        (p: string) =>
+          !p.startsWith('version:::') &&
+          !p.includes(':::version:::') &&
+          !expenseWsSet.has(p.toLowerCase())
       )
-      // Purge any stale 'Ticket Portal' or version entries from local cache if server didn't return it for this user
-      const validLocalWs = localWs.filter(
+      // Exclude expense workspaces or stale entries from ticket workspaces
+      const validLocalTicketWs = localTicketWs.filter(
         (w) =>
           !w.startsWith('version:::') &&
           !w.includes(':::version:::') &&
-          (w !== 'Ticket Portal' || serverProjects.includes('Ticket Portal'))
+          !expenseWsSet.has(w.toLowerCase()) &&
+          (w !== 'Ticket Portal' || serverTicketProjects.includes('Ticket Portal'))
       )
-      const merged = Array.from(new Set([...serverProjects, ...validLocalWs]))
-      setAvailableProjects(merged)
-      if (selectedProject.startsWith('version:::') || selectedProject.includes(':::version:::')) {
+      const mergedTicketProjects = Array.from(new Set([...serverTicketProjects, ...validLocalTicketWs]))
+      setAvailableProjects(mergedTicketProjects)
+      if (
+        selectedProject.startsWith('version:::') ||
+        selectedProject.includes(':::version:::') ||
+        expenseWsSet.has(selectedProject.toLowerCase())
+      ) {
         setSelectedProject('ALL')
       }
 
-      // Sync cleaned workspaces back to localStorage
+      // Sync cleaned ticket workspaces back to localStorage
       try {
-        localStorage.setItem(storageKey, JSON.stringify(merged))
+        localStorage.setItem(ticketStorageKey, JSON.stringify(mergedTicketProjects))
       } catch {
         // ignore
       }
@@ -606,9 +656,9 @@ export default function Home() {
   // Expense Counts for Sidebar
   const expenseCounts = useMemo(() => {
     let scoped = expenses
-    if (selectedProject !== 'ALL') {
+    if (selectedExpenseProject !== 'ALL') {
       scoped = scoped.filter(
-        (e) => (e.projectName || 'General').toLowerCase() === selectedProject.toLowerCase()
+        (e) => (e.projectName || 'General').toLowerCase() === selectedExpenseProject.toLowerCase()
       )
     }
     if (selectedExpenseMonth !== 'ALL') {
@@ -633,7 +683,7 @@ export default function Home() {
       byCategory,
       byMethod,
     }
-  }, [expenses, selectedProject, selectedExpenseMonth])
+  }, [expenses, selectedExpenseProject, selectedExpenseMonth])
 
   // 4. GraphQL Mutations
   const handleStatusChange = async (id: string, newStatus: TicketStatus) => {
@@ -821,55 +871,39 @@ export default function Home() {
     }
   }
 
-  const handleCreateWorkspace = async (name: string) => {
+  const handleCreateWorkspace = async (name: string, type?: 'TICKET' | 'EXPENSE') => {
     const trimmed = name.trim()
     if (!trimmed) return
+    const wsType = type || (activeTab === 'expenses' ? 'EXPENSE' : 'TICKET')
 
     try {
       const mutation = /* GraphQL */ `
-        mutation CreateWorkspace($name: String!, $userEmail: String) {
-          createWorkspace(name: $name, userEmail: $userEmail)
+        mutation CreateWorkspace($name: String!, $type: String, $userEmail: String) {
+          createWorkspace(name: $name, type: $type, userEmail: $userEmail)
         }
       `
-      await fetchGraphQL(mutation, { name: trimmed, userEmail: user?.email })
+      await fetchGraphQL(mutation, { name: trimmed, type: wsType, userEmail: user?.email })
     } catch (err: unknown) {
       console.warn('Workspace GraphQL notice:', err)
     }
 
-    setAvailableProjects((prev) => {
-      const updated = Array.from(new Set([...prev, trimmed]))
-      if (user?.email) {
-        try {
-          const storageKey = `tp_workspaces_${user.email.toLowerCase()}`
-          localStorage.setItem(storageKey, JSON.stringify(updated))
-        } catch {
-          // ignore
+    if (wsType === 'EXPENSE') {
+      setAvailableExpenseProjects((prev) => {
+        const updated = Array.from(new Set([...prev, trimmed]))
+        if (user?.email) {
+          try {
+            const storageKey = `tp_expense_workspaces_${user.email.toLowerCase()}`
+            localStorage.setItem(storageKey, JSON.stringify(updated))
+          } catch {
+            // ignore
+          }
         }
-      }
-      return updated
-    })
-
-    setSelectedProject(trimmed)
-    setIsWorkspaceModalOpen(false)
-    setToast({
-      isOpen: true,
-      title: 'Workspace Created Successfully',
-      message: `Workspace "${trimmed}" created successfully`,
-    })
-  }
-
-  const handleConfirmDeleteWorkspace = async (workspaceName: string) => {
-    try {
-      const mutation = /* GraphQL */ `
-        mutation DeleteWorkspace($name: String!, $userEmail: String) {
-          deleteWorkspace(name: $name, userEmail: $userEmail)
-        }
-      `
-      await fetchGraphQL(mutation, { name: workspaceName, userEmail: user?.email })
-
-      // Update available workspaces state
+        return updated
+      })
+      setSelectedExpenseProject(trimmed)
+    } else {
       setAvailableProjects((prev) => {
-        const updated = prev.filter((p) => p !== workspaceName)
+        const updated = Array.from(new Set([...prev, trimmed]))
         if (user?.email) {
           try {
             const storageKey = `tp_workspaces_${user.email.toLowerCase()}`
@@ -880,14 +914,71 @@ export default function Home() {
         }
         return updated
       })
+      setSelectedProject(trimmed)
+    }
 
-      // If the deleted workspace was currently selected, reset filter to 'ALL'
-      if (selectedProject === workspaceName) {
-        setSelectedProject('ALL')
+    setIsWorkspaceModalOpen(false)
+    setToast({
+      isOpen: true,
+      title: 'Workspace Created Successfully',
+      message: `${wsType === 'EXPENSE' ? 'Expense workspace' : 'Workspace'} "${trimmed}" created successfully`,
+    })
+  }
+
+  const handleConfirmDeleteWorkspace = async (workspaceName: string) => {
+    const isExpense =
+      activeTab === 'expenses' ||
+      (availableExpenseProjects.includes(workspaceName) && !availableProjects.includes(workspaceName))
+
+    try {
+      const mutation = /* GraphQL */ `
+        mutation DeleteWorkspace($name: String!, $userEmail: String) {
+          deleteWorkspace(name: $name, userEmail: $userEmail)
+        }
+      `
+      await fetchGraphQL(mutation, { name: workspaceName, userEmail: user?.email })
+
+      if (isExpense) {
+        setAvailableExpenseProjects((prev) => {
+          const updated = prev.filter((p) => p !== workspaceName)
+          if (user?.email) {
+            try {
+              const storageKey = `tp_expense_workspaces_${user.email.toLowerCase()}`
+              localStorage.setItem(storageKey, JSON.stringify(updated))
+            } catch {
+              // ignore
+            }
+          }
+          return updated
+        })
+
+        if (selectedExpenseProject === workspaceName) {
+          setSelectedExpenseProject('ALL')
+        }
+
+        // Remove local expenses that belonged to that workspace
+        setExpenses((prev) => prev.filter((e) => e.projectName !== workspaceName))
+      } else {
+        setAvailableProjects((prev) => {
+          const updated = prev.filter((p) => p !== workspaceName)
+          if (user?.email) {
+            try {
+              const storageKey = `tp_workspaces_${user.email.toLowerCase()}`
+              localStorage.setItem(storageKey, JSON.stringify(updated))
+            } catch {
+              // ignore
+            }
+          }
+          return updated
+        })
+
+        if (selectedProject === workspaceName) {
+          setSelectedProject('ALL')
+        }
+
+        // Remove local tickets that belonged to that workspace
+        setTickets((prev) => prev.filter((t) => t.projectName !== workspaceName))
       }
-
-      // Remove local tickets that belonged to that workspace
-      setTickets((prev) => prev.filter((t) => t.projectName !== workspaceName))
 
       setWorkspaceToDelete(null)
       setToast({
@@ -1196,9 +1287,9 @@ export default function Home() {
         onClose={() => setIsSidebarOpen(false)}
         user={user}
         onLogout={logout}
-        availableProjects={availableProjects}
-        selectedProject={selectedProject}
-        onSelectProject={handleSelectWorkspace}
+        availableProjects={activeTab === 'expenses' ? availableExpenseProjects : availableProjects}
+        selectedProject={activeTab === 'expenses' ? selectedExpenseProject : selectedProject}
+        onSelectProject={activeTab === 'expenses' ? handleSelectExpenseWorkspace : handleSelectWorkspace}
         selectedStatuses={selectedStatuses}
         onSelectStatus={handleSelectStatus}
         selectedPriorities={selectedPriorities}
@@ -1699,8 +1790,8 @@ export default function Home() {
               {activeTab === 'expenses' && (
                 <ExpenseTracker
                   expenses={expenses}
-                  availableProjects={availableProjects}
-                  selectedProject={selectedProject}
+                  availableProjects={availableExpenseProjects}
+                  selectedProject={selectedExpenseProject}
                   categories={expenseCategories}
                   onAddExpense={handleOpenAddExpense}
                   onEditExpense={handleOpenEditExpense}
@@ -1719,12 +1810,12 @@ export default function Home() {
                   onMaxAmountChange={setExpenseMaxAmount}
                   searchQuery={expenseSearchQuery}
                   onExpenseSearchChange={setExpenseSearchQuery}
-                  onSelectWorkspace={setSelectedProject}
+                  onSelectWorkspace={setSelectedExpenseProject}
                   onClearAllFilters={() => {
                     setSelectedExpenseCategory('ALL')
                     setSelectedPaymentMethod('ALL')
                     setSelectedExpenseMonth('ALL')
-                    setSelectedProject('ALL')
+                    setSelectedExpenseProject('ALL')
                     setExpenseMinAmount('')
                     setExpenseMaxAmount('')
                     setExpenseSearchQuery('')
@@ -1741,7 +1832,8 @@ export default function Home() {
         isOpen={isWorkspaceModalOpen}
         onClose={() => setIsWorkspaceModalOpen(false)}
         onCreateWorkspace={handleCreateWorkspace}
-        existingWorkspaces={availableProjects}
+        existingWorkspaces={activeTab === 'expenses' ? availableExpenseProjects : availableProjects}
+        workspaceType={activeTab === 'expenses' ? 'EXPENSE' : 'TICKET'}
         theme={theme}
       />
 
@@ -1810,7 +1902,18 @@ export default function Home() {
           isOpen={Boolean(workspaceToDelete)}
           onClose={() => setWorkspaceToDelete(null)}
           workspaceName={workspaceToDelete}
-          ticketCount={tickets.filter((t) => t.projectName === workspaceToDelete).length}
+          ticketCount={
+            activeTab === 'expenses' ||
+            (availableExpenseProjects.includes(workspaceToDelete) && !availableProjects.includes(workspaceToDelete))
+              ? expenses.filter((e) => e.projectName === workspaceToDelete).length
+              : tickets.filter((t) => t.projectName === workspaceToDelete).length
+          }
+          itemType={
+            activeTab === 'expenses' ||
+            (availableExpenseProjects.includes(workspaceToDelete) && !availableProjects.includes(workspaceToDelete))
+              ? 'expense'
+              : 'ticket'
+          }
           onConfirmDelete={handleConfirmDeleteWorkspace}
           theme={theme}
         />
@@ -1826,8 +1929,8 @@ export default function Home() {
         onSave={handleSaveExpense}
         expense={expenseToEdit}
         categories={expenseCategories}
-        availableProjects={availableProjects}
-        currentWorkspace={selectedProject}
+        availableProjects={availableExpenseProjects}
+        currentWorkspace={selectedExpenseProject}
         onCreateCategory={handleCreateExpenseCategory}
         theme={theme}
       />

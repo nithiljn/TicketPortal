@@ -6,12 +6,13 @@ import { Button } from '@/components/Button'
 interface WorkspaceModalProps {
   isOpen: boolean
   onClose: () => void
-  onCreateWorkspace: (name: string) => Promise<void>
+  onCreateWorkspace: (name: string, type?: 'TICKET' | 'EXPENSE') => Promise<void>
   existingWorkspaces: string[]
+  workspaceType?: 'TICKET' | 'EXPENSE'
   theme: 'dark' | 'light'
 }
 
-const QUICK_SUGGESTIONS = [
+const TICKET_SUGGESTIONS = [
   'Mobile App',
   'Payments',
   'Backend API',
@@ -20,11 +21,21 @@ const QUICK_SUGGESTIONS = [
   'Analytics',
 ]
 
+const EXPENSE_SUGGESTIONS = [
+  'Personal',
+  'Business',
+  'Travel',
+  'Office',
+  'Household',
+  'Freelance',
+]
+
 export function WorkspaceModal({
   isOpen,
   onClose,
   onCreateWorkspace,
   existingWorkspaces,
+  workspaceType = 'TICKET',
   theme,
 }: WorkspaceModalProps) {
   const [workspaceName, setWorkspaceName] = useState('')
@@ -32,6 +43,7 @@ export function WorkspaceModal({
   const [error, setError] = useState('')
 
   const isDark = theme === 'dark'
+  const isExpense = workspaceType === 'EXPENSE'
 
   useEffect(() => {
     if (isOpen) {
@@ -75,7 +87,7 @@ export function WorkspaceModal({
     setLoading(true)
     setError('')
     try {
-      await onCreateWorkspace(trimmed)
+      await onCreateWorkspace(trimmed, workspaceType)
       setWorkspaceName('')
       onClose()
     } catch (err: unknown) {
@@ -86,7 +98,8 @@ export function WorkspaceModal({
     }
   }
 
-  const availableSuggestions = QUICK_SUGGESTIONS.filter(
+  const suggestionsList = isExpense ? EXPENSE_SUGGESTIONS : TICKET_SUGGESTIONS
+  const availableSuggestions = suggestionsList.filter(
     (s) => !existingWorkspaces.some((ws) => ws.toLowerCase() === s.toLowerCase())
   ).slice(0, 4)
 
@@ -116,9 +129,13 @@ export function WorkspaceModal({
               </svg>
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold tracking-tight truncate">New Project Workspace</h2>
+              <h2 className="text-sm font-semibold tracking-tight truncate">
+                {isExpense ? 'New Expense Workspace' : 'New Project Workspace'}
+              </h2>
               <p className={`text-[11px] truncate ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                Organize and scope tickets under a dedicated workspace
+                {isExpense
+                  ? 'Organize and scope expenses under a dedicated workspace'
+                  : 'Organize and scope tickets under a dedicated workspace'}
               </p>
             </div>
           </div>
@@ -173,7 +190,7 @@ export function WorkspaceModal({
               <label className={`block text-[11px] font-mono font-medium uppercase tracking-wider ${
                 isDark ? 'text-zinc-400' : 'text-zinc-600'
               }`}>
-                Workspace Name *
+                {isExpense ? 'Expense Workspace Name *' : 'Workspace Name *'}
               </label>
               <span className="text-[10px] font-mono text-zinc-500">
                 {existingWorkspaces.length} active
@@ -187,7 +204,7 @@ export function WorkspaceModal({
               </span>
               <input
                 type="text"
-                placeholder="e.g. Mobile App, Payments, Admin Portal"
+                placeholder={isExpense ? 'e.g. Travel, Office Supplies, Personal' : 'e.g. Mobile App, Payments, Admin Portal'}
                 value={workspaceName}
                 onChange={(e) => {
                   setWorkspaceName(e.target.value)
@@ -243,7 +260,9 @@ export function WorkspaceModal({
               <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
             <p className="leading-relaxed">
-              Tickets and team activity can be mapped directly to this workspace for clean scoping across Inbox, Board, and Dashboard.
+              {isExpense
+                ? 'Expenses and monthly summaries can be mapped directly to this workspace for clean accounting.'
+                : 'Tickets and team activity can be mapped directly to this workspace for clean scoping across Inbox, Board, and Dashboard.'}
             </p>
           </div>
 
@@ -270,7 +289,7 @@ export function WorkspaceModal({
                 </svg>
               }
             >
-              Create Workspace
+              {isExpense ? 'Create Expense Workspace' : 'Create Workspace'}
             </Button>
           </div>
         </form>

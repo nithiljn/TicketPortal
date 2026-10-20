@@ -78,6 +78,47 @@ input, button, select, textarea {
   background-color: #52525b;
 }
 
+/* Notebook Spiral Top-Bound Page Flip Effect */
+@keyframes spiralPageFlipNext {
+  0% {
+    opacity: 0.15;
+    transform: perspective(1200px) rotateX(-15deg) translateY(12px);
+  }
+  65% {
+    opacity: 0.9;
+    transform: perspective(1200px) rotateX(2deg) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateX(0deg) translateY(0);
+  }
+}
+
+@keyframes spiralPageFlipPrev {
+  0% {
+    opacity: 0.15;
+    transform: perspective(1200px) rotateX(15deg) translateY(-12px);
+  }
+  65% {
+    opacity: 0.9;
+    transform: perspective(1200px) rotateX(-2deg) translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateX(0deg) translateY(0);
+  }
+}
+
+.notebook-page-flip-next {
+  transform-origin: top center;
+  animation: spiralPageFlipNext 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.notebook-page-flip-prev {
+  transform-origin: top center;
+  animation: spiralPageFlipPrev 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
 /* Explicit custom scrollbar utility class */
 .custom-scrollbar {
   scrollbar-width: thin;

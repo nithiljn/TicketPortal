@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { DailyNote } from '@/types'
 
 interface DailyNotesProps {
@@ -20,10 +20,46 @@ interface PlanItem {
 }
 
 interface ParsedTask {
+  originalIndex: number
   isCheckbox: boolean
   text: string
   completed: boolean
   completedAt: string | null
+  completionTime: string | null
+}
+
+const NOTES_LAST_DAY_KEY = 'tp_notes_last_day'
+
+// Format timestamp to localized time (e.g., 8:11 AM, 11:57 PM)
+function formatTimelineTime(isoString?: string | null): string {
+  if (!isoString) return ''
+  try {
+    const d = new Date(isoString)
+    if (isNaN(d.getTime())) return ''
+    return d.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    })
+  } catch {
+    return ''
+  }
+}
+
+// Format full date for notebook page header (e.g., Tuesday, Oct 20, 2026)
+function formatNotebookDate(dateStr: string): string {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    const dateObj = new Date(y, m - 1, d)
+    return dateObj.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  } catch {
+    return dateStr
+  }
 }
 
 // Parse checklist statistics from note content
@@ -46,61 +82,53 @@ function getNoteStats(content: string) {
   return { total, completed, percentage }
 }
 
-// Parse single markdown line for task state and completion metadata
-function parseTaskLine(line: string): ParsedTask {
-  const isChecked = /^\s*-\s*\[[xX]\]/.test(line)
-  const isUnchecked = /^\s*-\s*\[ \]/.test(line)
-  const isCheckbox = isChecked || isUnchecked
+// Parse tasks and separate memo remarks from markdown note content
+function parseNoteTasksAndMemos(content: string, noteCreatedAt?: string) {
+  const lines = content.split('\n')
+  const tasks: ParsedTask[] = []
+  const memos: string[] = []
+  let inNotesSection = false
 
-  if (!isCheckbox) {
-    return {
-      isCheckbox: false,
-      text: line,
-      completed: false,
-      completedAt: null,
+  lines.forEach((line, originalIndex) => {
+    const trimmed = line.trim()
+    if (trimmed.toUpperCase() === 'NOTES:') {
+      inNotesSection = true
+      return
     }
-  }
+    if (trimmed.toUpperCase() === "TODAY'S PLANS:") {
+      inNotesSection = false
+      return
+    }
 
-  const match = line.match(/<!--\s*completed(?:At)?:\s*([^\s>]+)\s*-->/i)
-  const completedAt = match ? match[1] : null
+    const isChecked = /^\s*-\s*\[[xX]\]/.test(line)
+    const isUnchecked = /^\s*-\s*\[ \]/.test(line)
 
-  const text = line
-    .replace(/^\s*-\s*\[[ xX]\]\s*/, '')
-    .replace(/<!--\s*completed(?:At)?:\s*([^\s>]+)\s*-->/i, '')
-    .trim()
+    if (isChecked || isUnchecked) {
+      const match = line.match(/<!--\s*completed(?:At)?:\s*([^\s>]+)\s*-->/i)
+      const completedAt = match ? match[1] : null
+      const text = line
+        .replace(/^\s*-\s*\[[ xX]\]\s*/, '')
+        .replace(/<!--\s*completed(?:At)?:\s*([^\s>]+)\s*-->/i, '')
+        .trim()
 
-  return {
-    isCheckbox: true,
-    text,
-    completed: isChecked,
-    completedAt,
-  }
-}
+      const completionTime = isChecked
+        ? formatTimelineTime(completedAt) || formatTimelineTime(noteCreatedAt) || 'Done'
+        : null
 
-// Format completion timestamp for timeline display
-function formatCompletionTime(dateString?: string | null, fallbackDateStr?: string): string {
-  if (!dateString && !fallbackDateStr) return ''
+      tasks.push({
+        originalIndex,
+        isCheckbox: true,
+        text,
+        completed: isChecked,
+        completedAt,
+        completionTime,
+      })
+    } else if (inNotesSection || (!isChecked && !isUnchecked && trimmed.length > 0)) {
+      memos.push(line)
+    }
+  })
 
-  try {
-    const d = dateString ? new Date(dateString) : new Date(fallbackDateStr || '')
-    if (isNaN(d.getTime())) return ''
-
-    const month = d.toLocaleDateString('en-US', { month: 'short' })
-    const day = d.getDate()
-    const year = d.getFullYear()
-    const currentYear = new Date().getFullYear()
-
-    const time = d.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    })
-
-    const yearPart = year !== currentYear ? `, ${year}` : ''
-    return `${month} ${day}${yearPart} at ${time}`
-  } catch {
-    return ''
-  }
+  return { tasks, memos: memos.join('\n').trim() }
 }
 
 // Mark checkbox as completed in markdown note content with completion timestamp
@@ -128,7 +156,10 @@ function appendTaskToNote(content: string, taskText: string): string {
 
   if (plansHeaderIndex !== -1) {
     let insertIndex = plansHeaderIndex + 1
-    while (insertIndex < lines.length && (lines[insertIndex].trim().startsWith('- [') || lines[insertIndex].trim() === '')) {
+    while (
+      insertIndex < lines.length &&
+      (lines[insertIndex].trim().startsWith('- [') || lines[insertIndex].trim() === '')
+    ) {
       insertIndex++
     }
     lines.splice(insertIndex, 0, `- [ ] ${trimmed}`)
@@ -136,6 +167,36 @@ function appendTaskToNote(content: string, taskText: string): string {
   }
 
   return `TODAY'S PLANS:\n- [ ] ${trimmed}\n\n${content}`
+}
+
+// Architectural Wire-O spiral binding matching our site's developer design system
+function SpiralBinding({ isDark }: { isDark: boolean }) {
+  const rings = Array.from({ length: 16 })
+
+  return (
+    <div className="relative w-full h-7 flex items-center justify-around px-3 sm:px-6 select-none pointer-events-none">
+      {rings.map((_, i) => (
+        <div key={i} className="relative flex items-center justify-center">
+          {/* Notebook paper punch hole slot */}
+          <div
+            className={`w-2.5 h-3.5 rounded-[2px] border ${
+              isDark
+                ? 'bg-[#09090b] border-white/[0.08] shadow-inner'
+                : 'bg-zinc-200 border-zinc-300 shadow-inner'
+            }`}
+          />
+          {/* Wire coil loop spanning across the top binding */}
+          <div
+            className={`absolute -top-3 w-1.5 h-6.5 rounded-full border ${
+              isDark
+                ? 'bg-zinc-600 border-zinc-500/40 shadow-xs'
+                : 'bg-zinc-700 border-zinc-800/30 shadow-xs'
+            }`}
+          />
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export function DailyNotes({
@@ -147,15 +208,36 @@ export function DailyNotes({
   initialFilterDate,
 }: DailyNotesProps) {
   const isDark = theme === 'dark'
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  // Sorted unique dates with work logs (most recent first)
+  const sortedUniqueDates = useMemo(() => {
+    const dates = Array.from(new Set(notes.map((n) => n.date)))
+    return dates.sort().reverse()
+  }, [notes])
+
+  // Active notebook page date (initialized from prop -> localStorage -> latest logged date -> today)
+  const [activeDate, setActiveDate] = useState<string>(() => {
+    if (initialFilterDate) return initialFilterDate
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(NOTES_LAST_DAY_KEY)
+      if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
+        return saved
+      }
+    }
+    return todayStr
+  })
+
+  const [flipDirection, setFlipDirection] = useState<'next' | 'prev'>('next')
+  const [flipKey, setFlipKey] = useState(0)
+
+  // Compose form states
   const [selectedDate, setSelectedDate] = useState(todayStr)
   const [plans, setPlans] = useState<PlanItem[]>([])
   const [newPlanText, setNewPlanText] = useState('')
   const [additionalNotes, setAdditionalNotes] = useState('')
   const [loading, setLoading] = useState(false)
-  const [filterDate, setFilterDate] = useState<string>(initialFilterDate || '')
-  const [timelineNewTaskText, setTimelineNewTaskText] = useState<Record<string, string>>({})
+  const [inlineNewTaskText, setInlineNewTaskText] = useState('')
 
   // Modal state for irreversible task completion confirmation
   const [confirmingTask, setConfirmingTask] = useState<{
@@ -166,13 +248,65 @@ export function DailyNotes({
   } | null>(null)
   const [isConfirming, setIsConfirming] = useState(false)
 
+  // Sync prop changes (e.g., clicking on a day in ActivityHeatmap)
   useEffect(() => {
-    if (initialFilterDate !== undefined) {
-      setFilterDate(initialFilterDate)
+    if (initialFilterDate) {
+      setActiveDate(initialFilterDate)
     }
   }, [initialFilterDate])
 
-  // Dynamically add a new plan item
+  // Persist current notebook page to localStorage
+  useEffect(() => {
+    if (activeDate && typeof window !== 'undefined') {
+      localStorage.setItem(NOTES_LAST_DAY_KEY, activeDate)
+    }
+  }, [activeDate])
+
+  // Find the note for the currently displayed notebook page
+  const currentNote = useMemo(() => {
+    return notes.find((n) => n.date === activeDate) || null
+  }, [notes, activeDate])
+
+  // Current page index in the sorted list of logged entries
+  const currentEntryIndex = sortedUniqueDates.indexOf(activeDate)
+
+  // Navigation handlers
+  const handlePrevDay = () => {
+    setFlipDirection('prev')
+    setFlipKey((k) => k + 1)
+    if (currentEntryIndex !== -1 && currentEntryIndex < sortedUniqueDates.length - 1) {
+      // Flip backward to previous logged entry
+      setActiveDate(sortedUniqueDates[currentEntryIndex + 1])
+    } else {
+      // Step backward 1 calendar day
+      const [y, m, d] = activeDate.split('-').map(Number)
+      const prevDate = new Date(y, m - 1, d - 1)
+      setActiveDate(prevDate.toISOString().split('T')[0])
+    }
+  }
+
+  const handleNextDay = () => {
+    setFlipDirection('next')
+    setFlipKey((k) => k + 1)
+    if (currentEntryIndex > 0) {
+      // Flip forward to next logged entry
+      setActiveDate(sortedUniqueDates[currentEntryIndex - 1])
+    } else {
+      // Step forward 1 calendar day
+      const [y, m, d] = activeDate.split('-').map(Number)
+      const nextDate = new Date(y, m - 1, d + 1)
+      setActiveDate(nextDate.toISOString().split('T')[0])
+    }
+  }
+
+  const handleDateSelect = (date: string) => {
+    if (!date) return
+    setFlipDirection(date > activeDate ? 'next' : 'prev')
+    setFlipKey((k) => k + 1)
+    setActiveDate(date)
+  }
+
+  // Dynamically add a plan item to the compose form
   const handleAddPlan = (textToAdd?: string) => {
     const text = (textToAdd ?? newPlanText).trim()
     if (!text) return
@@ -212,20 +346,18 @@ export function DailyNotes({
     setPlans((prev) => prev.filter((p) => p.id !== id))
   }
 
-  // Submit and save the compiled work log
+  // Submit and save the compiled work log from the compose form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (plans.length === 0 && !additionalNotes.trim()) return
 
-    // Compile dynamic plans and additional notes into structured markdown
     const sections: string[] = []
     if (plans.length > 0) {
       const nowIso = new Date().toISOString()
-      const planLines = plans.map(
-        (p) =>
-          p.completed
-            ? `- [x] ${p.text} <!-- completed:${p.completedAt || nowIso} -->`
-            : `- [ ] ${p.text}`
+      const planLines = plans.map((p) =>
+        p.completed
+          ? `- [x] ${p.text} <!-- completed:${p.completedAt || nowIso} -->`
+          : `- [ ] ${p.text}`
       )
       sections.push(`TODAY'S PLANS:\n${planLines.join('\n')}`)
     }
@@ -241,6 +373,8 @@ export function DailyNotes({
       setPlans([])
       setNewPlanText('')
       setAdditionalNotes('')
+      // Immediately open the newly logged date in the notebook
+      setActiveDate(selectedDate)
     } finally {
       setLoading(false)
     }
@@ -265,19 +399,23 @@ export function DailyNotes({
     }
   }
 
-  // Inline add task to existing timeline note
-  const handleInlineAddTask = async (noteId: string, currentContent: string) => {
-    const text = (timelineNewTaskText[noteId] || '').trim()
-    if (!text || !onUpdateNote) return
+  // Inline add task to the current notebook page's note
+  const handleInlineAddTask = async () => {
+    const text = inlineNewTaskText.trim()
+    if (!text || !currentNote || !onUpdateNote) return
 
-    const updated = appendTaskToNote(currentContent, text)
-    await onUpdateNote(noteId, updated)
-    setTimelineNewTaskText((prev) => ({ ...prev, [noteId]: '' }))
+    const updated = appendTaskToNote(currentNote.content, text)
+    await onUpdateNote(currentNote.id, updated)
+    setInlineNewTaskText('')
   }
 
-  const filteredNotes = filterDate
-    ? notes.filter((n) => n.date === filterDate)
-    : notes
+  // Parsed tasks and memos for current notebook page
+  const parsedPageData = useMemo(() => {
+    if (!currentNote) return { tasks: [], memos: '', stats: { total: 0, completed: 0, percentage: 0 } }
+    const { tasks, memos } = parseNoteTasksAndMemos(currentNote.content, currentNote.createdAt)
+    const stats = getNoteStats(currentNote.content)
+    return { tasks, memos, stats }
+  }, [currentNote])
 
   // Theme styles
   const cardContainer = isDark
@@ -288,16 +426,27 @@ export function DailyNotes({
   const inputBg = isDark
     ? 'bg-black/40 border-white/[0.08] text-zinc-200 placeholder-zinc-500 focus:border-white/[0.2]'
     : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400'
-  const logCardBg = isDark
-    ? 'bg-black/40 border-white/[0.06] text-zinc-200'
-    : 'bg-zinc-50/70 border-zinc-200 text-zinc-800'
   const countBadge = isDark
     ? 'bg-white/[0.04] text-zinc-400 border-white/[0.06]'
     : 'bg-zinc-100 text-zinc-600 border-zinc-200'
 
+  // Page surface paper styling
+  const notebookPaperBg = isDark
+    ? 'bg-[#141418] border-white/[0.08] text-zinc-100 shadow-2xl shadow-black/60'
+    : 'bg-[#fdfdfc] border-stone-200/90 text-zinc-900 shadow-xl shadow-zinc-950/5'
+
+  const notebookBindingBg = isDark
+    ? 'bg-[#0e0e11] border-b border-white/[0.06]'
+    : 'bg-[#f4f4f2] border-b border-stone-200'
+
+  const pageFlipAnimClass =
+    flipDirection === 'prev'
+      ? 'notebook-page-flip-prev'
+      : 'notebook-page-flip-next'
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-5">
-      {/* Compose Note Section */}
+      {/* Left Column: Compose Note Section */}
       <div className={`lg:col-span-1 rounded-2xl border p-3.5 sm:p-5 h-fit ${cardContainer}`}>
         <div className={`flex items-center justify-between pb-3 mb-3.5 border-b ${headerBorder}`}>
           <h2 className={`text-xs font-semibold tracking-wider uppercase ${sectionTitle}`}>
@@ -321,15 +470,14 @@ export function DailyNotes({
             />
           </div>
 
-          {/* Dynamic Task & Plan Creator */}
           <div>
             <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
-              Today's Plans & Tasks
+              Today's Plan Checklist
             </label>
-            <div className="flex gap-2 mb-2.5">
+            <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Type plan for today (Enter to add)..."
+                placeholder="e.g. Solve LeetCode, Review PR #42..."
                 value={newPlanText}
                 onChange={(e) => setNewPlanText(e.target.value)}
                 onKeyDown={(e) => {
@@ -343,42 +491,39 @@ export function DailyNotes({
               <button
                 type="button"
                 onClick={() => handleAddPlan()}
-                disabled={!newPlanText.trim()}
-                className={`h-9 px-3 sm:px-4 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] disabled:opacity-40 cursor-pointer shrink-0 ${
+                className={`h-9 px-3.5 rounded-lg border text-xs font-medium transition cursor-pointer shrink-0 ${
                   isDark
-                    ? 'bg-white/[0.08] hover:bg-white/[0.14] text-zinc-200 border-white/[0.1]'
-                    : 'bg-zinc-900 hover:bg-zinc-800 text-white border-zinc-900 shadow-2xs'
+                    ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-300'
+                    : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700 bg-white shadow-2xs'
                 }`}
               >
                 + Add
               </button>
             </div>
 
-            {/* List of dynamically added plans */}
-            {plans.length > 0 ? (
-              <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+            {/* Draft Plan Items */}
+            {plans.length > 0 && (
+              <div className="mt-3 space-y-1.5 max-h-48 overflow-y-auto pr-1">
                 {plans.map((p) => (
                   <div
                     key={p.id}
-                    className={`flex items-center justify-between p-2.5 rounded-lg border text-xs font-mono transition ${
+                    className={`flex items-center justify-between p-2 rounded-lg border text-xs font-mono transition group ${
                       isDark
-                        ? 'bg-black/30 border-white/[0.06] text-zinc-200'
-                        : 'bg-white border-zinc-200 text-zinc-800 shadow-2xs'
+                        ? 'bg-black/30 border-white/[0.05]'
+                        : 'bg-zinc-50/80 border-zinc-200'
                     }`}
                   >
                     <div
+                      className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
                       onClick={() => handleTogglePlan(p.id)}
-                      className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0 pr-2 select-none"
                     >
                       <span
-                        className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition ${
+                        className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition ${
                           p.completed
                             ? isDark
-                              ? 'bg-zinc-200 border-zinc-200 text-zinc-950'
+                              ? 'bg-white border-white text-zinc-950'
                               : 'bg-zinc-900 border-zinc-900 text-white'
-                            : isDark
-                            ? 'border-white/[0.2] bg-transparent'
-                            : 'border-zinc-300 bg-white'
+                            : 'border-zinc-400 dark:border-zinc-600 bg-transparent'
                         }`}
                       >
                         {p.completed && (
@@ -387,46 +532,56 @@ export function DailyNotes({
                           </svg>
                         )}
                       </span>
-                      <span className={`truncate ${p.completed ? 'line-through text-zinc-400 dark:text-zinc-500' : ''}`}>
+                      <span
+                        className={`truncate ${
+                          p.completed
+                            ? 'line-through text-zinc-400 dark:text-zinc-500'
+                            : 'text-zinc-800 dark:text-zinc-200'
+                        }`}
+                      >
                         {p.text}
                       </span>
                     </div>
-
                     <button
                       type="button"
                       onClick={() => handleRemovePlan(p.id)}
-                      className={`h-7.5 px-2 sm:px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                        isDark
-                          ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-200'
-                          : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 hover:text-zinc-950 shadow-2xs'
-                      }`}
+                      className="text-zinc-400 hover:text-rose-500 p-1 rounded transition cursor-pointer"
                       title="Remove task"
                     >
-                      <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
                       </svg>
-                      <span className="hidden min-[480px]:inline">Remove</span>
                     </button>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="py-3 px-3.5 rounded-lg border border-dashed border-zinc-300 dark:border-white/[0.08] text-xs text-zinc-500 dark:text-zinc-400">
-                <p className="mb-2.5 font-medium">No plans added yet. Type a plan above and press Enter.</p>
-                <div className="flex flex-wrap gap-2">
-                  {['Code feature', 'Review PRs', 'Fix bugs', 'Solve LeetCode'].map((suggestion) => (
+            )}
+
+            {/* Quick Routine Tasks Suggestions */}
+            {plans.length === 0 && (
+              <div className="mt-2.5 space-y-1.5">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">
+                  Quick routines:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'Speak English for 30 min',
+                    'Solve 1 LeetCode Problem',
+                    'Review PRs & Issues',
+                    'Update Daily Expenses',
+                  ].map((routine) => (
                     <button
-                      key={suggestion}
+                      key={routine}
                       type="button"
-                      onClick={() => handleAddPlan(suggestion)}
-                      className={`h-8 px-3.5 text-xs font-medium rounded-lg border transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center justify-center ${
+                      onClick={() => handleAddPlan(routine)}
+                      className={`px-2 py-0.5 text-[10px] font-mono rounded border transition cursor-pointer ${
                         isDark
-                          ? 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300'
-                          : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700'
+                          ? 'border-white/[0.06] hover:bg-white/[0.04] text-zinc-400 hover:text-zinc-200'
+                          : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 bg-zinc-50'
                       }`}
                     >
-                      + {suggestion}
+                      + {routine}
                     </button>
                   ))}
                 </div>
@@ -434,7 +589,7 @@ export function DailyNotes({
             )}
           </div>
 
-          {/* Optional Additional Notes Textarea */}
+          {/* Optional Additional Notes */}
           <div>
             <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
               Additional Notes (Optional)
@@ -471,239 +626,311 @@ export function DailyNotes({
         </form>
       </div>
 
-      {/* History / Log Timeline */}
-      <div className={`lg:col-span-2 rounded-2xl border p-3.5 sm:p-5 ${cardContainer}`}>
-        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 mb-3.5 border-b ${headerBorder}`}>
-          <div className="flex items-center justify-between sm:justify-start gap-2">
-            <h2 className={`text-xs font-semibold tracking-wider uppercase whitespace-nowrap ${sectionTitle}`}>
-              Work Logs Timeline
-            </h2>
-            <span className={`text-[10px] px-2.5 py-0.5 rounded-full border font-mono shrink-0 ${countBadge}`}>
-              {filteredNotes.length} entries
+      {/* Right Column: Redesigned Spiral Notebook (One Page Per Day with Timeline) */}
+      <div className="lg:col-span-2 flex flex-col space-y-3">
+        {/* Navigation & Jump Bar */}
+        <div className={`p-3 rounded-2xl border flex flex-wrap items-center justify-between gap-2.5 ${cardContainer}`}>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handlePrevDay}
+              className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                isDark
+                  ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-300'
+                  : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700 bg-white shadow-2xs'
+              }`}
+              title="Previous day / entry"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              <span>Prev</span>
+            </button>
+
+            {/* Page Count Indicator */}
+            <span className="text-[11px] font-mono px-2 py-1 rounded bg-zinc-100 dark:bg-white/[0.04] text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-white/[0.06] select-none">
+              {currentEntryIndex !== -1
+                ? `Page ${currentEntryIndex + 1} of ${sortedUniqueDates.length}`
+                : 'Empty Day'}
             </span>
+
+            <button
+              type="button"
+              onClick={handleNextDay}
+              className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                isDark
+                  ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-300'
+                  : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700 bg-white shadow-2xs'
+              }`}
+              title="Next day / entry"
+            >
+              <span>Next</span>
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Direct Date Picker Jump */}
             <input
               type="date"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className={`flex-1 sm:flex-none h-8.5 rounded-lg border px-2.5 text-xs focus:outline-none font-mono ${inputBg}`}
+              value={activeDate}
+              onChange={(e) => handleDateSelect(e.target.value)}
+              className={`h-8.5 rounded-lg border px-2.5 text-xs font-mono focus:outline-none ${inputBg}`}
+              title="Jump directly to any date"
             />
-            {filterDate && (
+
+            {/* Jump to Today */}
+            {activeDate !== todayStr && (
               <button
-                onClick={() => setFilterDate('')}
-                className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer shrink-0 ${
+                type="button"
+                onClick={() => handleDateSelect(todayStr)}
+                className={`h-8.5 px-2.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
                   isDark
-                    ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.06]'
-                    : 'border-zinc-200 text-zinc-700 hover:bg-zinc-100 bg-white shadow-2xs'
+                    ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-300'
+                    : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700 bg-white shadow-2xs'
                 }`}
               >
-                Clear
+                Today
               </button>
             )}
           </div>
         </div>
 
-        {filteredNotes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-zinc-500">
-            <p className="text-xs font-mono">No work logs recorded for this date.</p>
+        {/* The Spiral Notebook Container */}
+        <div className={`rounded-2xl border overflow-hidden transition-all ${notebookPaperBg}`}>
+          {/* Top Spiral Binding Strip */}
+          <div className={`pt-2.5 pb-1 ${notebookBindingBg}`}>
+            <SpiralBinding isDark={isDark} />
           </div>
-        ) : (
-          <div className="space-y-3.5 max-h-[580px] overflow-y-auto pr-1">
-            {filteredNotes.map((note) => {
-              const stats = getNoteStats(note.content)
 
-              return (
-                <div
-                  key={note.id}
-                  className={`p-3.5 sm:p-4 rounded-xl border relative group transition ${logCardBg}`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-inherit">
-                    <div className="flex items-center flex-wrap gap-2">
-                      <span className={`font-mono text-xs font-semibold flex items-center gap-1.5 shrink-0 ${
-                        isDark ? 'text-zinc-200' : 'text-zinc-800'
-                      }`}>
-                        <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                          <line x1="16" y1="2" x2="16" y2="6" />
-                          <line x1="8" y1="2" x2="8" y2="6" />
-                          <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                        {note.date}
+          {/* Notebook Page Content Area (With Top Spiral 3D Page Flip Animation) */}
+          <div
+            key={`${activeDate}-${flipKey}`}
+            className={`p-4 sm:p-6 min-h-[500px] flex flex-col ${pageFlipAnimClass}`}
+          >
+            {/* Page Header: Date, Stats, Author & Actions */}
+            <div className={`pb-4 mb-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${headerBorder}`}>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-bold tracking-tight text-zinc-950 dark:text-zinc-50 font-sans">
+                    {formatNotebookDate(activeDate)}
+                  </h3>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded border border-zinc-200 dark:border-white/[0.08] bg-zinc-100/70 dark:bg-white/[0.04] text-zinc-600 dark:text-zinc-400">
+                    {activeDate}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 mt-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-mono flex-wrap">
+                  {currentNote ? (
+                    <>
+                      <span>
+                        by{' '}
+                        <strong className="text-zinc-700 dark:text-zinc-300 font-semibold">
+                          {currentNote.createdBy?.startsWith('@')
+                            ? currentNote.createdBy
+                            : `@${(currentNote.createdBy?.includes('@') ? currentNote.createdBy.split('@')[0] : currentNote.createdBy) || 'user'}`}
+                        </strong>
                       </span>
 
-                      {/* Completion Percentage Badge */}
-                      {stats.total > 0 && (
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-md border font-mono font-medium flex items-center gap-1.5 shrink-0 ${
-                            stats.percentage === 100
-                              ? isDark
-                                ? 'border-white/[0.2] bg-white/[0.08] text-white font-semibold'
-                                : 'border-zinc-900/20 bg-zinc-900/5 text-zinc-950 font-semibold'
-                              : isDark
-                              ? 'border-white/[0.08] bg-white/[0.03] text-zinc-300'
-                              : 'border-zinc-200 bg-zinc-100 text-zinc-700'
-                          }`}
-                          title={`${stats.completed} of ${stats.total} tasks completed`}
-                        >
-                          {stats.percentage === 100 && (
-                            <svg className="w-3 h-3 text-zinc-300 dark:text-zinc-200 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                          <span>{stats.percentage}% Done</span>
-                          <span className="opacity-60 text-[10px]">({stats.completed}/{stats.total})</span>
-                        </span>
+                      {/* Completed % Progress Badge (Monochrome, No AI Colors) */}
+                      {parsedPageData.stats.total > 0 && (
+                        <>
+                          <span>•</span>
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-medium border ${
+                              parsedPageData.stats.percentage === 100
+                                ? isDark
+                                  ? 'bg-white text-zinc-950 border-white font-semibold shadow-2xs'
+                                  : 'bg-zinc-900 text-white border-zinc-900 font-semibold shadow-2xs'
+                                : 'bg-zinc-100 dark:bg-white/[0.04] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-white/[0.08]'
+                            }`}
+                          >
+                            {parsedPageData.stats.percentage === 100 && (
+                              <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                            <span>
+                              {parsedPageData.stats.percentage}% Done ({parsedPageData.stats.completed}/{parsedPageData.stats.total})
+                            </span>
+                          </span>
+                        </>
                       )}
-                    </div>
+                    </>
+                  ) : (
+                    <span>No entry recorded for this day</span>
+                  )}
+                </div>
+              </div>
 
-                    <div className="flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-0 border-t border-inherit/40 sm:border-t-0">
-                      <span className="text-[11px] text-zinc-500 font-mono truncate">
-                        by {note.createdBy?.startsWith('@') ? note.createdBy : `@${(note.createdBy?.includes('@') ? note.createdBy.split('@')[0] : note.createdBy) || 'jamnithil'}`}
-                      </span>
-                      <button
-                        onClick={() => onDeleteNote(note)}
-                        className={`h-7.5 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                          isDark
-                            ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-200'
-                            : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 hover:text-zinc-950 shadow-2xs'
-                        }`}
-                        title="Delete log"
-                      >
-                        <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                        <span className="hidden min-[480px]:inline">Delete</span>
-                      </button>
-                    </div>
-                  </div>
+              {/* Action Buttons: Delete Page Option */}
+              {currentNote && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onDeleteNote(currentNote)}
+                    className="h-8 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center gap-1.5 border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-600 hover:text-zinc-950 dark:border-white/[0.08] dark:hover:border-white/[0.18] dark:bg-white/[0.02] dark:hover:bg-white/[0.08] dark:text-zinc-400 dark:hover:text-zinc-200 shadow-2xs"
+                    title="Delete this day's work log"
+                  >
+                    <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                    <span>Delete Page</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
-                  {/* Interactive Markdown Checkboxes Content with Confirmation */}
-                  <div className="text-xs font-mono leading-relaxed space-y-2">
-                    {note.content.split('\n').map((line, idx) => {
-                      const parsed = parseTaskLine(line)
+            {/* Notebook Page Body: Timeline vs Empty State */}
+            {!currentNote ? (
+              /* Clear Empty State for Days with No Log */
+              <div className="flex-1 flex flex-col items-center justify-center py-16 px-4 text-center">
+                <div className="w-12 h-12 rounded-2xl border border-dashed border-zinc-300 dark:border-white/10 flex items-center justify-center mb-3 text-zinc-400">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </div>
+                <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                  No work log on this page
+                </h4>
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 max-w-sm font-mono leading-relaxed">
+                  You haven't recorded any tasks or notes for {activeDate} yet.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(activeDate)}
+                  className="mt-4 px-4 py-2 rounded-xl text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 transition-colors shadow-sm cursor-pointer"
+                >
+                  Write Log for {activeDate}
+                </button>
+              </div>
+            ) : (
+              /* Populated Page Content */
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Vertical Timeline with Completion Time Markers */}
+                  {parsedPageData.tasks.length > 0 && (
+                    <div className="relative space-y-4 my-2">
+                      {/* Vertical spine timeline line centered exactly on the 20px nodes (center at 10px) */}
+                      <div className="absolute left-[9px] top-3 bottom-3 w-[2px] bg-zinc-200 dark:bg-white/[0.08]" />
 
-                      if (parsed.isCheckbox) {
-                        const completionTime = parsed.completed
-                          ? formatCompletionTime(parsed.completedAt, note.createdAt)
-                          : null
+                      {parsedPageData.tasks.map((task) => (
+                        <div key={task.originalIndex} className="relative pl-8 group">
+                          {/* Timeline node sitting directly on the line */}
+                          <div className="absolute left-0 top-1 z-10 flex items-center justify-center">
+                            {task.completed ? (
+                              <div
+                                className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center shadow-xs border-2 border-[#fdfdfc] dark:border-[#141418]"
+                                title="Task completed"
+                              >
+                                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setConfirmingTask({
+                                    noteId: currentNote.id,
+                                    noteContent: currentNote.content,
+                                    lineIndex: task.originalIndex,
+                                    taskText: task.text,
+                                  })
+                                }}
+                                className="w-5 h-5 rounded-full border-2 border-zinc-300 dark:border-zinc-600 bg-[#fdfdfc] dark:bg-[#141418] hover:border-zinc-800 dark:hover:border-white transition-colors cursor-pointer flex items-center justify-center shadow-2xs"
+                                title="Click to complete task"
+                              />
+                            )}
+                          </div>
 
-                        return (
+                          {/* Task Content Card */}
                           <div
-                            key={idx}
                             onClick={() => {
-                              // If task is not checked, prompt confirmation to mark done permanently
-                              if (!parsed.completed) {
+                              if (!task.completed) {
                                 setConfirmingTask({
-                                  noteId: note.id,
-                                  noteContent: note.content,
-                                  lineIndex: idx,
-                                  taskText: parsed.text,
+                                  noteId: currentNote.id,
+                                  noteContent: currentNote.content,
+                                  lineIndex: task.originalIndex,
+                                  taskText: task.text,
                                 })
                               }
                             }}
-                            className={`flex items-start gap-2.5 py-1.5 select-none group/item transition rounded-lg px-2 border ${
-                              parsed.completed
+                            className={`flex-1 min-w-0 p-2.5 sm:p-3 rounded-xl border transition ${
+                              task.completed
                                 ? isDark
                                   ? 'bg-white/[0.02] border-white/[0.04]'
-                                  : 'bg-zinc-100/60 border-zinc-200/70'
+                                  : 'bg-zinc-50 border-zinc-200/60'
                                 : isDark
-                                ? 'cursor-pointer hover:bg-white/[0.03] border-transparent hover:border-white/[0.08]'
-                                : 'cursor-pointer hover:bg-zinc-100 border-transparent hover:border-zinc-200'
+                                ? 'bg-black/30 border-white/[0.06] hover:border-white/[0.12] cursor-pointer'
+                                : 'bg-white border-zinc-200/80 hover:border-zinc-300 cursor-pointer shadow-2xs'
                             }`}
                           >
-                            <span
-                              className={`mt-0.5 w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition ${
-                                parsed.completed
-                                  ? isDark
-                                    ? 'bg-white border-white text-zinc-950 shadow-2xs'
-                                    : 'bg-zinc-900 border-zinc-900 text-white shadow-2xs'
-                                  : isDark
-                                  ? 'border-white/[0.25] group-hover/item:border-white/[0.5] bg-transparent'
-                                  : 'border-zinc-300 group-hover/item:border-zinc-500 bg-white'
-                              }`}
-                              title={parsed.completed ? 'Completed (locked to preserve consistency)' : 'Click to complete'}
-                            >
-                              {parsed.completed && (
-                                <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                              )}
-                            </span>
-
-                            <div className="flex-1 min-w-0">
-                              <span
-                                className={`block break-words transition ${
-                                  parsed.completed
-                                    ? 'line-through text-zinc-400 dark:text-zinc-500'
-                                    : isDark
-                                    ? 'text-zinc-200 group-hover/item:text-white'
-                                    : 'text-zinc-800 group-hover/item:text-zinc-950'
-                                }`}
-                              >
-                                {parsed.text}
-                              </span>
-
-                              {/* Task Completion Date & Time */}
-                              {parsed.completed && completionTime && (
-                                <div className="mt-1 flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 dark:text-zinc-400">
-                                  <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="20 6 9 17 4 12" />
+                            <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                              {/* Time Marker Badge */}
+                              {task.completed ? (
+                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-zinc-100 dark:bg-white/[0.06] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-white/[0.08]">
+                                  <svg className="w-2.5 h-2.5 text-zinc-500 dark:text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12 6 12 12 16 14" />
                                   </svg>
-                                  <span>Completed on {completionTime}</span>
-                                </div>
+                                  <span>{task.completionTime}</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-400">
+                                  <span>To-do</span>
+                                </span>
+                              )}
+
+                              {task.completed && (
+                                <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 font-medium">
+                                  ✓ Done
+                                </span>
                               )}
                             </div>
 
-                            {parsed.completed && (
-                              <span
-                                className={`text-[10px] font-mono px-2 py-0.5 rounded-md border shrink-0 select-none ${
-                                  isDark
-                                    ? 'bg-white/[0.04] text-zinc-400 border-white/[0.08]'
-                                    : 'bg-white text-zinc-600 border-zinc-200 shadow-2xs'
-                                }`}
-                                title="Completed and locked"
-                              >
-                                Done
-                              </span>
-                            )}
+                            <p
+                              className={`text-xs font-mono break-words leading-relaxed ${
+                                task.completed
+                                  ? 'line-through text-zinc-400 dark:text-zinc-500'
+                                  : 'text-zinc-800 dark:text-zinc-200'
+                              }`}
+                            >
+                              {task.text}
+                            </p>
                           </div>
-                        )
-                      }
-
-                      return (
-                        <div key={idx} className={line.trim() === '' ? 'h-2' : 'whitespace-pre-wrap opacity-90'}>
-                          {line}
                         </div>
-                      )
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  )}
 
-                  {/* Inline quick task adder for existing note */}
+                  {/* Inline Task Adder on Current Day's Page */}
                   {onUpdateNote && (
-                    <div className="mt-3 pt-2.5 border-t border-inherit flex items-center gap-2">
+                    <div className="mt-4 pt-3 border-t border-dashed border-zinc-200 dark:border-white/[0.08] flex items-center gap-2">
                       <input
                         type="text"
-                        placeholder="+ Add another task..."
-                        value={timelineNewTaskText[note.id] || ''}
-                        onChange={(e) =>
-                          setTimelineNewTaskText((prev) => ({ ...prev, [note.id]: e.target.value }))
-                        }
+                        placeholder="+ Add another task to this page..."
+                        value={inlineNewTaskText}
+                        onChange={(e) => setInlineNewTaskText(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault()
-                            handleInlineAddTask(note.id, note.content)
+                            handleInlineAddTask()
                           }
                         }}
-                        className={`flex-1 min-w-0 h-8.5 rounded-lg border px-2.5 text-xs focus:outline-none font-mono ${inputBg}`}
+                        className={`flex-1 min-w-0 h-9 rounded-lg border px-3 text-xs focus:outline-none font-mono ${inputBg}`}
                       />
                       <button
                         type="button"
-                        onClick={() => handleInlineAddTask(note.id, note.content)}
-                        disabled={!(timelineNewTaskText[note.id] || '').trim()}
-                        className={`h-8.5 px-3 sm:px-4 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] disabled:opacity-40 cursor-pointer shrink-0 ${
+                        onClick={handleInlineAddTask}
+                        disabled={!inlineNewTaskText.trim()}
+                        className={`h-9 px-3.5 rounded-lg border text-xs font-medium transition cursor-pointer disabled:opacity-40 shrink-0 ${
                           isDark
                             ? 'bg-white/[0.08] hover:bg-white/[0.14] text-zinc-200 border-white/[0.1]'
                             : 'bg-zinc-900 hover:bg-zinc-800 text-white border-zinc-900 shadow-2xs'
@@ -714,10 +941,29 @@ export function DailyNotes({
                     </div>
                   )}
                 </div>
-              )
-            })}
+
+                {/* Additional Notes Area (Memos & Remarks at Bottom of Page) */}
+                {parsedPageData.memos && (
+                  <div className="mt-6 pt-4 border-t border-dashed border-zinc-200 dark:border-white/[0.08]">
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-2">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <polyline points="10 9 9 9 8 9" />
+                      </svg>
+                      <span>Additional Notes & Remarks</span>
+                    </div>
+                    <div className="p-3.5 rounded-xl border bg-zinc-50/70 dark:bg-black/30 border-zinc-200/80 dark:border-white/[0.06] text-xs font-mono leading-relaxed whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
+                      {parsedPageData.memos}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Irreversible Task Completion Confirmation Modal */}

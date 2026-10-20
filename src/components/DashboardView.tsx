@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Ticket, DailyNote } from '@/types'
 
 interface DashboardViewProps {
@@ -22,6 +22,25 @@ interface ParsedDailyNote {
   totalTasks: number
   completedTasks: number
   completionPct: number
+}
+
+// Apple iOS / macOS System Palette for Categories
+const APPLE_CATEGORY_COLORS: Record<string, string> = {
+  DEV: '#0071e3', // Apple System Blue
+  FEATURE: '#34c759', // Apple System Green
+  BUG: '#ff3b30', // Apple System Red
+  DATABASE: '#30b0c7', // Apple System Teal
+  DESIGN: '#af52de', // Apple System Purple
+  OPS: '#ff9500', // Apple System Orange
+  DOCS: '#5856d6', // Apple System Indigo
+  SECURITY: '#ff2d55', // Apple System Pink
+}
+
+function getAppleCategoryColor(cat: string, index: number): string {
+  const key = cat.toUpperCase()
+  if (APPLE_CATEGORY_COLORS[key]) return APPLE_CATEGORY_COLORS[key]
+  const palette = ['#0071e3', '#34c759', '#30b0c7', '#ff9500', '#af52de', '#5856d6', '#ff3b30', '#8e8e93']
+  return palette[index % palette.length]
 }
 
 function parseDailyNoteContent(content: string): ParsedDailyNote {
@@ -72,7 +91,7 @@ function parseDailyNoteContent(content: string): ParsedDailyNote {
   }
 }
 
-function formatNoteDate(dateStr: string): string {
+function formatAppleDate(dateStr: string): string {
   try {
     const parts = dateStr.split('-')
     if (parts.length < 3) return dateStr
@@ -81,9 +100,9 @@ function formatNoteDate(dateStr: string): string {
     const d = Number(parts[2])
     const dateObj = new Date(y, m - 1, d)
     return dateObj.toLocaleDateString('en-US', {
+      weekday: 'short',
       month: 'short',
       day: 'numeric',
-      year: 'numeric',
     })
   } catch {
     return dateStr
@@ -98,405 +117,388 @@ export function DashboardView({
 }: DashboardViewProps) {
   const isDark = theme === 'dark'
 
-  // Metric counts
+  // Core metrics (strictly without In-Progress or Blocked cards)
   const total = tickets.length
-  const todo = tickets.filter((t) => t.status === 'TODO').length
-  const inProgress = tickets.filter((t) => t.status === 'IN_PROGRESS').length
-  const done = tickets.filter((t) => t.status === 'DONE').length
-  const blocked = tickets.filter((t) => t.status === 'BLOCKED').length
-
+  const done = useMemo(() => tickets.filter((t) => t.status === 'DONE').length, [tickets])
+  const open = total - done
   const completionRate = total > 0 ? Math.round((done / total) * 100) : 0
 
-  // Priority counts
-  const urgent = tickets.filter((t) => t.priority === 'URGENT').length
-  const high = tickets.filter((t) => t.priority === 'HIGH').length
-  const medium = tickets.filter((t) => t.priority === 'MEDIUM').length
-  const low = tickets.filter((t) => t.priority === 'LOW').length
+  // Priority calculations
+  const urgent = useMemo(() => tickets.filter((t) => t.priority === 'URGENT').length, [tickets])
+  const high = useMemo(() => tickets.filter((t) => t.priority === 'HIGH').length, [tickets])
+  const medium = useMemo(() => tickets.filter((t) => t.priority === 'MEDIUM').length, [tickets])
+  const low = useMemo(() => tickets.filter((t) => t.priority === 'LOW').length, [tickets])
+  const criticalCount = urgent + high
+  const criticalOpen = useMemo(
+    () => tickets.filter((t) => (t.priority === 'URGENT' || t.priority === 'HIGH') && t.status !== 'DONE').length,
+    [tickets]
+  )
 
-  // Status Distribution circular donut chart calculations
-  const STATUS_RADIUS = 46
-  const STATUS_CIRCUMFERENCE = 2 * Math.PI * STATUS_RADIUS
+  // Functional Category Domain Matrix
+  const categoryStats = useMemo(() => {
+    const map: Record<string, { count: number; done: number }> = {}
+    tickets.forEach((t) => {
+      const cat = (t.category || 'DEV').toUpperCase()
+      if (!map[cat]) map[cat] = { count: 0, done: 0 }
+      map[cat].count++
+      if (t.status === 'DONE') map[cat].done++
+    })
 
-  const statusData = [
-    {
-      label: 'Completed',
-      count: done,
-      color: '#10b981',
-      icon: (
-        <svg className="w-3.5 h-3.5 text-emerald-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      ),
-    },
-    {
-      label: 'In Progress',
-      count: inProgress,
-      color: '#f59e0b',
-      icon: (
-        <svg className="w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      ),
-    },
-    {
-      label: 'To Do',
-      count: todo,
-      color: isDark ? '#71717a' : '#a1a1aa',
-      icon: (
-        <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="3 3">
-          <circle cx="12" cy="12" r="9" />
-        </svg>
-      ),
-    },
-    {
-      label: 'Blocked',
-      count: blocked,
-      color: '#f43f5e',
-      icon: (
-        <svg className="w-3.5 h-3.5 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-        </svg>
-      ),
-    },
-  ]
+    const entries = Object.entries(map).map(([name, data]) => ({
+      name,
+      count: data.count,
+      done: data.done,
+      pct: total > 0 ? Math.round((data.count / total) * 100) : 0,
+      completionPct: data.count > 0 ? Math.round((data.done / data.count) * 100) : 0,
+    }))
 
-  let accumulatedStatusOffset = 0
-  const statusSegments = statusData.map((item) => {
-    const fraction = total > 0 ? item.count / total : 0
-    const strokeLength = fraction * STATUS_CIRCUMFERENCE
-    const offset = accumulatedStatusOffset
-    accumulatedStatusOffset += strokeLength
-    const pct = total > 0 ? Math.round(fraction * 100) : 0
+    return entries.sort((a, b) => b.count - a.count)
+  }, [tickets, total])
+
+  // Standup work logs aggregated throughput
+  const standupStats = useMemo(() => {
+    let totalTasks = 0
+    let completedTasks = 0
+    const contributors = new Set<string>()
+
+    dailyNotes.forEach((note) => {
+      if (note.createdBy) contributors.add(note.createdBy)
+      const parsed = parseDailyNoteContent(note.content)
+      totalTasks += parsed.totalTasks
+      completedTasks += parsed.completedTasks
+    })
+
+    const velocityPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+
     return {
-      ...item,
-      pct,
-      strokeLength,
-      offset,
+      totalNotes: dailyNotes.length,
+      totalTasks,
+      completedTasks,
+      velocityPct,
+      contributorsCount: contributors.size,
     }
-  })
+  }, [dailyNotes])
 
-  // Projects distribution
-  const projectStats = availableProjects.map((proj) => {
-    const count = tickets.filter((t) => t.projectName === proj).length
-    const projDone = tickets.filter(
-      (t) => t.projectName === proj && t.status === 'DONE'
-    ).length
-    const pct = count > 0 ? Math.round((projDone / count) * 100) : 0
-    return { name: proj, count, done: projDone, pct }
-  })
+  // Workspace velocity and distribution
+  const projectStats = useMemo(() => {
+    return availableProjects
+      .map((proj) => {
+        const projTickets = tickets.filter((t) => t.projectName === proj)
+        const count = projTickets.length
+        const projDone = projTickets.filter((t) => t.status === 'DONE').length
+        const pct = count > 0 ? Math.round((projDone / count) * 100) : 0
+        return { name: proj, count, done: projDone, pct }
+      })
+      .sort((a, b) => b.count - a.count)
+  }, [availableProjects, tickets])
 
-  // Theme-aware styles
-  const cardBg = isDark
-    ? 'bg-[#111114] border-white/[0.07] text-zinc-100 hover:border-white/[0.12] transition-colors'
-    : 'bg-white border-zinc-200/90 text-zinc-900 shadow-2xs hover:border-zinc-300 transition-colors'
-  const cardHeaderBorder = isDark ? 'border-white/[0.06]' : 'border-zinc-100'
-  const subtleBarTrack = isDark ? 'bg-white/[0.06]' : 'bg-zinc-100'
+  // Apple Design System Surface & Card Tokens (DESIGN.md)
+  // Apple parchment off-white (#f5f5f7) canvas with pure white utility cards in light mode;
+  // Near-black tile (#1c1c1e) on pure black canvas (#000000) in dark mode.
+  const cardSurface = isDark
+    ? 'bg-[#1c1c1e] border-white/[0.08] text-white'
+    : 'bg-white border-[#e5e5ea] text-[#1d1d1f] shadow-xs'
 
-  const themeTag = isDark
-    ? 'bg-white/[0.05] border-white/[0.08] text-zinc-300'
-    : 'bg-zinc-100 border-zinc-200 text-zinc-700 shadow-2xs'
+  const innerCardSurface = isDark
+    ? 'bg-[#242426] border-white/[0.06]'
+    : 'bg-[#f5f5f7] border-black/[0.04]'
+
+  const hairlineDivider = isDark ? 'border-white/[0.08]' : 'border-[#f0f0f0]'
+  const progressTrack = isDark ? 'bg-white/[0.08]' : 'bg-[#e5e5ea]'
+
+  // Signature Apple Capsule Chip (Pill) - Quiet, Authentic, Never AI/Neon
+  const appleCapsule = isDark
+    ? 'bg-white/[0.08] border-white/[0.08] text-[#f5f5f7]'
+    : 'bg-[#f5f5f7] border-black/[0.06] text-[#1d1d1f]'
 
   return (
-    <div className="flex-1 overflow-auto p-2.5 sm:p-6 space-y-4 sm:space-y-6">
-      {/* 1. Executive Metric KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        {/* Total Scope */}
-        <div className={`p-3 sm:p-5 rounded-xl sm:rounded-2xl border ${cardBg}`}>
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
+    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 bg-[#f5f5f7] dark:bg-[#000000] font-sans">
+      {/* 1. Apple-Style KPI Overview Grid (4 Clean Rounded Cards) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {/* Metric 1: Total Scope */}
+        <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardSurface}`}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6]">
               Total Scope
             </span>
-            <span className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-mono font-medium border shrink-0 ${themeTag}`}>
-              <span className="hidden sm:inline">All </span>Workspaces
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+              {availableProjects.length} Workspaces
             </span>
           </div>
-          <div className="text-xl sm:text-3xl font-bold font-mono mt-1.5 sm:mt-2.5 tracking-tight text-zinc-900 dark:text-zinc-100">
+          <div className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-3">
             {total}
           </div>
-          <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 sm:mt-1.5 flex items-center gap-1.5 truncate">
-            <span>Across {availableProjects.length} workspaces</span>
-          </div>
+          <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-2 font-normal">
+            {open} open items in backlog
+          </p>
         </div>
 
-        {/* Completion Rate */}
-        <div className={`p-3 sm:p-5 rounded-xl sm:rounded-2xl border ${cardBg}`}>
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
-              Completion Rate
+        {/* Metric 2: Delivery Rate */}
+        <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardSurface}`}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6]">
+              Delivery Rate
             </span>
-            <span className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-mono font-medium border shrink-0 ${themeTag}`}>
-              {done}/{total}<span className="hidden sm:inline"> Done</span>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+              {done}/{total} Done
             </span>
           </div>
-          <div className="text-xl sm:text-3xl font-bold font-mono mt-1.5 sm:mt-2.5 tracking-tight text-zinc-900 dark:text-zinc-100">
+          <div className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-3">
             {completionRate}%
           </div>
-          <div className={`w-full ${subtleBarTrack} rounded-full h-1.5 sm:h-2 mt-2 sm:mt-2.5 overflow-hidden`}>
+          <div className={`w-full ${progressTrack} rounded-full h-1.5 mt-3 overflow-hidden`}>
             <div
-              className="bg-emerald-500 h-1.5 sm:h-2 rounded-full transition-all duration-500"
+              className="bg-[#34c759] h-1.5 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${completionRate}%` }}
             />
           </div>
         </div>
 
-        {/* In Progress */}
-        <div className={`p-3 sm:p-5 rounded-xl sm:rounded-2xl border ${cardBg}`}>
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
-              In Progress
+        {/* Metric 3: Critical Attention Required */}
+        <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardSurface}`}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6]">
+              Attention Required
             </span>
-            <span className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-mono font-medium border shrink-0 ${themeTag}`}>
-              {inProgress}<span className="hidden sm:inline"> Active</span>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+              {criticalOpen > 0 ? `${criticalOpen} Priority` : 'All Clear'}
             </span>
           </div>
-          <div className="text-xl sm:text-3xl font-bold font-mono mt-1.5 sm:mt-2.5 tracking-tight text-zinc-900 dark:text-zinc-100">
-            {inProgress}
+          <div className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-3">
+            {criticalOpen}
           </div>
-          <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 sm:mt-1.5 truncate">
-            Tasks currently active
-          </div>
+          <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-2 font-normal">
+            {urgent} urgent and {high} high priority items
+          </p>
         </div>
 
-        {/* Blocked Issues */}
-        <div className={`p-3 sm:p-5 rounded-xl sm:rounded-2xl border ${cardBg}`}>
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
-              Blocked Issues
+        {/* Metric 4: Work Log Execution */}
+        <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardSurface}`}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6]">
+              Standup Tasks
             </span>
-            <span className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-mono font-medium border shrink-0 ${themeTag}`}>
-              {blocked > 0 ? (
-                <span>
-                  {blocked}
-                  <span className="hidden sm:inline"> Blocked</span>
-                </span>
-              ) : (
-                'Clear'
-              )}
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+              {standupStats.totalNotes} Logs
             </span>
           </div>
-          <div className="text-xl sm:text-3xl font-bold font-mono mt-1.5 sm:mt-2.5 tracking-tight text-zinc-900 dark:text-zinc-100">
-            {blocked}
+          <div className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-3">
+            {standupStats.totalTasks}
           </div>
-          <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 sm:mt-1.5 truncate">
-            {blocked > 0 ? 'Requires attention' : 'Zero impediments'}
+          <div className={`w-full ${progressTrack} rounded-full h-1.5 mt-3 overflow-hidden`}>
+            <div
+              className="bg-[#0071e3] dark:bg-[#2997ff] h-1.5 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${standupStats.velocityPct}%` }}
+            />
           </div>
         </div>
       </div>
 
-      {/* 2. Visual Charts Grid (Status Distribution & Priority Severity) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 sm:gap-5">
-        {/* Chart 1: Workflow Status Distribution (Circular Donut Chart) */}
-        <div className={`p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border ${cardBg}`}>
-          <div className={`flex items-center justify-between pb-3 mb-3.5 sm:pb-3.5 sm:mb-4 border-b ${cardHeaderBorder}`}>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-              Status Distribution
-            </h3>
-            <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-mono font-medium border shrink-0 ${themeTag}`}>
-              Workflow Ratio
+      {/* 2. Apple Visual Matrices (Category Scope & Priority Severity) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+        {/* Matrix Card 1: Functional Categories */}
+        <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardSurface}`}>
+          <div className={`flex items-center justify-between pb-4 mb-5 border-b ${hairlineDivider}`}>
+            <div>
+              <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
+                Functional Categories
+              </h3>
+              <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
+                Scope allocation across engineering disciplines
+              </p>
+            </div>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+              {categoryStats.length} Disciplines
             </span>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 py-1 sm:py-2">
-            {/* Circular Donut Chart SVG */}
-            <div className="relative flex items-center justify-center shrink-0">
-              <svg className="w-32 h-32 sm:w-36 sm:h-36 transform -rotate-90" viewBox="0 0 120 120">
-                {/* Background Ring */}
-                <circle
-                  cx="60"
-                  cy="60"
-                  r={STATUS_RADIUS}
-                  className={isDark ? 'stroke-white/[0.06]' : 'stroke-zinc-100'}
-                  strokeWidth="10"
-                  fill="none"
-                />
-                {/* Status Segments */}
-                {statusSegments.map((seg) =>
-                  seg.count > 0 ? (
-                    <circle
-                      key={seg.label}
-                      cx="60"
-                      cy="60"
-                      r={STATUS_RADIUS}
-                      stroke={seg.color}
-                      strokeWidth="10"
-                      strokeDasharray={`${seg.strokeLength} ${STATUS_CIRCUMFERENCE}`}
-                      strokeDashoffset={-seg.offset}
-                      fill="none"
-                      className="transition-all duration-700 ease-out"
+          {categoryStats.length === 0 ? (
+            <p className="py-12 text-center text-xs text-[#86868b] dark:text-[#a1a1a6]">
+              No categorized tickets in workspace.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {/* Segmented Distribution Bar */}
+              <div>
+                <div className={`w-full h-2 rounded-full overflow-hidden flex ${progressTrack}`}>
+                  {categoryStats.map((cat, idx) => (
+                    <div
+                      key={cat.name}
+                      style={{
+                        width: `${cat.pct}%`,
+                        backgroundColor: getAppleCategoryColor(cat.name, idx),
+                      }}
+                      title={`${cat.name}: ${cat.count} tickets (${cat.pct}%)`}
+                      className="h-full first:rounded-l-full last:rounded-r-full transition-all duration-500 ease-out"
                     />
-                  ) : null
-                )}
-              </svg>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-[#86868b] dark:text-[#a1a1a6] mt-2">
+                  <span>Scope Allocation</span>
+                  <span>100% Breakdown</span>
+                </div>
+              </div>
 
-              {/* Donut Center Display */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-center">
-                <span className="text-xl sm:text-2xl font-bold font-mono tracking-tight leading-none text-zinc-900 dark:text-zinc-100">
-                  {total}
-                </span>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 mt-1">
-                  Tickets
-                </span>
+              {/* Category Breakdown Rows */}
+              <div className="space-y-2.5">
+                {categoryStats.map((item, idx) => {
+                  const catColor = getAppleCategoryColor(item.name, idx)
+                  return (
+                    <div
+                      key={item.name}
+                      className={`flex items-center justify-between p-3 rounded-[14px] text-xs transition border ${innerCardSurface}`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: catColor }}
+                        />
+                        <span className="font-semibold text-[#1d1d1f] dark:text-white truncate">
+                          {item.name}
+                        </span>
+                        <span className="text-[11px] text-[#86868b] dark:text-[#a1a1a6] hidden min-[400px]:inline">
+                          ({item.pct}% share)
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-[11px] text-[#86868b] dark:text-[#a1a1a6] hidden sm:inline">
+                          {item.done}/{item.count} done
+                        </span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${appleCapsule}`}>
+                          {item.count}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
-
-            {/* Status Legend & Breakdown Rows */}
-            <div className="flex-1 w-full space-y-2 sm:space-y-2.5">
-              {statusSegments.map((item) => (
-                <div
-                  key={item.label}
-                  className={`flex items-center justify-between p-2 sm:p-2.5 rounded-lg sm:rounded-xl text-xs transition border ${
-                    isDark
-                      ? 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.05]'
-                      : 'border-zinc-100 bg-zinc-50/80 hover:bg-zinc-100/70'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 sm:gap-2.5">
-                    {item.icon}
-                    <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                      {item.label}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 sm:gap-2.5 font-mono">
-                    <span className="text-[11px] sm:text-xs text-zinc-500">{item.pct}%</span>
-                    <span
-                      className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-semibold text-right min-w-[28px] sm:min-w-[32px] border ${
-                        isDark
-                          ? 'bg-white/[0.06] border-white/[0.08] text-zinc-200'
-                          : 'bg-white border-zinc-200 text-zinc-800 shadow-2xs'
-                      }`}
-                    >
-                      {item.count}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Chart 2: Priority Severity Breakdown */}
-        <div className={`p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border ${cardBg}`}>
-          <div className={`flex items-center justify-between pb-3 mb-3.5 sm:pb-3.5 sm:mb-4 border-b ${cardHeaderBorder}`}>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-              Priority Severity
-            </h3>
-            <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-mono font-medium border shrink-0 ${themeTag}`}>
-              <span className="hidden min-[400px]:inline">Urgency </span>Distribution
+        {/* Matrix Card 2: Priority Severity */}
+        <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardSurface}`}>
+          <div className={`flex items-center justify-between pb-4 mb-5 border-b ${hairlineDivider}`}>
+            <div>
+              <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
+                Priority Severity
+              </h3>
+              <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
+                Workload urgency distribution across backlog
+              </p>
+            </div>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+              4 Urgency Tiers
             </span>
           </div>
 
-          <div className="space-y-3 sm:space-y-4 pt-1">
+          <div className="space-y-4 pt-1">
             {[
               {
                 label: 'Urgent',
                 count: urgent,
-                trackColor: 'bg-rose-500',
-                icon: (
-                  <svg className="w-3.5 h-3.5 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                  </svg>
-                ),
+                color: '#ff3b30', // Apple Red
               },
               {
                 label: 'High',
                 count: high,
-                trackColor: 'bg-amber-500',
-                icon: (
-                  <svg className="w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="18 15 12 9 6 15" />
-                  </svg>
-                ),
+                color: '#ff9500', // Apple Orange
               },
               {
                 label: 'Medium',
                 count: medium,
-                trackColor: 'bg-blue-500',
-                icon: (
-                  <svg className="w-3.5 h-3.5 text-blue-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="5" y1="9" x2="19" y2="9" />
-                    <line x1="5" y1="15" x2="19" y2="15" />
-                  </svg>
-                ),
+                color: '#0071e3', // Apple Blue
               },
               {
                 label: 'Low',
                 count: low,
-                trackColor: 'bg-zinc-400 dark:bg-zinc-500',
-                icon: (
-                  <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                ),
+                color: '#8e8e93', // Apple Gray
               },
             ].map((item) => {
               const pct = total > 0 ? Math.round((item.count / total) * 100) : 0
               return (
                 <div key={item.label} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium flex items-center gap-1.5 text-zinc-800 dark:text-zinc-200">
-                      {item.icon}
+                    <div className="flex items-center gap-2 font-medium text-[#1d1d1f] dark:text-white">
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: item.color }}
+                      />
                       <span>{item.label} Priority</span>
-                    </span>
-                    <span className="font-mono text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs">
-                      {item.count} items ({pct}%)
-                    </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-[#86868b] dark:text-[#a1a1a6]">
+                        {pct}%
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${appleCapsule}`}>
+                        {item.count}
+                      </span>
+                    </div>
                   </div>
-                  <div className={`w-full ${subtleBarTrack} h-2 rounded-full overflow-hidden`}>
+                  <div className={`w-full ${progressTrack} h-1.5 rounded-full overflow-hidden`}>
                     <div
-                      className={`h-2 rounded-full ${item.trackColor} transition-all duration-500`}
-                      style={{ width: `${pct}%` }}
+                      className="h-1.5 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${pct}%`, backgroundColor: item.color }}
                     />
                   </div>
                 </div>
               )
             })}
+
+            {/* Severity Summary */}
+            <div className={`pt-4 mt-5 border-t ${hairlineDivider} flex items-center justify-between text-xs text-[#86868b] dark:text-[#a1a1a6]`}>
+              <span>Critical Share (Urgent + High)</span>
+              <span className="font-semibold text-[#1d1d1f] dark:text-white">
+                {total > 0 ? Math.round((criticalCount / total) * 100) : 0}% of scope
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 3. Workload per Project Workspace */}
-      <div className={`p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border ${cardBg}`}>
-        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 pb-3 mb-3.5 sm:pb-3.5 sm:mb-4 border-b ${cardHeaderBorder}`}>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-900 dark:text-zinc-100 whitespace-nowrap">
-            Workspace Workload & Velocity
-          </h3>
-          <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-mono font-medium border self-start sm:self-auto shrink-0 ${themeTag}`}>
+      {/* 3. Workspaces Workload Grid */}
+      <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardSurface}`}>
+        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-5 border-b ${hairlineDivider}`}>
+          <div>
+            <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
+              Workspaces
+            </h3>
+            <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
+              Active projects, ticket volume, and delivery progress
+            </p>
+          </div>
+          <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border self-start sm:self-auto shrink-0 ${appleCapsule}`}>
             {projectStats.length} Workspaces
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projectStats.map((p) => (
             <div
               key={p.name}
-              className={`p-3 sm:p-4 rounded-xl border transition ${
-                isDark
-                  ? 'bg-black/25 border-white/[0.06] hover:border-white/[0.12]'
-                  : 'bg-zinc-50/70 border-zinc-200/80 hover:border-zinc-300'
-              }`}
+              className={`p-4 rounded-[16px] border transition-all duration-200 ${innerCardSurface}`}
             >
-              <div className="flex items-center justify-between gap-2 text-xs font-semibold mb-2 sm:mb-2.5">
-                <span className="truncate min-w-0 flex items-center gap-1.5 text-zinc-900 dark:text-zinc-100 font-medium">
-                  <svg className="w-3.5 h-3.5 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="flex items-center justify-between gap-2 text-xs font-semibold mb-3">
+                <span className="truncate min-w-0 flex items-center gap-2 text-[#1d1d1f] dark:text-white font-medium">
+                  <svg className="w-3.5 h-3.5 text-[#0071e3] dark:text-[#2997ff] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                   </svg>
                   <span className="truncate">{p.name}</span>
                 </span>
-                <span className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-mono border shrink-0 ${themeTag}`}>
+                <span className={`px-2 py-0.5 rounded-full text-[11px] font-normal border shrink-0 ${appleCapsule}`}>
                   {p.count} tickets
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[11px] sm:text-xs text-zinc-500 mb-1.5 sm:mb-2">
-                <span>Completed: {p.done}</span>
-                <span className="font-mono font-medium text-zinc-700 dark:text-zinc-300">
+              <div className="flex items-center justify-between text-[11px] text-[#86868b] dark:text-[#a1a1a6] mb-2">
+                <span>{p.done} completed</span>
+                <span className="font-semibold text-[#1d1d1f] dark:text-white">
                   {p.pct}% velocity
                 </span>
               </div>
-              <div className={`w-full ${subtleBarTrack} h-2 rounded-full overflow-hidden`}>
+              <div className={`w-full ${progressTrack} h-1.5 rounded-full overflow-hidden`}>
                 <div
-                  className="h-2 bg-emerald-500 rounded-full transition-all duration-500"
+                  className="h-1.5 bg-[#34c759] rounded-full transition-all duration-500 ease-out"
                   style={{ width: `${p.pct}%` }}
                 />
               </div>
@@ -505,87 +507,79 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* 4. Daily Standup Logs Overview */}
-      <div className={`p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border ${cardBg}`}>
-        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3.5 sm:pb-3.5 sm:mb-4 border-b ${cardHeaderBorder}`}>
-          <div className="flex items-center justify-between sm:justify-start gap-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-900 dark:text-zinc-100 whitespace-nowrap">
-              Daily Standup Log Activity
+      {/* 4. Standup Work Log Activity */}
+      <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardSurface}`}>
+        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-5 border-b ${hairlineDivider}`}>
+          <div>
+            <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
+              Daily Standup Activity
             </h3>
-            <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-mono font-medium border shrink-0 ${themeTag}`}>
-              Recent Work
-            </span>
+            <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
+              Latest recorded work sessions, tasks, and notes
+            </p>
           </div>
-          <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-mono font-medium border self-start sm:self-auto shrink-0 ${themeTag}`}>
+          <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border self-start sm:self-auto shrink-0 ${appleCapsule}`}>
             {dailyNotes.length} Total Logs
           </span>
         </div>
 
         {dailyNotes.length === 0 ? (
-          <p className="text-xs text-zinc-500 py-6 text-center italic">
-            No work logs recorded yet. Create one from the Notes tab!
+          <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] py-10 text-center">
+            No work logs recorded yet. Create your first log in the Notes tab.
           </p>
         ) : (
-          <div className="space-y-3 sm:space-y-3.5">
+          <div className="space-y-4">
             {dailyNotes.slice(0, 3).map((note) => {
               const parsed = parseDailyNoteContent(note.content)
 
               return (
                 <div
                   key={note.id}
-                  className={`p-3 sm:p-4 rounded-xl border transition ${
-                    isDark
-                      ? 'bg-black/30 border-white/[0.06] hover:border-white/[0.1]'
-                      : 'bg-zinc-50/70 border-zinc-200/80 hover:border-zinc-300 shadow-2xs'
-                  }`}
+                  className={`p-4 rounded-[16px] border transition-all duration-200 ${innerCardSurface}`}
                 >
-                  {/* Note Header: Date, Task Completion Pill, Author */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 text-xs mb-2.5 sm:mb-3 pb-2 sm:pb-2.5 border-b border-inherit">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-zinc-900 dark:text-zinc-100 shrink-0">
-                        <svg className="w-3.5 h-3.5 text-zinc-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  {/* Note Header */}
+                  <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs mb-3 pb-3 border-b ${hairlineDivider}`}>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1d1d1f] dark:text-white shrink-0">
+                        <svg className="w-3.5 h-3.5 text-[#0071e3] dark:text-[#2997ff] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                           <line x1="16" y1="2" x2="16" y2="6" />
                           <line x1="8" y1="2" x2="8" y2="6" />
                           <line x1="3" y1="10" x2="21" y2="10" />
                         </svg>
-                        {formatNoteDate(note.date)}
+                        {formatAppleDate(note.date)}
                       </span>
                       {parsed.totalTasks > 0 && (
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-mono font-medium border shrink-0 ${themeTag}`}>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-normal border shrink-0 ${appleCapsule}`}>
                           {parsed.completedTasks}/{parsed.totalTasks} completed
                         </span>
                       )}
                     </div>
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-mono font-medium border self-start sm:self-auto shrink-0 ${themeTag}`}>
-                      {note.createdBy?.startsWith('@') ? note.createdBy : `@${(note.createdBy?.includes('@') ? note.createdBy.split('@')[0] : note.createdBy) || 'jamnithil'}`}
+                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-normal border self-start sm:self-auto shrink-0 ${appleCapsule}`}>
+                      {note.createdBy?.startsWith('@') ? note.createdBy : `@${(note.createdBy?.includes('@') ? note.createdBy.split('@')[0] : note.createdBy) || 'user'}`}
                     </span>
                   </div>
 
-                  {/* Note Tasks Breakdown */}
+                  {/* Tasks Checklist */}
                   {parsed.tasks.length > 0 ? (
                     <div className="space-y-2">
                       {parsed.tasks.slice(0, 3).map((task, tIdx) => (
                         <div
                           key={tIdx}
-                          className={`flex items-start gap-2.5 p-2 rounded-lg text-xs leading-relaxed transition ${
-                            isDark
-                              ? 'bg-white/[0.02] text-zinc-300'
-                              : 'bg-white border border-zinc-200/60 text-zinc-800'
-                          }`}
+                          className="flex items-start gap-2.5 p-2 rounded-[10px] text-xs leading-relaxed"
                         >
                           {task.completed ? (
-                            <svg className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <svg className="w-4 h-4 text-[#34c759] shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
                           ) : (
-                            <span className="w-4 h-4 rounded-full border border-zinc-400 dark:border-zinc-500 shrink-0 mt-0.5" />
+                            <span className="w-4 h-4 rounded-full border border-[#86868b] dark:border-[#a1a1a6] shrink-0 mt-0.5" />
                           )}
                           <span
                             className={`flex-1 text-xs ${
                               task.completed
-                                ? 'line-through text-zinc-400 dark:text-zinc-500'
-                                : 'text-zinc-800 dark:text-zinc-200 font-medium'
+                                ? 'line-through text-[#86868b] dark:text-[#a1a1a6]'
+                                : 'text-[#1d1d1f] dark:text-white font-normal'
                             }`}
                           >
                             {task.text}
@@ -594,17 +588,17 @@ export function DashboardView({
                       ))}
 
                       {parsed.tasks.length > 3 && (
-                        <div className="text-xs font-mono text-zinc-500 pt-1 pl-1">
-                          + {parsed.tasks.length - 3} more task items recorded
+                        <div className="text-xs text-[#86868b] dark:text-[#a1a1a6] pt-1 pl-2">
+                          + {parsed.tasks.length - 3} more items recorded
                         </div>
                       )}
                     </div>
                   ) : parsed.notesText ? (
-                    <p className="text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed font-sans line-clamp-2">
+                    <p className="text-xs text-[#1d1d1f] dark:text-white leading-relaxed line-clamp-2">
                       {parsed.notesText}
                     </p>
                   ) : (
-                    <p className="text-xs text-zinc-400 italic">No task breakdown provided.</p>
+                    <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] italic">No task breakdown provided.</p>
                   )}
                 </div>
               )

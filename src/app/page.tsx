@@ -107,7 +107,10 @@ export default function Home() {
   const [selectedExpenseProject, setSelectedExpenseProject] = useState<string>('ALL')
   const [selectedExpenseCategory, setSelectedExpenseCategory] = useState<string | 'ALL'>('ALL')
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | 'ALL'>('ALL')
-  const [selectedExpenseMonth, setSelectedExpenseMonth] = useState<string>('ALL')
+  const [selectedExpenseMonth, setSelectedExpenseMonth] = useState<string>(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  })
   const [expenseMinAmount, setExpenseMinAmount] = useState<string>('')
   const [expenseMaxAmount, setExpenseMaxAmount] = useState<string>('')
   const [expenseSearchQuery, setExpenseSearchQuery] = useState<string>('')

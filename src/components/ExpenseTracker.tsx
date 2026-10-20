@@ -230,7 +230,7 @@ export function ExpenseTracker({
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
   // Filters State - sync with props if provided, otherwise internal fallback
-  const [internalMonth, setInternalMonth] = useState<string>('ALL')
+  const [internalMonth, setInternalMonth] = useState<string>(currentMonthKey)
   const [internalCategory, setInternalCategory] = useState<string>('ALL')
   const [internalPaymentMethod, setInternalPaymentMethod] = useState<string>('ALL')
   const [internalHighExpense, setInternalHighExpense] = useState<boolean>(false)

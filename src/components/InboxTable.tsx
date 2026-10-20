@@ -151,17 +151,17 @@ export function InboxTable({
     (ticketIdFilter?.trim() ? 1 : 0)
 
   const getStatusBadge = (status: TicketStatus) => {
+    // Apple-style monochrome capsule badge — no colored icons
+    const capsuleBase = `inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-normal border`
+    const capsuleColor = isDark
+      ? 'bg-white/[0.08] text-[#f5f5f7] border-white/[0.08]'
+      : 'bg-[#f5f5f7] text-[#1d1d1f] border-black/[0.06]'
+
     switch (status) {
       case 'TODO':
         return (
-          <span
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border ${
-              isDark
-                ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]'
-                : 'bg-zinc-100/80 text-zinc-700 border-zinc-200'
-            }`}
-          >
-            <svg className="w-3 h-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <span className={`${capsuleBase} ${capsuleColor}`}>
+            <svg className="w-3 h-3 opacity-50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <circle cx="12" cy="12" r="9" strokeDasharray="3 3" />
             </svg>
             To Do
@@ -169,14 +169,8 @@ export function InboxTable({
         )
       case 'IN_PROGRESS':
         return (
-          <span
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border ${
-              isDark
-                ? 'bg-white/[0.04] text-zinc-200 border-white/[0.08]'
-                : 'bg-zinc-100/80 text-zinc-800 border-zinc-200'
-            }`}
-          >
-            <svg className="w-3 h-3 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <span className={`${capsuleBase} ${capsuleColor}`}>
+            <svg className="w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <circle cx="12" cy="12" r="9" strokeDasharray="14 14" />
             </svg>
             In Progress
@@ -184,14 +178,8 @@ export function InboxTable({
         )
       case 'DONE':
         return (
-          <span
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border ${
-              isDark
-                ? 'bg-white/[0.04] text-zinc-200 border-white/[0.08]'
-                : 'bg-zinc-100/80 text-zinc-800 border-zinc-200'
-            }`}
-          >
-            <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <span className={`${capsuleBase} ${capsuleColor}`}>
+            <svg className="w-3 h-3 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
             Completed
@@ -199,14 +187,8 @@ export function InboxTable({
         )
       case 'BLOCKED':
         return (
-          <span
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border ${
-              isDark
-                ? 'bg-white/[0.04] text-zinc-200 border-white/[0.08]'
-                : 'bg-zinc-100/80 text-zinc-800 border-zinc-200'
-            }`}
-          >
-            <svg className="w-3 h-3 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <span className={`${capsuleBase} ${capsuleColor}`}>
+            <svg className="w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
               <circle cx="12" cy="12" r="9" />
               <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
             </svg>
@@ -217,44 +199,38 @@ export function InboxTable({
   }
 
   const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case 'URGENT':
-        return (
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-rose-600 dark:text-rose-400">
-            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 3v13M12 20v1" strokeLinecap="round" />
-            </svg>
-            Urgent
-          </span>
-        )
-      case 'HIGH':
-        return (
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
-            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="18 15 12 9 6 15" />
-            </svg>
-            High
-          </span>
-        )
-      case 'MEDIUM':
-        return (
-          <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Medium
-          </span>
-        )
-      default:
-        return (
-          <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-            <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-            Low
-          </span>
-        )
+    // Apple-style: monochrome text + icon — NO colored text
+    const monoText = isDark ? 'text-[#ebebf5]/60' : 'text-[#1d1d1f]/50'
+
+    const iconMap: Record<string, React.ReactNode> = {
+      URGENT: (
+        <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <path d="M12 3v13M12 20v1" />
+        </svg>
+      ),
+      HIGH: (
+        <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="18 15 12 9 6 15" />
+        </svg>
+      ),
+      MEDIUM: (
+        <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      ),
+      LOW: (
+        <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      ),
     }
+    const labelMap: Record<string, string> = { URGENT: 'Urgent', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' }
+    return (
+      <span className={`inline-flex items-center gap-1.5 text-[11px] font-normal ${monoText}`}>
+        {iconMap[priority] ?? iconMap['LOW']}
+        {labelMap[priority] ?? 'Low'}
+      </span>
+    )
   }
 
   const formatDate = (dateString: string) => {
@@ -269,33 +245,34 @@ export function InboxTable({
     }
   }
 
-  // Theme-aware styles
-  const subHeaderBorder = isDark ? 'border-white/[0.06] text-zinc-400' : 'border-zinc-200 text-zinc-500'
-  const subHeaderTitle = isDark ? 'text-zinc-200' : 'text-zinc-900 font-semibold'
-  const emptyBorder = isDark ? 'border-white/[0.06] text-zinc-500' : 'border-zinc-200 text-zinc-400'
-  const tableContainer = isDark ? 'border-white/[0.06] bg-[#111114]' : 'border-zinc-200 bg-white shadow-xs'
-  const tableThead = isDark ? 'bg-[#151518] border-white/[0.06] text-zinc-400' : 'bg-zinc-50 border-zinc-200 text-zinc-600'
-  const tableRowDivide = isDark ? 'divide-white/[0.04]' : 'divide-zinc-200/80'
-  const tableRowHover = isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-zinc-50/70'
-  const ticketTitle = isDark ? 'text-zinc-100 group-hover:text-white' : 'text-zinc-900 group-hover:text-zinc-950'
-  const ticketDesc = isDark ? 'text-zinc-400' : 'text-zinc-500'
-  
-  // Clean, high-visibility workspace badge
-  const workspaceBadge = isDark
-    ? 'bg-white/[0.06] text-zinc-200 border-white/[0.1]'
-    : 'bg-zinc-100 text-zinc-800 border-zinc-200 font-medium'
-  
-  const categoryBadge = isDark
-    ? 'bg-white/[0.04] text-zinc-400 border-white/[0.06]'
-    : 'bg-zinc-100 text-zinc-600 border-zinc-200'
+  // Theme-aware styles — Apple Design tokens
+  const subHeaderBorder = isDark ? 'border-white/[0.06] text-[#ebebf5]/50' : 'border-black/[0.06] text-[#1d1d1f]/50'
+  const subHeaderTitle = isDark ? 'text-[#f5f5f7]' : 'text-[#1d1d1f] font-semibold'
+  const emptyBorder = isDark ? 'border-white/[0.08] text-[#ebebf5]/30' : 'border-black/[0.08] text-[#1d1d1f]/30'
+  const tableContainer = isDark ? 'border-white/[0.08] bg-[#1c1c1e]' : 'border-black/[0.06] bg-white shadow-sm'
+  const tableThead = isDark ? 'bg-black/20 border-white/[0.06] text-[#ebebf5]/40' : 'bg-[#f5f5f7] border-black/[0.06] text-[#1d1d1f]/40'
+  const tableRowDivide = isDark ? 'divide-white/[0.04]' : 'divide-black/[0.04]'
+  const tableRowHover = isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-[#f5f5f7]/70'
+  const ticketTitle = isDark ? 'text-[#f5f5f7] group-hover:text-white' : 'text-[#1d1d1f] group-hover:text-black'
+  const ticketDesc = isDark ? 'text-[#ebebf5]/40' : 'text-[#1d1d1f]/40'
 
+  // Apple capsule badge — neutral, no color
+  const workspaceBadge = isDark
+    ? 'bg-white/[0.08] text-[#f5f5f7] border-white/[0.08]'
+    : 'bg-[#f5f5f7] text-[#1d1d1f] border-black/[0.06] font-medium'
+
+  const categoryBadge = isDark
+    ? 'bg-white/[0.06] text-[#ebebf5]/60 border-white/[0.08]'
+    : 'bg-[#f5f5f7] text-[#1d1d1f]/60 border-black/[0.06]'
+
+  // Apple ghost button — rounded-full, no blue
   const actionBtn = isDark
-    ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-300 hover:text-white'
-    : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 hover:text-zinc-950 shadow-2xs'
+    ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.04] hover:bg-white/[0.1] text-[#ebebf5]/70 hover:text-white'
+    : 'border-black/[0.08] hover:border-black/[0.16] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f]/60 hover:text-[#1d1d1f]'
 
   const deleteBtn = isDark
-    ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.02] hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-200'
-    : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-600 hover:text-zinc-950 shadow-2xs'
+    ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.04] hover:bg-white/[0.08] text-[#ebebf5]/50 hover:text-[#ff453a]'
+    : 'border-black/[0.08] hover:border-black/[0.16] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f]/40 hover:text-[#ff3b30]'
 
   return (
     <div className="flex flex-col flex-1 min-w-0">
@@ -305,8 +282,8 @@ export function InboxTable({
           <span className={subHeaderTitle}>
             {selectedProject === 'ALL' ? 'All Workspaces' : selectedProject}
           </span>
-          <span className={isDark ? 'text-zinc-600' : 'text-zinc-300'}>•</span>
-          <span className="font-mono text-[11px]">{tickets.length} items</span>
+          <span className={isDark ? 'text-[#ebebf5]/20' : 'text-black/20'}>•</span>
+          <span className={`font-mono text-[11px] ${isDark ? 'text-[#ebebf5]/40' : 'text-[#1d1d1f]/40'}`}>{tickets.length} items</span>
 
           {/* Active Status Filter Chips */}
           {activeStatuses.map((status) => {
@@ -314,21 +291,20 @@ export function InboxTable({
             return (
               <span
                 key={status}
-                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-normal border ${categoryBadge}`}
               >
-                <span className="text-zinc-500 text-[11px]">Status:</span>
+                <span className={`text-[10px] ${isDark ? 'text-[#ebebf5]/30' : 'text-[#1d1d1f]/40'}`}>Status:</span>
                 <span>{label}</span>
                 <button
                   type="button"
                   onClick={() => onRemoveStatus ? onRemoveStatus(status) : onClearStatus?.()}
-                  className={`p-0.5 rounded transition cursor-pointer ${
-                    isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                  className={`p-0.5 rounded-full transition cursor-pointer ${
+                    isDark ? 'text-[#ebebf5]/40 hover:text-white hover:bg-white/10' : 'text-[#1d1d1f]/40 hover:text-[#1d1d1f] hover:bg-black/10'
                   }`}
                   title={`Remove ${label} filter`}
                 >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
               </span>
@@ -341,21 +317,20 @@ export function InboxTable({
             return (
               <span
                 key={priority}
-                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-normal border ${categoryBadge}`}
               >
-                <span className="text-zinc-500 text-[11px]">Priority:</span>
+                <span className={`text-[10px] ${isDark ? 'text-[#ebebf5]/30' : 'text-[#1d1d1f]/40'}`}>Priority:</span>
                 <span>{label}</span>
                 <button
                   type="button"
                   onClick={() => onRemovePriority ? onRemovePriority(priority) : onClearPriority?.()}
-                  className={`p-0.5 rounded transition cursor-pointer ${
-                    isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                  className={`p-0.5 rounded-full transition cursor-pointer ${
+                    isDark ? 'text-[#ebebf5]/40 hover:text-white hover:bg-white/10' : 'text-[#1d1d1f]/40 hover:text-[#1d1d1f] hover:bg-black/10'
                   }`}
                   title={`Remove ${label} filter`}
                 >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
               </span>
@@ -366,21 +341,20 @@ export function InboxTable({
           {activeCategories.map((category) => (
             <span
               key={category}
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-normal border ${categoryBadge}`}
             >
-              <span className="text-zinc-500 text-[11px]">Category:</span>
+              <span className={`text-[10px] ${isDark ? 'text-[#ebebf5]/30' : 'text-[#1d1d1f]/40'}`}>Category:</span>
               <span>{category}</span>
               <button
                 type="button"
                 onClick={() => onRemoveCategory ? onRemoveCategory(category) : onClearCategory?.()}
-                className={`p-0.5 rounded transition cursor-pointer ${
-                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                className={`p-0.5 rounded-full transition cursor-pointer ${
+                  isDark ? 'text-[#ebebf5]/40 hover:text-white hover:bg-white/10' : 'text-[#1d1d1f]/40 hover:text-[#1d1d1f] hover:bg-black/10'
                 }`}
                 title={`Remove ${category} filter`}
               >
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </span>
@@ -390,21 +364,20 @@ export function InboxTable({
           {activeVersions.map((version) => (
             <span
               key={version}
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-normal border ${categoryBadge}`}
             >
-              <span className="text-zinc-500 text-[11px]">Version:</span>
+              <span className={`text-[10px] ${isDark ? 'text-[#ebebf5]/30' : 'text-[#1d1d1f]/40'}`}>Version:</span>
               <span className="font-mono">{version}</span>
               <button
                 type="button"
                 onClick={() => onRemoveVersion ? onRemoveVersion(version) : onClearVersion?.()}
-                className={`p-0.5 rounded transition cursor-pointer ${
-                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                className={`p-0.5 rounded-full transition cursor-pointer ${
+                  isDark ? 'text-[#ebebf5]/40 hover:text-white hover:bg-white/10' : 'text-[#1d1d1f]/40 hover:text-[#1d1d1f] hover:bg-black/10'
                 }`}
                 title={`Remove ${version} filter`}
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </span>
@@ -413,21 +386,20 @@ export function InboxTable({
           {/* Active Ticket ID Filter Chip */}
           {ticketIdFilter?.trim() && (
             <span
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryBadge}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-normal border ${categoryBadge}`}
             >
-              <span className="text-zinc-500 text-[11px]">Ticket ID:</span>
+              <span className={`text-[10px] ${isDark ? 'text-[#ebebf5]/30' : 'text-[#1d1d1f]/40'}`}>Ticket ID:</span>
               <span className="font-mono">{ticketIdFilter.startsWith('#') ? ticketIdFilter : `#${ticketIdFilter}`}</span>
               <button
                 type="button"
                 onClick={onClearTicketIdFilter}
-                className={`p-0.5 rounded transition cursor-pointer ${
-                  isDark ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200'
+                className={`p-0.5 rounded-full transition cursor-pointer ${
+                  isDark ? 'text-[#ebebf5]/40 hover:text-white hover:bg-white/10' : 'text-[#1d1d1f]/40 hover:text-[#1d1d1f] hover:bg-black/10'
                 }`}
                 title="Remove Ticket ID filter"
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </span>
@@ -438,8 +410,8 @@ export function InboxTable({
             <button
               type="button"
               onClick={onClearAllFilters}
-              className={`text-[11px] font-medium transition cursor-pointer underline ml-1 ${
-                isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-800'
+              className={`text-[11px] font-normal transition cursor-pointer underline ml-1 ${
+                isDark ? 'text-[#ebebf5]/40 hover:text-[#f5f5f7]' : 'text-[#1d1d1f]/40 hover:text-[#1d1d1f]'
               }`}
             >
               Clear all
@@ -452,22 +424,22 @@ export function InboxTable({
           <button
             type="button"
             onClick={onToggleBookmarkedFilter}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all duration-150 cursor-pointer shrink-0 select-none ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-normal border transition-all duration-150 cursor-pointer shrink-0 select-none ${
               showOnlyBookmarked
                 ? isDark
-                  ? 'bg-white/[0.1] border-white/[0.2] text-white shadow-2xs'
-                  : 'bg-zinc-900 border-zinc-900 text-white shadow-2xs'
+                  ? 'bg-white border-white text-zinc-950 shadow-sm'
+                  : 'bg-zinc-950 border-zinc-950 text-white shadow-sm'
                 : isDark
-                  ? 'bg-white/[0.02] border-white/[0.08] hover:border-white/[0.15] text-zinc-400 hover:text-zinc-200'
-                  : 'bg-white border-zinc-200 hover:border-zinc-300 text-zinc-600 hover:text-zinc-900 shadow-2xs'
+                  ? 'bg-white/[0.04] border-white/[0.08] hover:border-white/[0.16] text-[#ebebf5]/60 hover:text-[#f5f5f7]'
+                  : 'bg-white border-black/[0.08] hover:border-black/[0.16] text-[#1d1d1f]/60 hover:text-[#1d1d1f]'
             }`}
             title={showOnlyBookmarked ? 'Show all tickets' : 'Show bookmarked tickets only'}
           >
             <svg
               className={`w-3.5 h-3.5 transition-colors ${
                 showOnlyBookmarked
-                  ? 'text-white fill-current'
-                  : isDark ? 'text-zinc-400 fill-none' : 'text-zinc-500 fill-none'
+                  ? 'fill-current'
+                  : 'fill-none'
               }`}
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -480,14 +452,14 @@ export function InboxTable({
             <span>Bookmarked</span>
             {typeof bookmarkedCount === 'number' && bookmarkedCount > 0 && (
               <span
-                className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold ${
+                className={`px-1.5 rounded-full text-[10px] font-mono font-medium ${
                   showOnlyBookmarked
                     ? isDark
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white/20 text-white'
+                      ? 'bg-black/20 text-current'
+                      : 'bg-white/20 text-current'
                     : isDark
-                      ? 'bg-white/[0.06] text-zinc-300'
-                      : 'bg-zinc-100 text-zinc-700'
+                      ? 'bg-white/[0.08] text-[#ebebf5]/60'
+                      : 'bg-black/[0.06] text-[#1d1d1f]/60'
                 }`}
               >
                 {bookmarkedCount}
@@ -500,9 +472,9 @@ export function InboxTable({
       {/* Content Area */}
       <div className="flex-1 overflow-auto p-4 sm:p-6">
         {tickets.length === 0 ? (
-          <div className={`flex flex-col items-center justify-center py-24 rounded-xl border border-dashed ${emptyBorder}`}>
+          <div className={`flex flex-col items-center justify-center py-24 rounded-[20px] border border-dashed ${emptyBorder}`}>
             <svg
-              className={`w-8 h-8 mb-2 ${isDark ? 'text-zinc-600' : 'text-zinc-300'}`}
+              className={`w-8 h-8 mb-2 ${isDark ? 'text-[#ebebf5]/20' : 'text-[#1d1d1f]/20'}`}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -511,8 +483,8 @@ export function InboxTable({
               <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
               <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
             </svg>
-            <p className={`text-sm font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>No tickets found</p>
-            <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>
+            <p className={`text-sm font-medium ${isDark ? 'text-[#ebebf5]/50' : 'text-[#1d1d1f]/50'}`}>No tickets found</p>
+            <p className={`text-xs mt-0.5 ${isDark ? 'text-[#ebebf5]/30' : 'text-[#1d1d1f]/30'}`}>
               {ticketIdFilter?.trim()
                 ? `No ticket matches Ticket ID "${ticketIdFilter.startsWith('#') ? ticketIdFilter : `#${ticketIdFilter}`}".`
                 : 'Adjust your filters or create a new ticket.'}
@@ -521,10 +493,10 @@ export function InboxTable({
               <button
                 type="button"
                 onClick={onClearTicketIdFilter}
-                className={`mt-4 px-3.5 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer ${
+                className={`mt-4 px-4 py-1.5 rounded-full text-xs font-normal border transition-all duration-150 active:scale-95 cursor-pointer ${
                   isDark
-                    ? 'border-white/[0.12] bg-white/[0.05] hover:bg-white/[0.1] text-zinc-200'
-                    : 'border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-800 shadow-2xs'
+                    ? 'border-white/[0.12] bg-white/[0.06] hover:bg-white/[0.12] text-[#f5f5f7]'
+                    : 'border-black/[0.1] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f]'
                 }`}
               >
                 Clear ID filter
@@ -533,10 +505,10 @@ export function InboxTable({
               <button
                 type="button"
                 onClick={onClearAllFilters}
-                className={`mt-4 px-3.5 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer ${
+                className={`mt-4 px-4 py-1.5 rounded-full text-xs font-normal border transition-all duration-150 active:scale-95 cursor-pointer ${
                   isDark
-                    ? 'border-white/[0.12] bg-white/[0.05] hover:bg-white/[0.1] text-zinc-200'
-                    : 'border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-800 shadow-2xs'
+                    ? 'border-white/[0.12] bg-white/[0.06] hover:bg-white/[0.12] text-[#f5f5f7]'
+                    : 'border-black/[0.1] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f]'
                 }`}
               >
                 Clear all filters
@@ -546,7 +518,7 @@ export function InboxTable({
         ) : (
           <>
             {/* Desktop Table View (Hidden on small screens) */}
-            <div className={`hidden sm:block overflow-hidden rounded-xl border ${tableContainer}`}>
+            <div className={`hidden sm:block overflow-hidden rounded-[20px] border ${tableContainer}`}>
               <table className="w-full text-left text-xs border-collapse">
                 <thead className={`border-b text-[10px] uppercase tracking-wider font-semibold select-none ${tableThead}`}>
                   <tr>
@@ -585,7 +557,7 @@ export function InboxTable({
                             e.stopPropagation()
                             onToggleBookmark?.(ticket)
                           }}
-                          className={`p-1.5 rounded-lg border transition-all duration-150 active:scale-[0.96] cursor-pointer inline-flex items-center justify-center ${
+                          className={`p-1.5 rounded-full border transition-all duration-150 active:scale-[0.96] cursor-pointer inline-flex items-center justify-center ${
                             ticket.isBookmarked
                               ? isDark
                                 ? 'bg-white/[0.08] border-white/[0.14] text-white hover:bg-white/[0.12] shadow-2xs'
@@ -725,7 +697,7 @@ export function InboxTable({
                               e.stopPropagation()
                               onViewTicket(ticket)
                             }}
-                            className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
+                            className={`h-7 px-3 rounded-full border text-xs font-normal transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
                             title="View ticket details"
                           >
                             <svg
@@ -746,7 +718,7 @@ export function InboxTable({
                             e.stopPropagation()
                             onEditTicket(ticket)
                           }}
-                          className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
+                          className={`h-7 px-3 rounded-full border text-xs font-normal transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${actionBtn}`}
                           title="Edit ticket"
                         >
                           <svg
@@ -763,7 +735,7 @@ export function InboxTable({
                         </button>
                         <button
                           onClick={() => onDeleteTicket(ticket)}
-                          className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${deleteBtn}`}
+                          className={`h-7 px-3 rounded-full border text-xs font-normal transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5 ${deleteBtn}`}
                           title="Delete ticket"
                         >
                           <svg
@@ -792,10 +764,10 @@ export function InboxTable({
                   key={ticket.id}
                   onDoubleClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
                   onClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
-                  className={`rounded-xl border p-3.5 space-y-2.5 shadow-xs cursor-pointer ${
+                  className={`rounded-[20px] border p-3.5 space-y-2.5 cursor-pointer ${
                     isDark
-                      ? 'border-white/[0.06] bg-[#111114] active:bg-white/[0.04]'
-                      : 'border-zinc-200 bg-white active:bg-zinc-50'
+                      ? 'border-white/[0.08] bg-[#1c1c1e] active:bg-white/[0.04]'
+                      : 'border-black/[0.06] bg-white active:bg-[#f5f5f7]'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -807,26 +779,26 @@ export function InboxTable({
                           const rawId = ticket.ticketId || ticket.id.slice(0, 4)
                           onSelectTicketIdFilter?.(rawId)
                         }}
-                        className={`font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded transition cursor-pointer text-left ${
+                        className={`font-mono text-[10px] font-normal px-2 py-0.5 rounded-full transition cursor-pointer text-left ${
                           isDark
-                            ? 'text-zinc-400 hover:text-white hover:bg-white/[0.08]'
-                            : 'text-zinc-500 hover:text-zinc-950 hover:bg-zinc-100'
+                            ? 'text-[#ebebf5]/40 hover:text-[#f5f5f7] hover:bg-white/[0.08]'
+                            : 'text-[#1d1d1f]/40 hover:text-[#1d1d1f] hover:bg-black/[0.06]'
                         }`}
                         title={`Filter by #${ticket.ticketId || ticket.id.slice(0, 4)}`}
                       >
                         #{ticket.ticketId || ticket.id.slice(0, 4)}
                       </button>
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-mono ${workspaceBadge}`}>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[10px] font-mono ${workspaceBadge}`}>
                         <svg className="w-2.5 h-2.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                         </svg>
                         {ticket.projectName}
                       </span>
                       {ticket.version && (
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-mono font-medium ${
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-mono font-normal ${
                           isDark
-                            ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]'
-                            : 'bg-zinc-100 text-zinc-700 border-zinc-200'
+                            ? 'bg-white/[0.08] text-[#f5f5f7] border-white/[0.08]'
+                            : 'bg-[#f5f5f7] text-[#1d1d1f] border-black/[0.06]'
                         }`}>
                           <svg className="w-2.5 h-2.5 opacity-60 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
@@ -843,14 +815,14 @@ export function InboxTable({
                           e.stopPropagation()
                           onToggleBookmark?.(ticket)
                         }}
-                        className={`p-1 rounded-lg border transition-all duration-150 active:scale-[0.96] cursor-pointer inline-flex items-center justify-center ${
+                        className={`p-1 rounded-full border transition-all duration-150 active:scale-[0.96] cursor-pointer inline-flex items-center justify-center ${
                           ticket.isBookmarked
                             ? isDark
-                              ? 'bg-white/[0.08] border-white/[0.14] text-white shadow-2xs'
-                              : 'bg-zinc-100 border-zinc-300 text-zinc-900 shadow-2xs'
+                              ? 'bg-white/[0.1] border-white/[0.18] text-white'
+                              : 'bg-black/[0.06] border-black/[0.1] text-[#1d1d1f]'
                             : isDark
-                              ? 'border-transparent text-zinc-500 hover:text-zinc-200'
-                              : 'border-transparent text-zinc-400 hover:text-zinc-700'
+                              ? 'border-transparent text-[#ebebf5]/30 hover:text-[#f5f5f7]'
+                              : 'border-transparent text-[#1d1d1f]/30 hover:text-[#1d1d1f]'
                         }`}
                         title={ticket.isBookmarked ? 'Remove bookmark' : 'Bookmark this ticket'}
                       >
@@ -877,10 +849,10 @@ export function InboxTable({
                       </h3>
                       {ticket.commands && (
                         <span
-                          className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-mono border ${
+                          className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono border ${
                             isDark
-                              ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]'
-                              : 'bg-zinc-100 text-zinc-700 border-zinc-200'
+                              ? 'bg-white/[0.08] text-[#ebebf5]/60 border-white/[0.08]'
+                              : 'bg-[#f5f5f7] text-[#1d1d1f]/60 border-black/[0.06]'
                           }`}
                         >
                           <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -899,7 +871,7 @@ export function InboxTable({
                   </div>
 
                   <div className={`flex items-center justify-between pt-2.5 border-t text-[11px] gap-2 ${
-                    isDark ? 'border-white/[0.04]' : 'border-zinc-100'
+                    isDark ? 'border-white/[0.04]' : 'border-black/[0.04]'
                   }`}>
                     <div className="flex items-center shrink-0">
                       {getStatusBadge(ticket.status)}
@@ -916,7 +888,7 @@ export function InboxTable({
                             e.stopPropagation()
                             onViewTicket(ticket)
                           }}
-                          className={`h-8 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center justify-center gap-1.5 ${actionBtn}`}
+                          className={`h-7 px-2.5 rounded-full border text-xs font-normal transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center justify-center gap-1.5 ${actionBtn}`}
                           title="View ticket details"
                           aria-label="View ticket"
                         >
@@ -933,7 +905,7 @@ export function InboxTable({
                           e.stopPropagation()
                           onEditTicket(ticket)
                         }}
-                        className={`h-8 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center justify-center gap-1.5 ${actionBtn}`}
+                        className={`h-7 px-2.5 rounded-full border text-xs font-normal transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center justify-center gap-1.5 ${actionBtn}`}
                         title="Edit ticket"
                         aria-label="Edit ticket"
                       >
@@ -949,7 +921,7 @@ export function InboxTable({
                           e.stopPropagation()
                           onDeleteTicket(ticket)
                         }}
-                        className={`h-8 px-2.5 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center justify-center gap-1.5 ${deleteBtn}`}
+                        className={`h-7 px-2.5 rounded-full border text-xs font-normal transition-all duration-150 active:scale-[0.98] cursor-pointer inline-flex items-center justify-center gap-1.5 ${deleteBtn}`}
                         title="Delete ticket"
                         aria-label="Delete ticket"
                       >
@@ -969,39 +941,39 @@ export function InboxTable({
             {tickets.length > 0 && (
               <div
                 className={`mt-4 pt-3.5 border-t flex flex-col sm:flex-row items-center justify-between gap-3 text-xs select-none ${
-                  isDark ? 'border-white/[0.06] text-zinc-400' : 'border-zinc-200 text-zinc-600'
+                  isDark ? 'border-white/[0.06] text-[#ebebf5]/40' : 'border-black/[0.06] text-[#1d1d1f]/40'
                 }`}
               >
                 {/* Left: Summary and Page Size Selector */}
                 <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
                   <span>
                     Showing{' '}
-                    <span className={`font-mono font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>
+                    <span className={`font-mono font-medium ${isDark ? 'text-[#f5f5f7]' : 'text-[#1d1d1f]'}`}>
                       {startIndex + 1}
                     </span>{' '}
                     to{' '}
-                    <span className={`font-mono font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>
+                    <span className={`font-mono font-medium ${isDark ? 'text-[#f5f5f7]' : 'text-[#1d1d1f]'}`}>
                       {endIndex}
                     </span>{' '}
                     of{' '}
-                    <span className={`font-mono font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>
+                    <span className={`font-mono font-medium ${isDark ? 'text-[#f5f5f7]' : 'text-[#1d1d1f]'}`}>
                       {tickets.length}
                     </span>{' '}
                     tickets
                   </span>
 
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] text-zinc-500">Rows per page:</span>
+                    <span className={`text-[11px] ${isDark ? 'text-[#ebebf5]/30' : 'text-[#1d1d1f]/30'}`}>Rows per page:</span>
                     <select
                       value={pageSize}
                       onChange={(e) => {
                         setPageSize(Number(e.target.value))
                         setCurrentPage(1)
                       }}
-                      className={`px-2 py-1 rounded-lg border text-xs font-mono transition cursor-pointer outline-none ${
+                      className={`px-2 py-1 rounded-[10px] border text-xs font-mono transition cursor-pointer outline-none ${
                         isDark
-                          ? 'bg-black/40 border-white/[0.08] text-zinc-200 focus:border-white/[0.25]'
-                          : 'bg-white border-zinc-200 text-zinc-800 focus:border-zinc-400'
+                          ? 'bg-white/[0.06] border-white/[0.08] text-[#f5f5f7] focus:border-white/[0.2]'
+                          : 'bg-white border-black/[0.08] text-[#1d1d1f] focus:border-black/[0.2]'
                       }`}
                     >
                       <option value={10}>10</option>
@@ -1019,10 +991,10 @@ export function InboxTable({
                       type="button"
                       onClick={() => setCurrentPage(1)}
                       disabled={safeCurrentPage === 1}
-                      className={`p-1.5 rounded-lg border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                      className={`p-1.5 rounded-full border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                         isDark
-                          ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200'
-                          : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900'
+                          ? 'border-white/[0.08] hover:bg-white/[0.08] text-[#ebebf5]/50 hover:text-[#f5f5f7]'
+                          : 'border-black/[0.08] hover:bg-black/[0.06] text-[#1d1d1f]/40 hover:text-[#1d1d1f]'
                       }`}
                       title="First page"
                     >
@@ -1037,10 +1009,10 @@ export function InboxTable({
                       type="button"
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={safeCurrentPage === 1}
-                      className={`p-1.5 rounded-lg border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                      className={`p-1.5 rounded-full border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                         isDark
-                          ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200'
-                          : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900'
+                          ? 'border-white/[0.08] hover:bg-white/[0.08] text-[#ebebf5]/50 hover:text-[#f5f5f7]'
+                          : 'border-black/[0.08] hover:bg-black/[0.06] text-[#1d1d1f]/40 hover:text-[#1d1d1f]'
                       }`}
                       title="Previous page"
                     >
@@ -1053,7 +1025,7 @@ export function InboxTable({
                     {pageNumbers.map((p, idx) => {
                       if (p === '...') {
                         return (
-                          <span key={`dots-${idx}`} className="px-2 py-1 text-xs text-zinc-500 font-mono">
+                          <span key={`dots-${idx}`} className={`px-2 py-1 text-xs font-mono ${isDark ? 'text-[#ebebf5]/30' : 'text-[#1d1d1f]/30'}`}>
                             ...
                           </span>
                         )
@@ -1064,14 +1036,14 @@ export function InboxTable({
                           key={p}
                           type="button"
                           onClick={() => setCurrentPage(Number(p))}
-                          className={`min-w-[28px] h-7 px-2 rounded-lg border text-xs font-mono font-medium transition cursor-pointer ${
+                          className={`min-w-[28px] h-7 px-2 rounded-full border text-xs font-mono font-normal transition cursor-pointer ${
                             isCurrent
                               ? isDark
-                                ? 'bg-white border-white text-zinc-950 shadow-2xs font-bold'
-                                : 'bg-zinc-900 border-zinc-900 text-white shadow-2xs font-bold'
+                                ? 'bg-white border-white text-zinc-950 shadow-sm font-semibold'
+                                : 'bg-zinc-950 border-zinc-950 text-white shadow-sm font-semibold'
                               : isDark
-                                ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200'
-                                : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900'
+                                ? 'border-white/[0.08] hover:bg-white/[0.08] text-[#ebebf5]/50 hover:text-[#f5f5f7]'
+                                : 'border-black/[0.08] hover:bg-black/[0.06] text-[#1d1d1f]/40 hover:text-[#1d1d1f]'
                           }`}
                         >
                           {p}
@@ -1084,10 +1056,10 @@ export function InboxTable({
                       type="button"
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       disabled={safeCurrentPage === totalPages}
-                      className={`p-1.5 rounded-lg border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                      className={`p-1.5 rounded-full border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                         isDark
-                          ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200'
-                          : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900'
+                          ? 'border-white/[0.08] hover:bg-white/[0.08] text-[#ebebf5]/50 hover:text-[#f5f5f7]'
+                          : 'border-black/[0.08] hover:bg-black/[0.06] text-[#1d1d1f]/40 hover:text-[#1d1d1f]'
                       }`}
                       title="Next page"
                     >
@@ -1101,10 +1073,10 @@ export function InboxTable({
                       type="button"
                       onClick={() => setCurrentPage(totalPages)}
                       disabled={safeCurrentPage === totalPages}
-                      className={`p-1.5 rounded-lg border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                      className={`p-1.5 rounded-full border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                         isDark
-                          ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200'
-                          : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900'
+                          ? 'border-white/[0.08] hover:bg-white/[0.08] text-[#ebebf5]/50 hover:text-[#f5f5f7]'
+                          : 'border-black/[0.08] hover:bg-black/[0.06] text-[#1d1d1f]/40 hover:text-[#1d1d1f]'
                       }`}
                       title="Last page"
                     >

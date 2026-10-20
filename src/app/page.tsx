@@ -1497,8 +1497,8 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {/* Left: Mobile Hamburger + Desktop Apple Pill Search */}
-              <div className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0 max-w-xs sm:max-w-sm">
+              {/* Left: Mobile Hamburger + Current View Title + Desktop Apple Pill Search */}
+              <div className="flex items-center gap-2.5 flex-1 min-w-0 max-w-xs sm:max-w-sm">
                 {/* Mobile Hamburger Button */}
                 <button
                   type="button"
@@ -1517,6 +1517,13 @@ export default function Home() {
                     <line x1="4" y1="18" x2="20" y2="18" />
                   </svg>
                 </button>
+
+                {/* Mobile Current View Title (Apple Clean Typography) */}
+                <span className={`sm:hidden text-sm font-semibold tracking-tight truncate ${
+                  isDark ? 'text-[#f5f5f7]' : 'text-[#1d1d1f]'
+                }`}>
+                  {NAV_TABS.find((t) => t.id === activeTab)?.label ?? 'TicketFlow'}
+                </span>
 
                 {/* Desktop Apple Pill Search Input */}
                 <div className="hidden sm:block relative w-full min-w-0">
@@ -1569,7 +1576,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right: Views Switcher (Apple Segmented Pill) + Primary Action Button */}
+              {/* Right: Views Switcher (Apple Segmented Pill on Desktop) + Actions */}
               <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
                 {/* Mobile Search Toggle Button */}
                 <button
@@ -1589,10 +1596,10 @@ export default function Home() {
                   </svg>
                 </button>
 
-                {/* View Switcher Apple Segmented Control */}
+                {/* View Switcher Apple Segmented Control (Desktop Only) */}
                 <nav
                   aria-label="View Switcher"
-                  className={`relative flex items-center p-1 rounded-full border transition-colors ${
+                  className={`hidden sm:flex relative items-center p-1 rounded-full border transition-colors ${
                     isDark
                       ? 'bg-white/[0.06] border-white/[0.08]'
                       : 'bg-[#f5f5f7] border-black/[0.06]'
@@ -1642,7 +1649,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={activeTab === 'expenses' ? handleOpenAddExpense : handleOpenCreateTicket}
-                  className={`h-8.5 px-3.5 sm:px-4 rounded-full text-xs font-semibold transition-all duration-150 cursor-pointer active:scale-95 inline-flex items-center gap-1.5 shadow-xs shrink-0 ${
+                  className={`h-8.5 px-3 sm:px-4 rounded-full text-xs font-semibold transition-all duration-150 cursor-pointer active:scale-95 inline-flex items-center gap-1.5 shadow-xs shrink-0 ${
                     isDark
                       ? 'bg-white hover:bg-zinc-100 text-zinc-950 border border-white'
                       : 'bg-zinc-950 hover:bg-zinc-800 text-white border border-zinc-950'
@@ -1825,6 +1832,45 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {/* Mobile Bottom Tab Bar — Apple iOS Style */}
+        <nav
+          aria-label="Mobile Navigation"
+          className={`sm:hidden shrink-0 h-16 border-t flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom,0px)] transition-colors select-none z-20 ${
+            isDark
+              ? 'border-white/[0.08] bg-[#000000]/85 backdrop-blur-md'
+              : 'border-[#e5e5ea] bg-white/85 backdrop-blur-md'
+          }`}
+        >
+          {NAV_TABS.map((tab) => {
+            const isActive = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleTabChange(tab.id)}
+                className={`flex-1 flex flex-col items-center justify-center gap-1 py-1.5 transition-all active:scale-95 cursor-pointer ${
+                  isActive
+                    ? isDark
+                      ? 'text-white'
+                      : 'text-[#1d1d1f]'
+                    : isDark
+                    ? 'text-[#86868b] hover:text-[#f5f5f7]'
+                    : 'text-[#86868b] hover:text-[#1d1d1f]'
+                }`}
+                title={tab.label}
+                aria-label={tab.label}
+              >
+                <span className={`transition-transform duration-150 [&>svg]:w-4.5 [&>svg]:h-4.5 ${isActive ? 'scale-110 opacity-100' : 'opacity-60'}`}>
+                  {tab.icon}
+                </span>
+                <span className={`text-[10px] tracking-tight leading-none ${isActive ? 'font-semibold' : 'font-normal opacity-70'}`}>
+                  {tab.label}
+                </span>
+              </button>
+            )
+          })}
+        </nav>
       </div>
 
       {/* Separate Workspace Creation Modal */}

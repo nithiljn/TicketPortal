@@ -847,13 +847,6 @@ export default function Home() {
         }
       `
       await fetchGraphQL(mutation, { id: ticket.id })
-      setToast({
-        isOpen: true,
-        title: nextState ? 'Ticket Bookmarked' : 'Bookmark Removed',
-        message: nextState
-          ? `Added "${ticket.title}" to bookmarked items`
-          : `Removed "${ticket.title}" from bookmarked items`,
-      })
     } catch (err: unknown) {
       console.error('Failed to toggle bookmark:', err)
       // Rollback on error

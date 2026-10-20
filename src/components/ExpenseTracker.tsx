@@ -1244,8 +1244,14 @@ export function ExpenseTracker({
                                 {exp.title}
                               </span>
                               {isHigh && (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium border bg-[#ff3b30]/10 border-[#ff3b30]/20 text-[#ff3b30] shrink-0">
-                                  High
+                                <span
+                                  className={`inline-flex items-center justify-center w-5 h-5 rounded-full border shrink-0 ${appleCapsule}`}
+                                  title="High expense (≥ ₹2,000)"
+                                >
+                                  <svg className="w-3 h-3 text-[#86868b] dark:text-[#a1a1a6] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                                    <polyline points="17 6 23 6 23 12" />
+                                  </svg>
                                 </span>
                               )}
                               <span className={`inline-flex items-center text-[10px] px-2.5 py-0.5 rounded-full border font-normal shrink-0 ${appleCapsule}`}>

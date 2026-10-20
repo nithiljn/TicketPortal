@@ -19,11 +19,14 @@ export const viewport: Viewport = {
   ],
 }
 
+const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : 'https://ticketflow-hub.vercel.app')
+
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://ticketflow-hub.vercel.app')
-  ),
+  metadataBase: new URL(appUrl),
   title: {
     default: 'TicketFlow for Engineering Teams',
     template: '%s | TicketFlow',
@@ -44,25 +47,26 @@ export const metadata: Metadata = {
     title: 'TicketFlow for Engineering Teams',
     description:
       'A unified workspace to manage engineering tickets, track daily standup notes, and monitor project expenses.',
+    url: appUrl,
     siteName: 'TicketFlow',
     type: 'website',
     locale: 'en_US',
     images: [
       {
-        url: '/ticket-icon.png',
-        width: 512,
-        height: 512,
-        alt: 'TicketFlow Logo',
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'TicketFlow - Engineering Workspace',
         type: 'image/png',
       },
     ],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'TicketFlow for Engineering Teams',
     description:
       'A unified workspace to manage engineering tickets, track daily standup notes, and monitor project expenses.',
-    images: ['/ticket-icon.png'],
+    images: ['/og-image.png'],
   },
   icons: {
     icon: [

@@ -169,7 +169,7 @@ function appendTaskToNote(content: string, taskText: string): string {
   return `TODAY'S PLANS:\n- [ ] ${trimmed}\n\n${content}`
 }
 
-// Architectural Wire-O spiral binding matching our site's developer design system
+// Apple-inspired Notebook Wire-O spiral binding
 function SpiralBinding({ isDark }: { isDark: boolean }) {
   const rings = Array.from({ length: 16 })
 
@@ -179,18 +179,18 @@ function SpiralBinding({ isDark }: { isDark: boolean }) {
         <div key={i} className="relative flex items-center justify-center">
           {/* Notebook paper punch hole slot */}
           <div
-            className={`w-2.5 h-3.5 rounded-[2px] border ${
+            className={`w-2.5 h-3.5 rounded-[3px] border ${
               isDark
-                ? 'bg-[#09090b] border-white/[0.08] shadow-inner'
-                : 'bg-zinc-200 border-zinc-300 shadow-inner'
+                ? 'bg-[#0e0e11] border-white/[0.1] shadow-inner'
+                : 'bg-[#e5e5ea] border-[#d2d2d7] shadow-inner'
             }`}
           />
           {/* Wire coil loop spanning across the top binding */}
           <div
             className={`absolute -top-3 w-1.5 h-6.5 rounded-full border ${
               isDark
-                ? 'bg-zinc-600 border-zinc-500/40 shadow-xs'
-                : 'bg-zinc-700 border-zinc-800/30 shadow-xs'
+                ? 'bg-zinc-500 border-zinc-400/40 shadow-xs'
+                : 'bg-zinc-600 border-zinc-700/30 shadow-xs'
             }`}
           />
         </div>
@@ -417,27 +417,27 @@ export function DailyNotes({
     return { tasks, memos, stats }
   }, [currentNote])
 
-  // Theme styles
+  // Apple Design System Tokens
   const cardContainer = isDark
-    ? 'bg-[#111114] border-white/[0.06] text-zinc-100 shadow-sm'
-    : 'bg-white border-zinc-200 text-zinc-900 shadow-xs'
-  const headerBorder = isDark ? 'border-white/[0.06]' : 'border-zinc-200'
-  const sectionTitle = isDark ? 'text-zinc-200' : 'text-zinc-800'
+    ? 'bg-[#161618] border-white/[0.08] text-[#f5f5f7] shadow-sm'
+    : 'bg-white border-[#e5e5ea] text-[#1d1d1f] shadow-xs'
+  const headerBorder = isDark ? 'border-white/[0.08]' : 'border-[#e5e5ea]'
+  const sectionTitle = isDark ? 'text-[#f5f5f7]' : 'text-[#1d1d1f]'
   const inputBg = isDark
-    ? 'bg-black/40 border-white/[0.08] text-zinc-200 placeholder-zinc-500 focus:border-white/[0.2]'
-    : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400'
+    ? 'bg-white/[0.04] border-white/[0.08] text-[#f5f5f7] placeholder-[#86868b] focus:border-[#2997ff] focus:ring-1 focus:ring-[#2997ff]/20'
+    : 'bg-[#fafafc] border-[#e5e5ea] text-[#1d1d1f] placeholder-[#86868b] focus:bg-white focus:border-[#0071e3] focus:ring-1 focus:ring-[#0071e3]/20 shadow-2xs'
   const countBadge = isDark
-    ? 'bg-white/[0.04] text-zinc-400 border-white/[0.06]'
-    : 'bg-zinc-100 text-zinc-600 border-zinc-200'
+    ? 'bg-white/[0.06] text-[#86868b] border-white/[0.08]'
+    : 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
 
   // Page surface paper styling
   const notebookPaperBg = isDark
-    ? 'bg-[#141418] border-white/[0.08] text-zinc-100 shadow-2xl shadow-black/60'
-    : 'bg-[#fdfdfc] border-stone-200/90 text-zinc-900 shadow-xl shadow-zinc-950/5'
+    ? 'bg-[#18181b] border-white/[0.08] text-[#f5f5f7] shadow-2xl shadow-black/80'
+    : 'bg-white border-[#e5e5ea] text-[#1d1d1f] shadow-xl shadow-black/5'
 
   const notebookBindingBg = isDark
-    ? 'bg-[#0e0e11] border-b border-white/[0.06]'
-    : 'bg-[#f4f4f2] border-b border-stone-200'
+    ? 'bg-[#121214] border-b border-white/[0.08]'
+    : 'bg-[#f5f5f7] border-b border-[#e5e5ea]'
 
   const pageFlipAnimClass =
     flipDirection === 'prev'
@@ -447,9 +447,9 @@ export function DailyNotes({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-5">
       {/* Left Column: Compose Note Section */}
-      <div className={`lg:col-span-1 rounded-2xl border p-3.5 sm:p-5 h-fit ${cardContainer}`}>
+      <div className={`lg:col-span-1 rounded-[20px] border p-4 sm:p-5 h-fit ${cardContainer}`}>
         <div className={`flex items-center justify-between pb-3 mb-3.5 border-b ${headerBorder}`}>
-          <h2 className={`text-xs font-semibold tracking-wider uppercase ${sectionTitle}`}>
+          <h2 className="text-[11px] font-semibold tracking-wider uppercase text-[#86868b]">
             Log Daily Work
           </h2>
           <span className={`text-[10px] px-2.5 py-0.5 rounded-full border font-mono ${countBadge}`}>
@@ -459,19 +459,19 @@ export function DailyNotes({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
+            <label className="block text-[11px] font-medium text-[#86868b] mb-1.5">
               Entry Date
             </label>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className={`w-full h-9 rounded-lg border px-3 text-xs focus:outline-none font-mono ${inputBg}`}
+              className={`w-full h-9 rounded-[10px] border px-3 text-xs focus:outline-none font-mono ${inputBg}`}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
+            <label className="block text-[11px] font-medium text-[#86868b] mb-1.5">
               Today's Plan Checklist
             </label>
             <div className="flex gap-2">
@@ -486,15 +486,15 @@ export function DailyNotes({
                     handleAddPlan()
                   }
                 }}
-                className={`flex-1 min-w-0 h-9 rounded-lg border px-3 text-xs focus:outline-none font-mono ${inputBg}`}
+                className={`flex-1 min-w-0 h-9 rounded-[10px] border px-3 text-xs focus:outline-none font-mono ${inputBg}`}
               />
               <button
                 type="button"
                 onClick={() => handleAddPlan()}
-                className={`h-9 px-3.5 rounded-lg border text-xs font-medium transition cursor-pointer shrink-0 ${
+                className={`h-9 px-4 rounded-full border text-xs font-semibold active:scale-95 transition-all shrink-0 cursor-pointer ${
                   isDark
-                    ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-300'
-                    : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700 bg-white shadow-2xs'
+                    ? 'border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] text-white'
+                    : 'border-[#e5e5ea] bg-white hover:bg-[#fafafc] text-[#1d1d1f] shadow-2xs'
                 }`}
               >
                 + Add
@@ -507,23 +507,23 @@ export function DailyNotes({
                 {plans.map((p) => (
                   <div
                     key={p.id}
-                    className={`flex items-center justify-between p-2 rounded-lg border text-xs font-mono transition group ${
+                    className={`flex items-center justify-between p-2.5 rounded-[12px] border text-xs font-mono transition group ${
                       isDark
-                        ? 'bg-black/30 border-white/[0.05]'
-                        : 'bg-zinc-50/80 border-zinc-200'
+                        ? 'bg-white/[0.02] border-white/[0.06]'
+                        : 'bg-[#f5f5f7]/70 border-[#e5e5ea]'
                     }`}
                   >
                     <div
-                      className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
+                      className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer"
                       onClick={() => handleTogglePlan(p.id)}
                     >
                       <span
-                        className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition ${
+                        className={`w-4 h-4 rounded-full border-2 transition-transform active:scale-90 flex items-center justify-center shrink-0 ${
                           p.completed
                             ? isDark
                               ? 'bg-white border-white text-zinc-950'
-                              : 'bg-zinc-900 border-zinc-900 text-white'
-                            : 'border-zinc-400 dark:border-zinc-600 bg-transparent'
+                              : 'bg-black border-black text-white'
+                            : 'border-[#86868b]/50 bg-transparent'
                         }`}
                       >
                         {p.completed && (
@@ -535,8 +535,8 @@ export function DailyNotes({
                       <span
                         className={`truncate ${
                           p.completed
-                            ? 'line-through text-zinc-400 dark:text-zinc-500'
-                            : 'text-zinc-800 dark:text-zinc-200'
+                            ? 'line-through text-[#86868b]'
+                            : 'text-[#1d1d1f] dark:text-[#f5f5f7]'
                         }`}
                       >
                         {p.text}
@@ -545,7 +545,7 @@ export function DailyNotes({
                     <button
                       type="button"
                       onClick={() => handleRemovePlan(p.id)}
-                      className="text-zinc-400 hover:text-rose-500 p-1 rounded transition cursor-pointer"
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition cursor-pointer"
                       title="Remove task"
                     >
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -561,7 +561,7 @@ export function DailyNotes({
             {/* Quick Routine Tasks Suggestions */}
             {plans.length === 0 && (
               <div className="mt-2.5 space-y-1.5">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">
+                <span className="text-[10px] font-mono text-[#86868b] uppercase tracking-wider block">
                   Quick routines:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -575,10 +575,10 @@ export function DailyNotes({
                       key={routine}
                       type="button"
                       onClick={() => handleAddPlan(routine)}
-                      className={`px-2 py-0.5 text-[10px] font-mono rounded border transition cursor-pointer ${
+                      className={`px-3 py-1 text-[11px] font-medium rounded-full border transition cursor-pointer active:scale-95 ${
                         isDark
-                          ? 'border-white/[0.06] hover:bg-white/[0.04] text-zinc-400 hover:text-zinc-200'
-                          : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 bg-zinc-50'
+                          ? 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-[#a1a1a6] hover:text-white'
+                          : 'border-[#e5e5ea] bg-[#f5f5f7] hover:bg-[#e5e5ea] text-[#515154] hover:text-[#1d1d1f]'
                       }`}
                     >
                       + {routine}
@@ -591,7 +591,7 @@ export function DailyNotes({
 
           {/* Optional Additional Notes */}
           <div>
-            <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
+            <label className="block text-[11px] font-medium text-[#86868b] mb-1.5">
               Additional Notes (Optional)
             </label>
             <textarea
@@ -599,17 +599,17 @@ export function DailyNotes({
               placeholder="Record decisions, challenges, or work notes..."
               value={additionalNotes}
               onChange={(e) => setAdditionalNotes(e.target.value)}
-              className={`w-full rounded-lg border p-3 text-xs focus:outline-none font-mono leading-relaxed resize-none ${inputBg}`}
+              className={`w-full rounded-[12px] border p-3 text-xs focus:outline-none font-mono leading-relaxed resize-none ${inputBg}`}
             />
           </div>
 
           <button
             type="submit"
             disabled={loading || (plans.length === 0 && !additionalNotes.trim())}
-            className={`w-full h-10 rounded-xl font-medium text-xs transition-all duration-150 active:scale-[0.99] disabled:opacity-50 cursor-pointer shadow-sm flex items-center justify-center gap-2 ${
+            className={`w-full h-10 rounded-full font-semibold text-xs transition-all duration-150 active:scale-95 disabled:opacity-50 cursor-pointer shadow-sm flex items-center justify-center gap-2 ${
               isDark
-                ? 'bg-white hover:bg-zinc-200 text-zinc-950'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                ? 'bg-white hover:bg-zinc-100 text-zinc-950'
+                : 'bg-black hover:bg-zinc-800 text-white'
             }`}
           >
             {loading ? (
@@ -629,15 +629,15 @@ export function DailyNotes({
       {/* Right Column: Redesigned Spiral Notebook (One Page Per Day with Timeline) */}
       <div className="lg:col-span-2 flex flex-col space-y-3">
         {/* Navigation & Jump Bar */}
-        <div className={`p-3 rounded-2xl border flex flex-wrap items-center justify-between gap-2.5 ${cardContainer}`}>
+        <div className={`p-3 rounded-[20px] border flex flex-wrap items-center justify-between gap-2.5 ${cardContainer}`}>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handlePrevDay}
-              className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+              className={`h-8.5 px-3.5 rounded-full border text-xs font-medium transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 ${
                 isDark
-                  ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-300'
-                  : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700 bg-white shadow-2xs'
+                  ? 'border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] text-[#f5f5f7]'
+                  : 'border-[#e5e5ea] bg-white hover:bg-[#fafafc] text-[#1d1d1f] shadow-2xs'
               }`}
               title="Previous day / entry"
             >
@@ -648,7 +648,9 @@ export function DailyNotes({
             </button>
 
             {/* Page Count Indicator */}
-            <span className="text-[11px] font-mono px-2 py-1 rounded bg-zinc-100 dark:bg-white/[0.04] text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-white/[0.06] select-none">
+            <span className={`text-[11px] font-mono px-3 py-1 rounded-full border select-none ${
+              isDark ? 'bg-white/[0.04] text-[#86868b] border-white/[0.08]' : 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
+            }`}>
               {currentEntryIndex !== -1
                 ? `Page ${currentEntryIndex + 1} of ${sortedUniqueDates.length}`
                 : 'Empty Day'}
@@ -657,10 +659,10 @@ export function DailyNotes({
             <button
               type="button"
               onClick={handleNextDay}
-              className={`h-8.5 px-3 rounded-lg border text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+              className={`h-8.5 px-3.5 rounded-full border text-xs font-medium transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 ${
                 isDark
-                  ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-300'
-                  : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700 bg-white shadow-2xs'
+                  ? 'border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] text-[#f5f5f7]'
+                  : 'border-[#e5e5ea] bg-white hover:bg-[#fafafc] text-[#1d1d1f] shadow-2xs'
               }`}
               title="Next day / entry"
             >
@@ -677,7 +679,7 @@ export function DailyNotes({
               type="date"
               value={activeDate}
               onChange={(e) => handleDateSelect(e.target.value)}
-              className={`h-8.5 rounded-lg border px-2.5 text-xs font-mono focus:outline-none ${inputBg}`}
+              className={`h-8.5 rounded-[10px] border px-2.5 text-xs font-mono focus:outline-none ${inputBg}`}
               title="Jump directly to any date"
             />
 
@@ -686,10 +688,10 @@ export function DailyNotes({
               <button
                 type="button"
                 onClick={() => handleDateSelect(todayStr)}
-                className={`h-8.5 px-2.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+                className={`h-8.5 px-3.5 rounded-full border text-xs font-medium transition-all active:scale-95 cursor-pointer ${
                   isDark
-                    ? 'border-white/[0.08] hover:bg-white/[0.06] text-zinc-300'
-                    : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700 bg-white shadow-2xs'
+                    ? 'border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] text-[#f5f5f7]'
+                    : 'border-[#e5e5ea] bg-white hover:bg-[#fafafc] text-[#1d1d1f] shadow-2xs'
                 }`}
               >
                 Today
@@ -699,7 +701,7 @@ export function DailyNotes({
         </div>
 
         {/* The Spiral Notebook Container */}
-        <div className={`rounded-2xl border overflow-hidden transition-all ${notebookPaperBg}`}>
+        <div className={`rounded-[24px] border overflow-hidden transition-all ${notebookPaperBg}`}>
           {/* Top Spiral Binding Strip */}
           <div className={`pt-2.5 pb-1 ${notebookBindingBg}`}>
             <SpiralBinding isDark={isDark} />
@@ -714,20 +716,20 @@ export function DailyNotes({
             <div className={`pb-4 mb-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${headerBorder}`}>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-base sm:text-lg font-bold tracking-tight text-zinc-950 dark:text-zinc-50 font-sans">
+                  <h3 className="text-base sm:text-lg font-bold tracking-tight text-[#1d1d1f] dark:text-[#f5f5f7] font-sans">
                     {formatNotebookDate(activeDate)}
                   </h3>
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded border border-zinc-200 dark:border-white/[0.08] bg-zinc-100/70 dark:bg-white/[0.04] text-zinc-600 dark:text-zinc-400">
+                  <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full border border-[#e5e5ea] dark:border-white/[0.08] bg-[#f5f5f7] dark:bg-white/[0.04] text-[#86868b]">
                     {activeDate}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 mt-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-mono flex-wrap">
+                <div className="flex items-center gap-2 mt-1.5 text-xs text-[#86868b] font-mono flex-wrap">
                   {currentNote ? (
                     <>
                       <span>
                         by{' '}
-                        <strong className="text-zinc-700 dark:text-zinc-300 font-semibold">
+                        <strong className="text-[#1d1d1f] dark:text-[#f5f5f7] font-semibold">
                           {currentNote.createdBy?.startsWith('@')
                             ? currentNote.createdBy
                             : `@${(currentNote.createdBy?.includes('@') ? currentNote.createdBy.split('@')[0] : currentNote.createdBy) || 'user'}`}
@@ -739,12 +741,14 @@ export function DailyNotes({
                         <>
                           <span>•</span>
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-medium border ${
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium border ${
                               parsedPageData.stats.percentage === 100
                                 ? isDark
-                                  ? 'bg-white text-zinc-950 border-white font-semibold shadow-2xs'
-                                  : 'bg-zinc-900 text-white border-zinc-900 font-semibold shadow-2xs'
-                                : 'bg-zinc-100 dark:bg-white/[0.04] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-white/[0.08]'
+                                  ? 'bg-white text-zinc-950 border-white font-semibold shadow-xs'
+                                  : 'bg-black text-white border-black font-semibold shadow-xs'
+                                : isDark
+                                ? 'bg-white/[0.06] text-[#f5f5f7] border-white/[0.08]'
+                                : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea]'
                             }`}
                           >
                             {parsedPageData.stats.percentage === 100 && (
@@ -771,10 +775,14 @@ export function DailyNotes({
                   <button
                     type="button"
                     onClick={() => onDeleteNote(currentNote)}
-                    className="h-8 px-3 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center gap-1.5 border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-600 hover:text-zinc-950 dark:border-white/[0.08] dark:hover:border-white/[0.18] dark:bg-white/[0.02] dark:hover:bg-white/[0.08] dark:text-zinc-400 dark:hover:text-zinc-200 shadow-2xs"
+                    className={`h-8 px-3.5 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1.5 ${
+                      isDark
+                        ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.04] hover:bg-white/[0.08] text-[#86868b] hover:text-[#f5f5f7]'
+                        : 'border-black/[0.08] hover:border-black/[0.18] bg-white hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] shadow-2xs'
+                    }`}
                     title="Delete this day's work log"
                   >
-                    <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="w-3.5 h-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <polyline points="3 6 5 6 21 6" />
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                     </svg>
@@ -788,7 +796,9 @@ export function DailyNotes({
             {!currentNote ? (
               /* Clear Empty State for Days with No Log */
               <div className="flex-1 flex flex-col items-center justify-center py-16 px-4 text-center">
-                <div className="w-12 h-12 rounded-2xl border border-dashed border-zinc-300 dark:border-white/10 flex items-center justify-center mb-3 text-zinc-400">
+                <div className={`w-12 h-12 rounded-[16px] border border-dashed flex items-center justify-center mb-3 text-[#86868b] ${
+                  isDark ? 'border-white/10 bg-white/[0.02]' : 'border-black/10 bg-black/[0.02]'
+                }`}>
                   <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                     <line x1="16" y1="2" x2="16" y2="6" />
@@ -796,16 +806,20 @@ export function DailyNotes({
                     <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
                 </div>
-                <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                <h4 className="text-sm font-semibold text-[#1d1d1f] dark:text-[#f5f5f7]">
                   No work log on this page
                 </h4>
-                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 max-w-sm font-mono leading-relaxed">
+                <p className="text-xs text-[#86868b] mt-1 max-w-sm font-mono leading-relaxed">
                   You haven't recorded any tasks or notes for {activeDate} yet.
                 </p>
                 <button
                   type="button"
                   onClick={() => setSelectedDate(activeDate)}
-                  className="mt-4 px-4 py-2 rounded-xl text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 transition-colors shadow-sm cursor-pointer"
+                  className={`mt-4 px-5 py-2.5 rounded-full text-xs font-semibold active:scale-95 transition-all shadow-sm cursor-pointer ${
+                    isDark
+                      ? 'bg-white hover:bg-zinc-100 text-zinc-950'
+                      : 'bg-black hover:bg-zinc-800 text-white'
+                  }`}
                 >
                   Write Log for {activeDate}
                 </button>
@@ -818,7 +832,7 @@ export function DailyNotes({
                   {parsedPageData.tasks.length > 0 && (
                     <div className="relative space-y-4 my-2">
                       {/* Vertical spine timeline line centered exactly on the 20px nodes (center at 10px) */}
-                      <div className="absolute left-[9px] top-3 bottom-3 w-[2px] bg-zinc-200 dark:bg-white/[0.08]" />
+                      <div className="absolute left-[9px] top-3 bottom-3 w-[2px] bg-[#e5e5ea] dark:bg-white/[0.08]" />
 
                       {parsedPageData.tasks.map((task) => (
                         <div key={task.originalIndex} className="relative pl-8 group">
@@ -826,7 +840,7 @@ export function DailyNotes({
                           <div className="absolute left-0 top-1 z-10 flex items-center justify-center">
                             {task.completed ? (
                               <div
-                                className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center shadow-xs border-2 border-[#fdfdfc] dark:border-[#141418]"
+                                className="w-5 h-5 rounded-full bg-[#34c759] text-white flex items-center justify-center shadow-xs border-2 border-white dark:border-[#18181b]"
                                 title="Task completed"
                               >
                                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -844,7 +858,7 @@ export function DailyNotes({
                                     taskText: task.text,
                                   })
                                 }}
-                                className="w-5 h-5 rounded-full border-2 border-zinc-300 dark:border-zinc-600 bg-[#fdfdfc] dark:bg-[#141418] hover:border-zinc-800 dark:hover:border-white transition-colors cursor-pointer flex items-center justify-center shadow-2xs"
+                                className="w-5 h-5 rounded-full border-2 border-[#86868b]/40 hover:border-[#0071e3] dark:hover:border-[#2997ff] bg-white dark:bg-[#18181b] active:scale-90 transition-all cursor-pointer flex items-center justify-center shadow-2xs"
                                 title="Click to complete task"
                               />
                             )}
@@ -862,34 +876,34 @@ export function DailyNotes({
                                 })
                               }
                             }}
-                            className={`flex-1 min-w-0 p-2.5 sm:p-3 rounded-xl border transition ${
+                            className={`flex-1 min-w-0 p-3 rounded-[14px] border transition ${
                               task.completed
                                 ? isDark
                                   ? 'bg-white/[0.02] border-white/[0.04]'
-                                  : 'bg-zinc-50 border-zinc-200/60'
+                                  : 'bg-[#f5f5f7]/60 border-[#e5e5ea]/80'
                                 : isDark
-                                ? 'bg-black/30 border-white/[0.06] hover:border-white/[0.12] cursor-pointer'
-                                : 'bg-white border-zinc-200/80 hover:border-zinc-300 cursor-pointer shadow-2xs'
+                                ? 'bg-white/[0.04] border-white/[0.08] hover:border-white/[0.16] cursor-pointer'
+                                : 'bg-white border-[#e5e5ea] hover:border-[#0071e3]/40 cursor-pointer shadow-2xs'
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
                               {/* Time Marker Badge */}
                               {task.completed ? (
-                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-zinc-100 dark:bg-white/[0.06] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-white/[0.08]">
-                                  <svg className="w-2.5 h-2.5 text-zinc-500 dark:text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#f5f5f7] dark:bg-white/[0.06] text-[#1d1d1f] dark:text-[#f5f5f7] border border-[#e5e5ea] dark:border-white/[0.08]">
+                                  <svg className="w-2.5 h-2.5 text-[#86868b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <circle cx="12" cy="12" r="10" />
                                     <polyline points="12 6 12 12 16 14" />
                                   </svg>
                                   <span>{task.completionTime}</span>
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-400">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[#86868b]">
                                   <span>To-do</span>
                                 </span>
                               )}
 
                               {task.completed && (
-                                <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 font-medium">
+                                <span className="text-[10px] font-mono text-[#34c759] font-medium">
                                   ✓ Done
                                 </span>
                               )}
@@ -898,8 +912,8 @@ export function DailyNotes({
                             <p
                               className={`text-xs font-mono break-words leading-relaxed ${
                                 task.completed
-                                  ? 'line-through text-zinc-400 dark:text-zinc-500'
-                                  : 'text-zinc-800 dark:text-zinc-200'
+                                  ? 'line-through text-[#86868b]'
+                                  : 'text-[#1d1d1f] dark:text-[#f5f5f7]'
                               }`}
                             >
                               {task.text}
@@ -912,7 +926,7 @@ export function DailyNotes({
 
                   {/* Inline Task Adder on Current Day's Page */}
                   {onUpdateNote && (
-                    <div className="mt-4 pt-3 border-t border-dashed border-zinc-200 dark:border-white/[0.08] flex items-center gap-2">
+                    <div className="mt-4 pt-3 border-t border-dashed border-[#e5e5ea] dark:border-white/[0.08] flex items-center gap-2">
                       <input
                         type="text"
                         placeholder="+ Add another task to this page..."
@@ -924,16 +938,16 @@ export function DailyNotes({
                             handleInlineAddTask()
                           }
                         }}
-                        className={`flex-1 min-w-0 h-9 rounded-lg border px-3 text-xs focus:outline-none font-mono ${inputBg}`}
+                        className={`flex-1 min-w-0 h-9 rounded-[10px] border px-3 text-xs focus:outline-none font-mono ${inputBg}`}
                       />
                       <button
                         type="button"
                         onClick={handleInlineAddTask}
                         disabled={!inlineNewTaskText.trim()}
-                        className={`h-9 px-3.5 rounded-lg border text-xs font-medium transition cursor-pointer disabled:opacity-40 shrink-0 ${
+                        className={`h-9 px-4 rounded-full text-xs font-semibold transition active:scale-95 cursor-pointer disabled:opacity-40 shrink-0 ${
                           isDark
-                            ? 'bg-white/[0.08] hover:bg-white/[0.14] text-zinc-200 border-white/[0.1]'
-                            : 'bg-zinc-900 hover:bg-zinc-800 text-white border-zinc-900 shadow-2xs'
+                            ? 'bg-white hover:bg-zinc-100 text-zinc-950'
+                            : 'bg-black hover:bg-zinc-800 text-white shadow-2xs'
                         }`}
                       >
                         Add
@@ -944,8 +958,8 @@ export function DailyNotes({
 
                 {/* Additional Notes Area (Memos & Remarks at Bottom of Page) */}
                 {parsedPageData.memos && (
-                  <div className="mt-6 pt-4 border-t border-dashed border-zinc-200 dark:border-white/[0.08]">
-                    <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-2">
+                  <div className="mt-6 pt-4 border-t border-dashed border-[#e5e5ea] dark:border-white/[0.08]">
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-[#86868b] mb-2">
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                         <polyline points="14 2 14 8 20 8" />
@@ -955,7 +969,7 @@ export function DailyNotes({
                       </svg>
                       <span>Additional Notes & Remarks</span>
                     </div>
-                    <div className="p-3.5 rounded-xl border bg-zinc-50/70 dark:bg-black/30 border-zinc-200/80 dark:border-white/[0.06] text-xs font-mono leading-relaxed whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
+                    <div className="p-3.5 rounded-[16px] border bg-[#f5f5f7]/60 dark:bg-white/[0.02] border-[#e5e5ea] dark:border-white/[0.06] text-xs font-mono leading-relaxed whitespace-pre-wrap text-[#1d1d1f] dark:text-[#f5f5f7]">
                       {parsedPageData.memos}
                     </div>
                   </div>
@@ -968,19 +982,19 @@ export function DailyNotes({
 
       {/* Irreversible Task Completion Confirmation Modal */}
       {confirmingTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-3 sm:p-4 select-none animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-3 sm:p-4 select-none animate-in fade-in duration-150">
           <div
-            className={`w-full max-w-md rounded-2xl border p-4 sm:p-6 shadow-2xl space-y-4 ${
-              isDark ? 'bg-[#121215] border-white/[0.08] text-zinc-100' : 'bg-white border-zinc-200 text-zinc-900'
+            className={`w-full max-w-md rounded-[24px] border p-5 sm:p-6 shadow-2xl space-y-4 backdrop-blur-2xl ${
+              isDark ? 'bg-[#1c1c1e]/95 border-white/[0.12] text-[#f5f5f7] shadow-black/80' : 'bg-white/95 border-[#e5e5ea] text-[#1d1d1f] shadow-2xl'
             }`}
           >
             {/* Modal Header with Clean Icon */}
             <div className="flex items-start gap-3.5">
               <div
-                className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${
+                className={`w-10 h-10 rounded-[12px] border flex items-center justify-center shrink-0 ${
                   isDark
-                    ? 'bg-white/[0.04] border-white/[0.08] text-zinc-200'
-                    : 'bg-zinc-100 border-zinc-200 text-zinc-800'
+                    ? 'bg-white/[0.06] border-white/[0.1] text-white'
+                    : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#1d1d1f]'
                 }`}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -992,7 +1006,7 @@ export function DailyNotes({
                 <h3 className="text-sm font-semibold tracking-wide">
                   Confirm Task Completion
                 </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                <p className="text-xs text-[#86868b] mt-1">
                   Are you sure you have completed this work today?
                 </p>
               </div>
@@ -1000,11 +1014,11 @@ export function DailyNotes({
 
             {/* Task Item Highlight Card */}
             <div
-              className={`p-3.5 rounded-xl border text-xs font-mono leading-relaxed ${
-                isDark ? 'bg-black/40 border-white/[0.06] text-zinc-200' : 'bg-zinc-50 border-zinc-200 text-zinc-800'
+              className={`p-3.5 rounded-[14px] border text-xs font-mono leading-relaxed ${
+                isDark ? 'bg-black/40 border-white/[0.06] text-[#f5f5f7]' : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#1d1d1f]'
               }`}
             >
-              <span className="text-[10px] uppercase font-semibold tracking-wider text-zinc-400 block mb-1">
+              <span className="text-[10px] uppercase font-semibold tracking-wider text-[#86868b] block mb-1">
                 Task Plan
               </span>
               <p className="font-medium break-words">"{confirmingTask.taskText}"</p>
@@ -1012,13 +1026,13 @@ export function DailyNotes({
 
             {/* Consistency Discipline Notice */}
             <div
-              className={`p-3 rounded-lg border text-[11px] leading-relaxed flex items-start gap-2.5 ${
+              className={`p-3 rounded-[12px] border text-[11px] leading-relaxed flex items-start gap-2.5 ${
                 isDark
-                  ? 'bg-white/[0.02] border-white/[0.06] text-zinc-400'
-                  : 'bg-zinc-50 border-zinc-200 text-zinc-600'
+                  ? 'bg-white/[0.02] border-white/[0.06] text-[#86868b]'
+                  : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#86868b]'
               }`}
             >
-              <div className="flex items-center gap-1.5 shrink-0 mt-0.5 font-mono text-[10px] text-zinc-400 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 shrink-0 mt-0.5 font-mono text-[10px] text-[#86868b] uppercase tracking-wider">
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -1036,10 +1050,10 @@ export function DailyNotes({
                 type="button"
                 onClick={() => setConfirmingTask(null)}
                 disabled={isConfirming}
-                className={`w-full sm:w-auto h-9 px-4 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
+                className={`w-full sm:w-auto h-9.5 px-4 rounded-full border text-xs font-medium transition-all duration-150 active:scale-95 cursor-pointer ${
                   isDark
-                    ? 'border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300'
-                    : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 shadow-2xs'
+                    ? 'border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] text-[#f5f5f7]'
+                    : 'border-[#e5e5ea] bg-white hover:bg-[#fafafc] text-[#1d1d1f] shadow-2xs'
                 }`}
               >
                 Cancel
@@ -1049,10 +1063,10 @@ export function DailyNotes({
                 type="button"
                 onClick={handleConfirmTaskCompletion}
                 disabled={isConfirming}
-                className={`w-full sm:w-auto h-9 px-4 rounded-lg text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer shadow-sm flex items-center justify-center gap-1.5 ${
+                className={`w-full sm:w-auto h-9.5 px-5 rounded-full text-xs font-semibold transition-all duration-150 active:scale-95 cursor-pointer shadow-sm flex items-center justify-center gap-1.5 ${
                   isDark
-                    ? 'bg-white hover:bg-zinc-200 text-zinc-950'
-                    : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                    ? 'bg-white hover:bg-zinc-100 text-zinc-950'
+                    : 'bg-black hover:bg-zinc-800 text-white'
                 }`}
               >
                 {isConfirming ? (

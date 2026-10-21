@@ -571,7 +571,7 @@ export function InboxTable({
                     </th>
                     <th className="py-2.5 px-3 w-20 font-mono">ID</th>
                     <th className="py-2.5 px-4 w-32">Status</th>
-                    <th className="py-2.5 px-4">Title & Details</th>
+                    <th className="py-2.5 px-4">Title</th>
                     <th className="py-2.5 px-4">Workspace</th>
                     <th className="py-2.5 px-4">Version</th>
                     <th className="py-2.5 px-4">Priority</th>
@@ -649,34 +649,13 @@ export function InboxTable({
                         {getStatusBadge(ticket.status)}
                       </td>
 
-                      {/* Title & Preview */}
-                      <td className="py-3 px-4 max-w-xs">
+                      {/* Title */}
+                      <td className="py-3 px-4 max-w-sm">
                         <div className="flex items-center gap-2">
                           <span className={`font-medium transition truncate ${ticketTitle}`}>
                             {ticket.title}
                           </span>
-                          {ticket.commands && (
-                            <span
-                              className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono border ${
-                                isDark
-                                  ? 'bg-white/[0.04] text-zinc-300 border-white/[0.08]'
-                                  : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                              }`}
-                              title="Contains execution commands"
-                            >
-                              <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <polyline points="4 17 10 11 4 5" />
-                                <line x1="12" y1="19" x2="20" y2="19" />
-                              </svg>
-                              <span>commands</span>
-                            </span>
-                          )}
                         </div>
-                        {ticket.description && (
-                          <div className={`text-[11px] line-clamp-2 mt-0.5 leading-relaxed whitespace-pre-line ${ticketDesc}`}>
-                            {ticket.description}
-                          </div>
-                        )}
                       </td>
 
                       {/* Workspace Badge (Distinct, High-Contrast) */}
@@ -885,31 +864,9 @@ export function InboxTable({
                   </div>
 
                   <div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <h3 className={`font-medium text-xs ${ticketTitle}`}>
-                        {ticket.title}
-                      </h3>
-                      {ticket.commands && (
-                        <span
-                          className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono border ${
-                            isDark
-                              ? 'bg-white/[0.08] text-[#ebebf5]/60 border-white/[0.08]'
-                              : 'bg-[#f5f5f7] text-[#1d1d1f]/60 border-black/[0.06]'
-                          }`}
-                        >
-                          <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <polyline points="4 17 10 11 4 5" />
-                            <line x1="12" y1="19" x2="20" y2="19" />
-                          </svg>
-                          <span>commands</span>
-                        </span>
-                      )}
-                    </div>
-                    {ticket.description && (
-                      <p className={`text-[11px] line-clamp-2 mt-0.5 whitespace-pre-line leading-relaxed ${ticketDesc}`}>
-                        {ticket.description}
-                      </p>
-                    )}
+                    <h3 className={`font-medium text-xs ${ticketTitle}`}>
+                      {ticket.title}
+                    </h3>
                   </div>
 
                   <div className={`flex items-center justify-between pt-2.5 border-t text-[11px] gap-2 ${

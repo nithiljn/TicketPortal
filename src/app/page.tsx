@@ -349,7 +349,7 @@ export default function Home() {
     setIsModalOpen(true)
   }
 
-  const handleOpenViewTicket = (ticket: Ticket) => {
+  const handleOpenViewTicket = async (ticket: Ticket) => {
     setEditingTicket(ticket)
     setModalMode('view')
     setIsModalOpen(true)
@@ -358,9 +358,47 @@ export default function Home() {
       url.searchParams.set('ticket', ticket.ticketId || ticket.id)
       window.history.replaceState(null, '', url.toString())
     }
+
+    // On-demand fetch of full details (description, commands) if not yet loaded
+    if (ticket.description === undefined || ticket.description === null) {
+      try {
+        const res = await fetchGraphQL<{ ticket: Ticket | null }>(
+          /* GraphQL */ `
+            query GetSingleTicketDetails($id: ID, $ticketId: String) {
+              ticket(id: $id, ticketId: $ticketId) {
+                id
+                ticketId
+                title
+                description
+                commands
+                status
+                priority
+                category
+                version
+                projectName
+                createdBy
+                updatedBy
+                createdAt
+                updatedAt
+                isBookmarked
+              }
+            }
+          `,
+          { id: ticket.id, ticketId: ticket.ticketId || ticket.id }
+        )
+        if (res?.ticket) {
+          setEditingTicket(res.ticket)
+          setTickets((prev) =>
+            prev.map((t) => (t.id === ticket.id ? { ...t, ...res.ticket } : t))
+          )
+        }
+      } catch (err) {
+        console.error('Error fetching ticket details:', err)
+      }
+    }
   }
 
-  const handleOpenEditTicket = (ticket: Ticket) => {
+  const handleOpenEditTicket = async (ticket: Ticket) => {
     setEditingTicket(ticket)
     setModalMode('edit')
     setIsModalOpen(true)
@@ -368,6 +406,44 @@ export default function Home() {
       const url = new URL(window.location.href)
       url.searchParams.set('ticket', ticket.ticketId || ticket.id)
       window.history.replaceState(null, '', url.toString())
+    }
+
+    // On-demand fetch of full details for editing if not yet loaded
+    if (ticket.description === undefined || ticket.description === null) {
+      try {
+        const res = await fetchGraphQL<{ ticket: Ticket | null }>(
+          /* GraphQL */ `
+            query GetSingleTicketDetails($id: ID, $ticketId: String) {
+              ticket(id: $id, ticketId: $ticketId) {
+                id
+                ticketId
+                title
+                description
+                commands
+                status
+                priority
+                category
+                version
+                projectName
+                createdBy
+                updatedBy
+                createdAt
+                updatedAt
+                isBookmarked
+              }
+            }
+          `,
+          { id: ticket.id, ticketId: ticket.ticketId || ticket.id }
+        )
+        if (res?.ticket) {
+          setEditingTicket(res.ticket)
+          setTickets((prev) =>
+            prev.map((t) => (t.id === ticket.id ? { ...t, ...res.ticket } : t))
+          )
+        }
+      } catch (err) {
+        console.error('Error fetching ticket details for edit:', err)
+      }
     }
   }
 
@@ -428,8 +504,6 @@ export default function Home() {
               id
               ticketId
               title
-              description
-              commands
               status
               priority
               category
@@ -836,6 +910,36 @@ export default function Home() {
       setEditingTicket(match)
       setModalMode('view')
       setIsModalOpen(true)
+      if (match.description === undefined || match.description === null) {
+        fetchGraphQL<{ ticket: Ticket | null }>(
+          /* GraphQL */ `
+            query GetSingleTicketUrl($ticketId: String, $id: ID) {
+              ticket(ticketId: $ticketId, id: $id) {
+                id
+                ticketId
+                title
+                description
+                commands
+                status
+                priority
+                category
+                version
+                projectName
+                createdBy
+                updatedBy
+                createdAt
+                updatedAt
+                isBookmarked
+              }
+            }
+          `,
+          { ticketId: targetId, id: targetId }
+        )
+          .then((res) => {
+            if (res?.ticket) setEditingTicket(res.ticket)
+          })
+          .catch(() => {})
+      }
     } else {
       fetchGraphQL<{ ticket: Ticket | null }>(
         /* GraphQL */ `

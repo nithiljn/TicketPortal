@@ -145,8 +145,12 @@ export function TicketModal({
   useEffect(() => {
     if (existingTicket) {
       setTitle(existingTicket.title)
-      setDescription(existingTicket.description || '')
-      setCommands(existingTicket.commands || '')
+      if (existingTicket.description !== undefined) {
+        setDescription(existingTicket.description || '')
+      }
+      if (existingTicket.commands !== undefined) {
+        setCommands(existingTicket.commands || '')
+      }
       setStatus(existingTicket.status)
       setPriority(existingTicket.priority)
       setCategory(existingTicket.category || 'DEV')
@@ -588,6 +592,13 @@ export function TicketModal({
                       {existingTicket.description}
                     </div>
                   )
+                ) : existingTicket.description === undefined ? (
+                  <div className="flex items-center gap-2 py-3 justify-center text-xs text-[#86868b]">
+                    <svg className="w-3.5 h-3.5 animate-spin text-[#86868b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" strokeDasharray="30" strokeDashoffset="10" />
+                    </svg>
+                    <span>Loading ticket details...</span>
+                  </div>
                 ) : (
                   <p className="text-xs italic text-[#86868b] font-sans">
                     No description provided for this ticket.
@@ -664,6 +675,13 @@ export function TicketModal({
                         </div>
                       )
                     })}
+                  </div>
+                ) : existingTicket.commands === undefined ? (
+                  <div className="flex items-center gap-2 py-3 justify-center text-xs text-[#86868b]">
+                    <svg className="w-3.5 h-3.5 animate-spin text-[#86868b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" strokeDasharray="30" strokeDashoffset="10" />
+                    </svg>
+                    <span>Loading commands...</span>
                   </div>
                 ) : (
                   <p className="text-xs italic text-[#86868b] font-sans">

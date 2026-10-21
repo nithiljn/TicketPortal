@@ -710,7 +710,6 @@ export default function Home() {
             date
             paymentMethod
             projectName
-            notes
             createdBy
             createdAt
             updatedAt
@@ -1554,9 +1553,44 @@ export default function Home() {
     setIsExpenseModalOpen(true)
   }
 
-  const handleOpenEditExpense = (exp: Expense) => {
+  const handleOpenEditExpense = async (exp: Expense) => {
     setExpenseToEdit(exp)
     setIsExpenseModalOpen(true)
+
+    // On-demand fetch of full details (notes) if not yet loaded
+    if (exp.notes === undefined || exp.notes === null) {
+      try {
+        const res = await fetchGraphQL<{ expense: Expense | null }>(
+          /* GraphQL */ `
+            query GetSingleExpenseDetails($id: ID!) {
+              expense(id: $id) {
+                id
+                title
+                amount
+                currency
+                category
+                date
+                paymentMethod
+                projectName
+                notes
+                createdBy
+                createdAt
+                updatedAt
+              }
+            }
+          `,
+          { id: exp.id }
+        )
+        if (res?.expense) {
+          setExpenseToEdit(res.expense)
+          setExpenses((prev) =>
+            prev.map((e) => (e.id === exp.id ? { ...e, ...res.expense } : e))
+          )
+        }
+      } catch (err) {
+        console.error('Error fetching expense details:', err)
+      }
+    }
   }
 
   const handleSaveExpense = async (
@@ -2191,6 +2225,11 @@ export default function Home() {
                   categories={expenseCategories}
                   onAddExpense={handleOpenAddExpense}
                   onEditExpense={handleOpenEditExpense}
+                  onExpenseUpdated={(updated) =>
+                    setExpenses((prev) =>
+                      prev.map((e) => (e.id === updated.id ? { ...e, ...updated } : e))
+                    )
+                  }
                   onDeleteExpense={(exp) => setExpenseToDelete(exp)}
                   onOpenCategoryManager={() => setIsCategoryModalOpen(true)}
                   theme={theme}

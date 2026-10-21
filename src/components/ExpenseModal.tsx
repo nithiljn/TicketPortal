@@ -175,7 +175,9 @@ export function ExpenseModal({
         setDate(expense.date || todayStr)
         setPaymentMethod((expense.paymentMethod as PaymentMethod) || 'UPI')
         setProjectName(expense.projectName || 'General')
-        setNotes(expense.notes || '')
+        if (expense.notes !== undefined) {
+          setNotes(expense.notes || '')
+        }
       } else {
         setTitle('')
         setAmount('')
@@ -596,10 +598,15 @@ export function ExpenseModal({
             </div>
             <textarea
               rows={4}
-              placeholder={'Add itemized breakdown or notes, e.g.:\n• Morning food - 40 rs\n• Evening snacks - 25 rs\n• Evening tea - 15 rs'}
+              placeholder={
+                expense && expense.notes === undefined
+                  ? 'Loading receipt notes from server...'
+                  : 'Add itemized breakdown or notes, e.g.:\n• Morning food - 40 rs\n• Evening snacks - 25 rs\n• Evening tea - 15 rs'
+              }
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               onKeyDown={handleNotesKeyDown}
+              disabled={Boolean(expense && expense.notes === undefined)}
               className={`w-full rounded-[14px] border p-3.5 text-xs focus:outline-none min-h-[96px] max-h-[190px] resize-y overflow-y-auto leading-relaxed custom-scrollbar transition ${inputBg}`}
             />
             <p className="mt-1.5 text-[11px] text-[#86868b] dark:text-[#a1a1a6]">

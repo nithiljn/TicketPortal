@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react'
 import { Expense, PaymentMethod } from '@/types'
 import { Button } from '@/components/Button'
 import { generateExpensePdf } from '@/lib/generateExpensePdf'
+import { fetchGraphQL } from '@/lib/graphql-client'
 
 interface ExpenseTrackerProps {
   expenses: Expense[]
@@ -14,6 +15,7 @@ interface ExpenseTrackerProps {
   onEditExpense: (expense: Expense) => void
   onDeleteExpense: (expense: Expense) => void
   onOpenCategoryManager: () => void
+  onExpenseUpdated?: (expense: Expense) => void
   theme?: 'dark' | 'light'
   // Synced Filter Props from Page / Sidebar
   selectedCategory?: string | 'ALL'
@@ -207,6 +209,7 @@ export function ExpenseTracker({
   onEditExpense,
   onDeleteExpense,
   onOpenCategoryManager,
+  onExpenseUpdated,
   theme = 'light',
   selectedCategory: propCategory,
   onSelectCategory,
@@ -236,6 +239,41 @@ export function ExpenseTracker({
   const [internalHighExpense, setInternalHighExpense] = useState<boolean>(false)
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null)
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
+
+  const handleViewExpense = async (exp: Expense) => {
+    setViewingExpense(exp)
+    if (exp.notes === undefined || exp.notes === null) {
+      try {
+        const res = await fetchGraphQL<{ expense: Expense | null }>(
+          /* GraphQL */ `
+            query GetSingleExpenseDetails($id: ID!) {
+              expense(id: $id) {
+                id
+                title
+                amount
+                currency
+                category
+                date
+                paymentMethod
+                projectName
+                notes
+                createdBy
+                createdAt
+                updatedAt
+              }
+            }
+          `,
+          { id: exp.id }
+        )
+        if (res?.expense) {
+          setViewingExpense(res.expense)
+          onExpenseUpdated?.(res.expense)
+        }
+      } catch (err) {
+        console.error('Error fetching expense details:', err)
+      }
+    }
+  }
 
   const activeMonth = propMonth !== undefined ? propMonth : internalMonth
   const handleMonthChange = (m: string) => {
@@ -1224,14 +1262,14 @@ export function ExpenseTracker({
                     return (
                       <div
                         key={exp.id}
-                        onDoubleClick={() => setViewingExpense(exp)}
+                        onDoubleClick={() => handleViewExpense(exp)}
                         className={`p-3.5 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition cursor-pointer select-none ${
                           isDark ? 'hover:bg-white/[0.04]' : 'hover:bg-[#f5f5f7]/60'
                         }`}
                         title="Double-click to view receipt details"
                       >
                         {/* Left Info */}
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border ${
                             isDark ? 'bg-white/[0.06] border-white/[0.08]' : 'bg-[#f5f5f7] border-black/[0.04]'
                           }`}>
@@ -1239,7 +1277,7 @@ export function ExpenseTracker({
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
                               <span className="text-xs sm:text-sm font-semibold text-[#1d1d1f] dark:text-white break-words">
                                 {exp.title}
                               </span>
@@ -1261,14 +1299,6 @@ export function ExpenseTracker({
                                 #{exp.projectName}
                               </span>
                             </div>
-
-                            {exp.notes && (
-                              <div className="mt-1">
-                                <p className="text-[11px] text-zinc-400 whitespace-pre-line line-clamp-2 leading-relaxed break-words">
-                                  {exp.notes}
-                                </p>
-                              </div>
-                            )}
                           </div>
                         </div>
 
@@ -1289,7 +1319,7 @@ export function ExpenseTracker({
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation()
-                                setViewingExpense(exp)
+                                handleViewExpense(exp)
                               }}
                               className={`h-7.5 px-2.5 sm:px-3 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer inline-flex items-center gap-1.5 ${appleActionBtn}`}
                               title="View Details"
@@ -1484,7 +1514,12 @@ export function ExpenseTracker({
                   )}
                 </div>
 
-                {viewingExpense.notes ? (
+                {viewingExpense.notes === undefined ? (
+                  <div className="flex items-center gap-2.5 py-4 text-xs text-[#86868b] dark:text-[#a1a1a6]">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
+                    <span>Loading receipt details from server...</span>
+                  </div>
+                ) : viewingExpense.notes ? (
                   <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
                     {viewingExpense.notes.split('\n').map((line, idx) => {
                       const trimmed = line.trim()

@@ -584,7 +584,7 @@ export function InboxTable({
                   {paginatedTickets.map((ticket) => (
                     <tr
                       key={ticket.id}
-                      className={`transition-colors group cursor-pointer ${tableRowHover}`}
+                      className={`transition-colors group cursor-pointer align-middle ${tableRowHover}`}
                       onDoubleClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
                       onClick={() => (onViewTicket ? onViewTicket(ticket) : onEditTicket(ticket))}
                     >
@@ -650,7 +650,7 @@ export function InboxTable({
                       </td>
 
                       {/* Title */}
-                      <td className="py-3 px-4 max-w-sm">
+                      <td className="py-3 px-4 max-w-sm align-middle">
                         <div className="flex items-center gap-2">
                           <span className={`font-medium transition truncate ${ticketTitle}`}>
                             {ticket.title}

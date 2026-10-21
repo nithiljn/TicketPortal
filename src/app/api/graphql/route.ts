@@ -115,6 +115,15 @@ const typeDefs = /* GraphQL */ `
     notes: String
   }
 
+  type TicketCounts {
+    total: Int!
+    todo: Int!
+    inProgress: Int!
+    done: Int!
+    blocked: Int!
+    bookmarked: Int
+  }
+
   # QUERIES
   type Query {
     tickets(
@@ -124,11 +133,27 @@ const typeDefs = /* GraphQL */ `
       projectName: String
       search: String
       userEmail: String
+      isBookmarked: Boolean
+      limit: Int
+      offset: Int
     ): [Ticket!]!
+    ticketsCount(
+      status: TicketStatus
+      priority: TicketPriority
+      category: String
+      projectName: String
+      search: String
+      userEmail: String
+      isBookmarked: Boolean
+    ): Int!
+    ticketStats(
+      projectName: String
+      userEmail: String
+    ): TicketCounts!
     ticket(id: ID, ticketId: String): Ticket
     projects(userEmail: String, type: String): [String!]!
     versions(userEmail: String): [String!]!
-    dailyNotes(date: String, userEmail: String): [DailyNote!]!
+    dailyNotes(date: String, userEmail: String, limit: Int, offset: Int): [DailyNote!]!
     expenses(
       userEmail: String
       projectName: String
@@ -136,6 +161,8 @@ const typeDefs = /* GraphQL */ `
       paymentMethod: String
       month: String
       search: String
+      limit: Int
+      offset: Int
     ): [Expense!]!
     expenseCategories(userEmail: String): [String!]!
   }
@@ -451,6 +478,9 @@ const resolvers = {
         projectName?: string
         search?: string
         userEmail?: string
+        limit?: number
+        offset?: number
+        isBookmarked?: boolean
       },
       context?: GraphQLContext
     ) => {
@@ -493,6 +523,15 @@ const resolvers = {
           `title.ilike.%${args.search}%,description.ilike.%${args.search}%`
         )
       }
+      if (args.isBookmarked) {
+        query = query.or('is_bookmarked.eq.true,description.ilike.%<!-- TICKET_BOOKMARKED -->%')
+      }
+
+      // Server-side Pagination Range
+      if (typeof args.limit === 'number' && args.limit > 0) {
+        const offset = typeof args.offset === 'number' && args.offset >= 0 ? args.offset : 0
+        query = query.range(offset, offset + args.limit - 1)
+      }
 
       const { data, error } = await query
       if (error) {
@@ -510,6 +549,132 @@ const resolvers = {
       })
 
       return rawRows.map((r) => formatTicket(r, seqMap.get(r.id)))
+    },
+
+    ticketsCount: async (
+      _: unknown,
+      args: {
+        status?: string
+        priority?: string
+        category?: string
+        projectName?: string
+        search?: string
+        userEmail?: string
+        isBookmarked?: boolean
+      },
+      context?: GraphQLContext
+    ) => {
+      const userEmail = resolveTargetEmail(args.userEmail, context)
+      if (!userEmail) return 0
+      const prefix = userEmail.split('@')[0]
+
+      let query = supabase
+        .from('tickets')
+        .select('id', { count: 'exact', head: true })
+
+      if (userEmail === 'admin@ticketflow.io') {
+        query = query.or(
+          'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+        )
+      } else {
+        query = query.or(
+          `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+        )
+      }
+
+      if (args.projectName && args.projectName !== 'ALL') {
+        query = query.eq('project_name', args.projectName)
+      }
+      if (args.status) {
+        query = query.eq('status', args.status)
+      }
+      if (args.priority) {
+        query = query.eq('priority', args.priority)
+      }
+      if (args.category && args.category !== 'ALL') {
+        query = query.ilike('category', args.category)
+      }
+      if (args.search) {
+        query = query.or(
+          `title.ilike.%${args.search}%,description.ilike.%${args.search}%`
+        )
+      }
+      if (args.isBookmarked) {
+        query = query.or('is_bookmarked.eq.true,description.ilike.%<!-- TICKET_BOOKMARKED -->%')
+      }
+
+      const { count, error } = await query
+      if (error) {
+        console.error('Supabase ticketsCount error:', error)
+        return 0
+      }
+      return count || 0
+    },
+
+    ticketStats: async (
+      _: unknown,
+      args: {
+        projectName?: string
+        userEmail?: string
+      },
+      context?: GraphQLContext
+    ) => {
+      const userEmail = resolveTargetEmail(args.userEmail, context)
+      if (!userEmail) {
+        return { total: 0, todo: 0, inProgress: 0, done: 0, blocked: 0, bookmarked: 0 }
+      }
+      const prefix = userEmail.split('@')[0]
+
+      let query = supabase
+        .from('tickets')
+        .select('status, is_bookmarked, description')
+
+      if (userEmail === 'admin@ticketflow.io') {
+        query = query.or(
+          'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+        )
+      } else {
+        query = query.or(
+          `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+        )
+      }
+
+      if (args.projectName && args.projectName !== 'ALL') {
+        query = query.eq('project_name', args.projectName)
+      }
+
+      const { data, error } = await query
+      if (error || !data) {
+        return { total: 0, todo: 0, inProgress: 0, done: 0, blocked: 0, bookmarked: 0 }
+      }
+
+      let todo = 0
+      let inProgress = 0
+      let done = 0
+      let blocked = 0
+      let bookmarked = 0
+
+      for (const row of data) {
+        const s = (row.status || '').toUpperCase()
+        if (s === 'TODO') todo++
+        else if (s === 'IN_PROGRESS') inProgress++
+        else if (s === 'DONE') done++
+        else if (s === 'BLOCKED') blocked++
+
+        const isBm =
+          row.is_bookmarked ||
+          (row.description && row.description.includes('<!-- TICKET_BOOKMARKED -->'))
+        if (isBm) bookmarked++
+      }
+
+      return {
+        total: data.length,
+        todo,
+        inProgress,
+        done,
+        blocked,
+        bookmarked,
+      }
     },
 
     projects: async (
@@ -756,7 +921,12 @@ const resolvers = {
 
     dailyNotes: async (
       _: unknown,
-      { date, userEmail }: { date?: string; userEmail?: string },
+      {
+        date,
+        userEmail,
+        limit,
+        offset,
+      }: { date?: string; userEmail?: string; limit?: number; offset?: number },
       context?: GraphQLContext
     ) => {
       // Security: Prioritize cryptographically verified token email
@@ -786,6 +956,11 @@ const resolvers = {
         )
       }
 
+      if (typeof limit === 'number' && limit > 0) {
+        const off = typeof offset === 'number' && offset >= 0 ? offset : 0
+        query = query.range(off, off + limit - 1)
+      }
+
       const { data, error } = await query
       if (error) {
         console.error('Supabase dailyNotes query error:', error)
@@ -803,6 +978,8 @@ const resolvers = {
         paymentMethod,
         month,
         search,
+        limit,
+        offset,
       }: {
         userEmail?: string
         projectName?: string
@@ -810,6 +987,8 @@ const resolvers = {
         paymentMethod?: string
         month?: string
         search?: string
+        limit?: number
+        offset?: number
       },
       context?: GraphQLContext
     ) => {
@@ -856,6 +1035,11 @@ const resolvers = {
               ? `${y + 1}-01-01`
               : `${y}-${String(m + 1).padStart(2, '0')}-01`
           query = query.gte('date', startDate).lt('date', nextMonth)
+        }
+
+        if (typeof limit === 'number' && limit > 0) {
+          const off = typeof offset === 'number' && offset >= 0 ? offset : 0
+          query = query.range(off, off + limit - 1)
         }
 
         const { data, error } = await query

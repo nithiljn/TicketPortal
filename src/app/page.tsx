@@ -82,6 +82,19 @@ export default function Home() {
   const { user, isLoading: isAuthLoading, logout } = useAuth()
 
   const [tickets, setTickets] = useState<Ticket[]>([])
+  const [inboxPage, setInboxPage] = useState(1)
+  const [inboxPageSize, setInboxPageSize] = useState(20)
+  const [inboxTotalCount, setInboxTotalCount] = useState(0)
+  const [ticketStats, setTicketStats] = useState({
+    total: 0,
+    todo: 0,
+    inProgress: 0,
+    done: 0,
+    blocked: 0,
+    bookmarked: 0,
+  })
+  const [boardTickets, setBoardTickets] = useState<Ticket[]>([])
+  const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set(['inbox']))
   const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [expenseCategories, setExpenseCategories] = useState<string[]>([])
@@ -206,13 +219,6 @@ export default function Home() {
     }, 200)
   }, [])
 
-  const handleTabChange = useCallback(
-    (targetTab: 'inbox' | 'dashboard' | 'board' | 'notes' | 'expenses') => {
-      if (targetTab === activeTab) return
-      setActiveTab(targetTab)
-    },
-    [activeTab]
-  )
 
   const handleSelectWorkspace = useCallback(
     (workspace: string) => {
@@ -379,52 +385,249 @@ export default function Home() {
     }
   }
 
-  // 1. Fetch Data from GraphQL
-  const loadData = useCallback(async () => {
-    // Security: Do not fetch or flash data before authentication resolves
-    if (isAuthLoading || !user?.email) {
-      setTickets([])
-      setDailyNotes([])
-      setExpenses([])
-      setExpenseCategories([])
-      setLoading(false)
-      return
-    }
+  // 1. Inbox Data Loader (Server-side Paginated)
+  const loadInboxData = useCallback(
+    async (page = 1, pageSize = 20) => {
+      if (isAuthLoading || !user?.email) {
+        setTickets([])
+        setLoading(false)
+        return
+      }
 
-    try {
-      setLoading(true)
-      setError('')
+      try {
+        setLoading(true)
+        setError('')
+        const offset = Math.max(0, (page - 1) * pageSize)
 
-      const query = /* GraphQL */ `
-        query GetPortalData($projectName: String, $search: String, $userEmail: String) {
-          projects(userEmail: $userEmail, type: "TICKET")
-          expenseProjects: projects(userEmail: $userEmail, type: "EXPENSE")
-          versions(userEmail: $userEmail)
-          tickets(projectName: $projectName, search: $search, userEmail: $userEmail) {
-            id
-            ticketId
-            title
-            description
-            commands
-            status
-            priority
-            category
-            version
-            projectName
-            createdBy
-            updatedBy
-            createdAt
-            updatedAt
-            isBookmarked
+        const query = /* GraphQL */ `
+          query GetInboxData(
+            $projectName: String
+            $search: String
+            $userEmail: String
+            $limit: Int
+            $offset: Int
+            $status: TicketStatus
+            $priority: TicketPriority
+            $category: String
+            $isBookmarked: Boolean
+          ) {
+            projects(userEmail: $userEmail, type: "TICKET")
+            expenseProjects: projects(userEmail: $userEmail, type: "EXPENSE")
+            versions(userEmail: $userEmail)
+            tickets(
+              projectName: $projectName
+              search: $search
+              userEmail: $userEmail
+              limit: $limit
+              offset: $offset
+              status: $status
+              priority: $priority
+              category: $category
+              isBookmarked: $isBookmarked
+            ) {
+              id
+              ticketId
+              title
+              description
+              commands
+              status
+              priority
+              category
+              version
+              projectName
+              createdBy
+              updatedBy
+              createdAt
+              updatedAt
+              isBookmarked
+            }
+            ticketsCount(
+              projectName: $projectName
+              search: $search
+              userEmail: $userEmail
+              status: $status
+              priority: $priority
+              category: $category
+              isBookmarked: $isBookmarked
+            )
+            ticketStats(
+              projectName: $projectName
+              userEmail: $userEmail
+            ) {
+              total
+              todo
+              inProgress
+              done
+              blocked
+              bookmarked
+            }
           }
-          dailyNotes(userEmail: $userEmail) {
+        `
+
+        const data = await fetchGraphQL<{
+          projects: string[]
+          expenseProjects?: string[]
+          versions?: string[]
+          tickets: Ticket[]
+          ticketsCount: number
+          ticketStats: {
+            total: number
+            todo: number
+            inProgress: number
+            done: number
+            blocked: number
+            bookmarked: number
+          }
+        }>(query, {
+          projectName: selectedProject !== 'ALL' ? selectedProject : null,
+          search: searchTerm.trim() || null,
+          userEmail: user.email,
+          limit: pageSize,
+          offset,
+          status: selectedStatuses.length === 1 ? selectedStatuses[0] : null,
+          priority: selectedPriorities.length === 1 ? selectedPriorities[0] : null,
+          category: selectedCategories.length === 1 ? selectedCategories[0] : null,
+          isBookmarked: showOnlyBookmarked ? true : null,
+        })
+
+        setTickets(data.tickets || [])
+        setInboxTotalCount(data.ticketsCount ?? 0)
+        setInboxPage(page)
+        setInboxPageSize(pageSize)
+        if (data.ticketStats) {
+          setTicketStats(data.ticketStats)
+        }
+        setAvailableVersions(data.versions || [])
+
+        // 1. Process Expense Workspaces for sidebar dropdown
+        const serverExpenseProjects = (data.expenseProjects || []).filter(
+          (p: string) => !p.startsWith('version:::') && !p.includes(':::version:::')
+        )
+        let localExpenseWs: string[] = []
+        const expenseStorageKey = `tp_expense_workspaces_${user.email.toLowerCase()}`
+        try {
+          const stored = localStorage.getItem(expenseStorageKey)
+          if (stored) {
+            localExpenseWs = JSON.parse(stored)
+          }
+        } catch {
+          // ignore
+        }
+        const mergedExpenseProjects = Array.from(
+          new Set([...serverExpenseProjects, ...localExpenseWs])
+        ).filter((w) => !w.startsWith('version:::') && !w.includes(':::version:::'))
+        if (mergedExpenseProjects.length === 0) {
+          mergedExpenseProjects.push('Expense_data')
+        }
+        setAvailableExpenseProjects(mergedExpenseProjects)
+
+        // 2. Process Ticket Workspaces
+        const expenseWsSet = new Set(mergedExpenseProjects.map((w) => w.toLowerCase()))
+        let localTicketWs: string[] = []
+        const ticketStorageKey = `tp_workspaces_${user.email.toLowerCase()}`
+        try {
+          const stored = localStorage.getItem(ticketStorageKey)
+          if (stored) {
+            localTicketWs = JSON.parse(stored)
+          }
+          localStorage.removeItem('tp_workspaces')
+        } catch {
+          // ignore
+        }
+
+        const serverTicketProjects = (data.projects || []).filter(
+          (p: string) =>
+            !p.startsWith('version:::') &&
+            !p.includes(':::version:::') &&
+            !expenseWsSet.has(p.toLowerCase())
+        )
+        const validLocalTicketWs = localTicketWs.filter(
+          (w) =>
+            !w.startsWith('version:::') &&
+            !w.includes(':::version:::') &&
+            !expenseWsSet.has(w.toLowerCase()) &&
+            (w !== 'Ticket Portal' || serverTicketProjects.includes('Ticket Portal'))
+        )
+        const mergedTicketProjects = Array.from(new Set([...serverTicketProjects, ...validLocalTicketWs]))
+        setAvailableProjects(mergedTicketProjects)
+        if (
+          selectedProject.startsWith('version:::') ||
+          selectedProject.includes(':::version:::') ||
+          expenseWsSet.has(selectedProject.toLowerCase())
+        ) {
+          setSelectedProject('ALL')
+        }
+
+        try {
+          localStorage.setItem(ticketStorageKey, JSON.stringify(mergedTicketProjects))
+        } catch {
+          // ignore
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error loading inbox data'
+        setError(msg)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [
+      isAuthLoading,
+      user?.email,
+      selectedProject,
+      searchTerm,
+      selectedStatuses,
+      selectedPriorities,
+      selectedCategories,
+      showOnlyBookmarked,
+    ]
+  )
+
+  // 2. Daily Notes Loader
+  const loadNotesData = useCallback(async () => {
+    if (!user?.email) return
+    try {
+      const query = /* GraphQL */ `
+        query GetNotesData($userEmail: String, $date: String, $limit: Int, $offset: Int) {
+          dailyNotes(userEmail: $userEmail, date: $date, limit: $limit, offset: $offset) {
             id
             date
             content
             createdBy
             createdAt
           }
-          expenses(userEmail: $userEmail) {
+        }
+      `
+      const data = await fetchGraphQL<{ dailyNotes: DailyNote[] }>(query, {
+        userEmail: user.email,
+        limit: 100,
+        offset: 0,
+      })
+      setDailyNotes(data.dailyNotes || [])
+    } catch (err) {
+      console.error('Error loading notes:', err)
+    }
+  }, [user?.email])
+
+  // 3. Expenses Loader
+  const loadExpensesData = useCallback(async () => {
+    if (!user?.email) return
+    try {
+      const query = /* GraphQL */ `
+        query GetExpensesData(
+          $userEmail: String
+          $projectName: String
+          $month: String
+          $limit: Int
+          $offset: Int
+        ) {
+          expenseProjects: projects(userEmail: $userEmail, type: "EXPENSE")
+          expenses(
+            userEmail: $userEmail
+            projectName: $projectName
+            month: $month
+            limit: $limit
+            offset: $offset
+          ) {
             id
             title
             amount
@@ -441,115 +644,177 @@ export default function Home() {
           expenseCategories(userEmail: $userEmail)
         }
       `
-
       const data = await fetchGraphQL<{
-        projects: string[]
         expenseProjects?: string[]
-        versions?: string[]
-        tickets: Ticket[]
-        dailyNotes: DailyNote[]
         expenses: Expense[]
         expenseCategories: string[]
       }>(query, {
+        userEmail: user.email,
+        projectName: selectedExpenseProject !== 'ALL' ? selectedExpenseProject : null,
+        month: selectedExpenseMonth !== 'ALL' ? selectedExpenseMonth : null,
+        limit: 100,
+        offset: 0,
+      })
+
+      setExpenses(data.expenses || [])
+      setExpenseCategories(data.expenseCategories || [])
+      if (data.expenseProjects) {
+        const filtered = data.expenseProjects.filter(
+          (p) => !p.startsWith('version:::') && !p.includes(':::version:::')
+        )
+        setAvailableExpenseProjects((prev) => Array.from(new Set([...prev, ...filtered])))
+      }
+    } catch (err) {
+      console.error('Error loading expenses:', err)
+    }
+  }, [user?.email, selectedExpenseProject, selectedExpenseMonth])
+
+  // 4. Board Loader
+  const loadBoardData = useCallback(async () => {
+    if (!user?.email) return
+    try {
+      const query = /* GraphQL */ `
+        query GetBoardData(
+          $projectName: String
+          $search: String
+          $userEmail: String
+          $limit: Int
+          $offset: Int
+        ) {
+          tickets(
+            projectName: $projectName
+            search: $search
+            userEmail: $userEmail
+            limit: $limit
+            offset: $offset
+          ) {
+            id
+            ticketId
+            title
+            description
+            commands
+            status
+            priority
+            category
+            version
+            projectName
+            createdBy
+            updatedBy
+            createdAt
+            updatedAt
+            isBookmarked
+          }
+        }
+      `
+      const data = await fetchGraphQL<{ tickets: Ticket[] }>(query, {
         projectName: selectedProject !== 'ALL' ? selectedProject : null,
         search: searchTerm.trim() || null,
         userEmail: user.email,
+        limit: 200,
+        offset: 0,
       })
-
-      setTickets(data.tickets || [])
-      setAvailableVersions(data.versions || [])
-      setDailyNotes(data.dailyNotes || [])
-      setExpenses(data.expenses || [])
-      setExpenseCategories(data.expenseCategories || [])
-
-      // 1. Process Expense Workspaces
-      const serverExpenseProjects = (data.expenseProjects || []).filter(
-        (p: string) => !p.startsWith('version:::') && !p.includes(':::version:::')
-      )
-      let localExpenseWs: string[] = []
-      const expenseStorageKey = `tp_expense_workspaces_${user.email.toLowerCase()}`
-      try {
-        const stored = localStorage.getItem(expenseStorageKey)
-        if (stored) {
-          localExpenseWs = JSON.parse(stored)
-        }
-      } catch {
-        // ignore
-      }
-      const expensesInList = (data.expenses || []).map((e: Expense) => e.projectName).filter(Boolean)
-      const mergedExpenseProjects = Array.from(
-        new Set([...serverExpenseProjects, ...localExpenseWs, ...expensesInList])
-      ).filter((w) => !w.startsWith('version:::') && !w.includes(':::version:::'))
-      if (mergedExpenseProjects.length === 0) {
-        mergedExpenseProjects.push('Expense_data')
-      }
-      setAvailableExpenseProjects(mergedExpenseProjects)
-      if (selectedExpenseProject.startsWith('version:::') || selectedExpenseProject.includes(':::version:::')) {
-        setSelectedExpenseProject('ALL')
-      }
-      try {
-        localStorage.setItem(expenseStorageKey, JSON.stringify(mergedExpenseProjects))
-      } catch {
-        // ignore
-      }
-
-      // 2. Process Ticket Workspaces
-      const expenseWsSet = new Set(mergedExpenseProjects.map((w) => w.toLowerCase()))
-      let localTicketWs: string[] = []
-      const ticketStorageKey = `tp_workspaces_${user.email.toLowerCase()}`
-      try {
-        const stored = localStorage.getItem(ticketStorageKey)
-        if (stored) {
-          localTicketWs = JSON.parse(stored)
-        }
-        localStorage.removeItem('tp_workspaces')
-      } catch {
-        // ignore
-      }
-
-      const serverTicketProjects = (data.projects || []).filter(
-        (p: string) =>
-          !p.startsWith('version:::') &&
-          !p.includes(':::version:::') &&
-          !expenseWsSet.has(p.toLowerCase())
-      )
-      // Exclude expense workspaces or stale entries from ticket workspaces
-      const validLocalTicketWs = localTicketWs.filter(
-        (w) =>
-          !w.startsWith('version:::') &&
-          !w.includes(':::version:::') &&
-          !expenseWsSet.has(w.toLowerCase()) &&
-          (w !== 'Ticket Portal' || serverTicketProjects.includes('Ticket Portal'))
-      )
-      const mergedTicketProjects = Array.from(new Set([...serverTicketProjects, ...validLocalTicketWs]))
-      setAvailableProjects(mergedTicketProjects)
-      if (
-        selectedProject.startsWith('version:::') ||
-        selectedProject.includes(':::version:::') ||
-        expenseWsSet.has(selectedProject.toLowerCase())
-      ) {
-        setSelectedProject('ALL')
-      }
-
-      // Sync cleaned ticket workspaces back to localStorage
-      try {
-        localStorage.setItem(ticketStorageKey, JSON.stringify(mergedTicketProjects))
-      } catch {
-        // ignore
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error loading data'
-      setError(msg)
-    } finally {
-      setLoading(false)
+      setBoardTickets(data.tickets || [])
+    } catch (err) {
+      console.error('Error loading board data:', err)
     }
-  }, [selectedProject, searchTerm, user?.email, isAuthLoading])
+  }, [user?.email, selectedProject, searchTerm])
+
+  // 5. Dashboard Loader
+  const loadDashboardData = useCallback(async () => {
+    if (!user?.email) return
+    try {
+      const query = /* GraphQL */ `
+        query GetDashboardData($projectName: String, $userEmail: String) {
+          tickets(projectName: $projectName, userEmail: $userEmail, limit: 300, offset: 0) {
+            id
+            ticketId
+            title
+            description
+            commands
+            status
+            priority
+            category
+            version
+            projectName
+            createdBy
+            updatedBy
+            createdAt
+            updatedAt
+            isBookmarked
+          }
+          dailyNotes(userEmail: $userEmail, limit: 100, offset: 0) {
+            id
+            date
+            content
+            createdBy
+            createdAt
+          }
+        }
+      `
+      const data = await fetchGraphQL<{ tickets: Ticket[]; dailyNotes: DailyNote[] }>(query, {
+        projectName: selectedProject !== 'ALL' ? selectedProject : null,
+        userEmail: user.email,
+      })
+      if (data.tickets) setBoardTickets(data.tickets)
+      if (data.dailyNotes) setDailyNotes(data.dailyNotes)
+    } catch (err) {
+      console.error('Error loading dashboard data:', err)
+    }
+  }, [user?.email, selectedProject])
+
+  // General loadData wrapper (for error retry and refresh)
+  const loadData = useCallback(() => {
+    loadInboxData(inboxPage, inboxPageSize)
+    if (loadedTabs.has('notes')) loadNotesData()
+    if (loadedTabs.has('expenses')) loadExpensesData()
+    if (loadedTabs.has('board')) loadBoardData()
+    if (loadedTabs.has('dashboard')) loadDashboardData()
+  }, [inboxPage, inboxPageSize, loadInboxData, loadedTabs, loadNotesData, loadExpensesData, loadBoardData, loadDashboardData])
+
+  // Tab change handler with lazy-loading
+  const handleTabChange = useCallback(
+    async (targetTab: 'inbox' | 'dashboard' | 'board' | 'notes' | 'expenses') => {
+      if (targetTab === activeTab) return
+      setActiveTab(targetTab)
+
+      if (!loadedTabs.has(targetTab)) {
+        setIsTabSwitching(true)
+        setTabSwitchTarget(targetTab)
+        try {
+          if (targetTab === 'notes') await loadNotesData()
+          else if (targetTab === 'expenses') await loadExpensesData()
+          else if (targetTab === 'board') await loadBoardData()
+          else if (targetTab === 'dashboard') await loadDashboardData()
+          setLoadedTabs((prev) => new Set(prev).add(targetTab))
+        } finally {
+          setIsTabSwitching(false)
+        }
+      }
+    },
+    [activeTab, loadedTabs, loadNotesData, loadExpensesData, loadBoardData, loadDashboardData]
+  )
 
   useEffect(() => {
     if (!isAuthLoading && user?.email) {
-      loadData()
+      loadInboxData(1, inboxPageSize)
     }
-  }, [loadData, isAuthLoading, user?.email])
+  }, [loadInboxData, isAuthLoading, user?.email])
+
+  // Re-fetch expenses when expense filters change while on expenses tab
+  useEffect(() => {
+    if (activeTab === 'expenses' && loadedTabs.has('expenses')) {
+      loadExpensesData()
+    }
+  }, [activeTab, loadedTabs, selectedExpenseProject, selectedExpenseMonth, loadExpensesData])
+
+  // Re-fetch board / dashboard when workspace changes
+  useEffect(() => {
+    if (activeTab === 'board' && loadedTabs.has('board')) {
+      loadBoardData()
+    } else if (activeTab === 'dashboard' && loadedTabs.has('dashboard')) {
+      loadDashboardData()
+    }
+  }, [activeTab, loadedTabs, selectedProject, searchTerm, loadBoardData, loadDashboardData])
 
   // Open ticket modal if ticket or ticketId query param is present in URL
   useEffect(() => {
@@ -674,16 +939,16 @@ export default function Home() {
 
   // Count total bookmarked tickets
   const bookmarkedCount = useMemo(() => {
-    return tickets.filter((t) => t.isBookmarked).length
-  }, [tickets])
+    return ticketStats.bookmarked || tickets.filter((t) => t.isBookmarked).length
+  }, [ticketStats.bookmarked, tickets])
 
   // 3. Facet Counts
   const ticketCounts = useMemo(() => {
-    const total = tickets.length
-    const todo = tickets.filter((t) => t.status === 'TODO').length
-    const inProgress = tickets.filter((t) => t.status === 'IN_PROGRESS').length
-    const done = tickets.filter((t) => t.status === 'DONE').length
-    const blocked = tickets.filter((t) => t.status === 'BLOCKED').length
+    const total = ticketStats.total || tickets.length
+    const todo = ticketStats.todo
+    const inProgress = ticketStats.inProgress
+    const done = ticketStats.done
+    const blocked = ticketStats.blocked
     const notesCount = dailyNotes.length
 
     // Category counts
@@ -706,7 +971,7 @@ export default function Home() {
     })
 
     return { total, todo, inProgress, done, blocked, notesCount, categoryCounts, versionCounts }
-  }, [tickets, dailyNotes])
+  }, [ticketStats, tickets, dailyNotes])
 
   // Expense available months
   const availableExpenseMonths = useMemo(() => {
@@ -770,9 +1035,12 @@ export default function Home() {
       setTickets((prev) =>
         prev.map((t) => (t.id === id ? { ...t, status: newStatus } : t))
       )
+      setBoardTickets((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, status: newStatus } : t))
+      )
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Failed to update status')
-      loadData()
+      loadInboxData(inboxPage, inboxPageSize)
     }
   }
 
@@ -868,7 +1136,9 @@ export default function Home() {
         message: `"${ticketData.title}" added to ${ticketData.projectName}`,
       })
     }
-    loadData()
+    loadInboxData(inboxPage, inboxPageSize)
+    if (loadedTabs.has('board')) loadBoardData()
+    if (loadedTabs.has('dashboard')) loadDashboardData()
   }
 
   const handleConfirmDeleteTicket = async () => {
@@ -883,6 +1153,8 @@ export default function Home() {
       `
       await fetchGraphQL(mutation, { id: ticketToDelete.id, userEmail: user?.email })
       setTickets((prev) => prev.filter((t) => t.id !== ticketToDelete.id))
+      setBoardTickets((prev) => prev.filter((t) => t.id !== ticketToDelete.id))
+      setInboxTotalCount((c) => Math.max(0, c - 1))
       setTicketToDelete(null)
       setToast({
         isOpen: true,
@@ -902,6 +1174,13 @@ export default function Home() {
     setTickets((prev) =>
       prev.map((t) => (t.id === ticket.id ? { ...t, isBookmarked: nextState } : t))
     )
+    setBoardTickets((prev) =>
+      prev.map((t) => (t.id === ticket.id ? { ...t, isBookmarked: nextState } : t))
+    )
+    setTicketStats((prev) => ({
+      ...prev,
+      bookmarked: Math.max(0, prev.bookmarked + (nextState ? 1 : -1)),
+    }))
     if (editingTicket && editingTicket.id === ticket.id) {
       setEditingTicket((prev) => (prev ? { ...prev, isBookmarked: nextState } : null))
     }
@@ -1125,7 +1404,7 @@ export default function Home() {
         createdBy: user?.email || user?.name || 'User',
       },
     })
-    loadData()
+    loadNotesData()
   }
 
   const handleUpdateDailyNote = async (id: string, content: string) => {
@@ -1245,7 +1524,7 @@ export default function Home() {
         message: `Added ₹${expenseData.amount.toLocaleString()} for "${expenseData.title}"`,
       })
     }
-    loadData()
+    loadExpensesData()
   }
 
   const handleConfirmDeleteExpense = async () => {
@@ -1685,7 +1964,7 @@ export default function Home() {
 
         {/* Main Display Area */}
         <div className="flex-1 overflow-auto flex flex-col">
-          {loading || isFilterLoading ? (
+          {loading || isFilterLoading || isTabSwitching ? (
             <ThemeSpinner
               theme={theme}
               title={
@@ -1718,7 +1997,13 @@ export default function Home() {
               {/* View 1: Inbox (Primary Table View) */}
               {activeTab === 'inbox' && (
                 <InboxTable
-                  tickets={filteredTickets}
+                  tickets={tickets}
+                  serverPagination={true}
+                  currentPage={inboxPage}
+                  pageSize={inboxPageSize}
+                  totalTicketsCount={inboxTotalCount}
+                  onPageChange={(page) => loadInboxData(page, inboxPageSize)}
+                  onPageSizeChange={(size) => loadInboxData(1, size)}
                   onStatusChange={handleStatusChange}
                   onViewTicket={handleOpenViewTicket}
                   onEditTicket={handleOpenEditTicket}
@@ -1758,7 +2043,7 @@ export default function Home() {
               {/* View 2: Dashboard (Visual Charts & Status Metrics) */}
               {activeTab === 'dashboard' && (
                 <DashboardView
-                  tickets={filteredTickets}
+                  tickets={boardTickets.length > 0 ? boardTickets : tickets}
                   dailyNotes={dailyNotes}
                   availableProjects={availableProjects}
                   theme={theme}
@@ -1769,7 +2054,7 @@ export default function Home() {
               {activeTab === 'board' && (
                 <div className="p-4 sm:p-6">
                   <KanbanBoard
-                    tickets={filteredTickets}
+                    tickets={boardTickets.length > 0 ? boardTickets : tickets}
                     onStatusChange={handleStatusChange}
                     onViewTicket={handleOpenViewTicket}
                     onEditTicket={handleOpenEditTicket}

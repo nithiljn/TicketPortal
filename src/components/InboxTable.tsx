@@ -39,6 +39,13 @@ interface InboxTableProps {
   onClearTicketIdFilter?: () => void
   onClearAllFilters?: () => void
   theme?: 'dark' | 'light'
+  // Server-side pagination
+  serverPagination?: boolean
+  currentPage?: number
+  pageSize?: number
+  totalTicketsCount?: number
+  onPageChange?: (page: number) => void
+  onPageSizeChange?: (size: number) => void
 }
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
@@ -91,17 +98,30 @@ export function InboxTable({
   onClearTicketIdFilter,
   onClearAllFilters,
   theme = 'dark',
+  serverPagination = false,
+  currentPage: controlledPage,
+  pageSize: controlledPageSize,
+  totalTicketsCount,
+  onPageChange,
+  onPageSizeChange,
 }: InboxTableProps) {
   const isDark = theme === 'dark'
 
-  // Pagination State
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  // Pagination State (controlled if serverPagination, internal otherwise)
+  const [internalCurrentPage, setInternalCurrentPage] = useState(1)
+  const [internalPageSize, setInternalPageSize] = useState(20)
 
-  // Reset to first page when tickets count or filters change
+  const activeCurrentPage = serverPagination && controlledPage !== undefined ? controlledPage : internalCurrentPage
+  const activePageSize = serverPagination && controlledPageSize !== undefined ? controlledPageSize : internalPageSize
+  const effectiveTotalCount = serverPagination && typeof totalTicketsCount === 'number' ? totalTicketsCount : tickets.length
+
+  // Reset internal page when tickets count or filters change (for client pagination)
   useEffect(() => {
-    setCurrentPage(1)
+    if (!serverPagination) {
+      setInternalCurrentPage(1)
+    }
   }, [
+    serverPagination,
     tickets.length,
     selectedProject,
     selectedCategory,
@@ -116,14 +136,36 @@ export function InboxTable({
     ticketIdFilter,
   ])
 
-  const totalPages = Math.max(1, Math.ceil(tickets.length / pageSize))
-  const safeCurrentPage = Math.min(currentPage, totalPages)
-  const startIndex = (safeCurrentPage - 1) * pageSize
-  const endIndex = Math.min(startIndex + pageSize, tickets.length)
+  const totalPages = Math.max(1, Math.ceil(effectiveTotalCount / activePageSize))
+  const safeCurrentPage = Math.min(activeCurrentPage, totalPages)
+  const startIndex = (safeCurrentPage - 1) * activePageSize
+  const endIndex = serverPagination
+    ? Math.min(startIndex + tickets.length, effectiveTotalCount)
+    : Math.min(startIndex + activePageSize, effectiveTotalCount)
 
   const paginatedTickets = useMemo(() => {
+    if (serverPagination) {
+      return tickets
+    }
     return tickets.slice(startIndex, endIndex)
-  }, [tickets, startIndex, endIndex])
+  }, [serverPagination, tickets, startIndex, endIndex])
+
+  const handlePageChange = (newPage: number) => {
+    if (serverPagination && onPageChange) {
+      onPageChange(newPage)
+    } else {
+      setInternalCurrentPage(newPage)
+    }
+  }
+
+  const handlePageSizeChange = (newSize: number) => {
+    if (serverPagination && onPageSizeChange) {
+      onPageSizeChange(newSize)
+    } else {
+      setInternalPageSize(newSize)
+      setInternalCurrentPage(1)
+    }
+  }
 
   const pageNumbers = useMemo(() => {
     if (totalPages <= 5) {
@@ -938,7 +980,7 @@ export function InboxTable({
             </div>
 
             {/* Pagination Footer */}
-            {tickets.length > 0 && (
+            {(tickets.length > 0 || (serverPagination && effectiveTotalCount > 0)) && (
               <div
                 className={`mt-4 pt-3.5 border-t flex flex-col sm:flex-row items-center justify-between gap-3 text-xs select-none ${
                   isDark ? 'border-white/[0.06] text-[#ebebf5]/40' : 'border-black/[0.06] text-[#1d1d1f]/40'
@@ -949,7 +991,7 @@ export function InboxTable({
                   <span>
                     Showing{' '}
                     <span className={`font-mono font-medium ${isDark ? 'text-[#f5f5f7]' : 'text-[#1d1d1f]'}`}>
-                      {startIndex + 1}
+                      {effectiveTotalCount === 0 ? 0 : startIndex + 1}
                     </span>{' '}
                     to{' '}
                     <span className={`font-mono font-medium ${isDark ? 'text-[#f5f5f7]' : 'text-[#1d1d1f]'}`}>
@@ -957,7 +999,7 @@ export function InboxTable({
                     </span>{' '}
                     of{' '}
                     <span className={`font-mono font-medium ${isDark ? 'text-[#f5f5f7]' : 'text-[#1d1d1f]'}`}>
-                      {tickets.length}
+                      {effectiveTotalCount}
                     </span>{' '}
                     tickets
                   </span>
@@ -965,11 +1007,8 @@ export function InboxTable({
                   <div className="flex items-center gap-1.5">
                     <span className={`text-[11px] ${isDark ? 'text-[#ebebf5]/30' : 'text-[#1d1d1f]/30'}`}>Rows per page:</span>
                     <select
-                      value={pageSize}
-                      onChange={(e) => {
-                        setPageSize(Number(e.target.value))
-                        setCurrentPage(1)
-                      }}
+                      value={activePageSize}
+                      onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                       className={`px-2 py-1 rounded-[10px] border text-xs font-mono transition cursor-pointer outline-none ${
                         isDark
                           ? 'bg-white/[0.06] border-white/[0.08] text-[#f5f5f7] focus:border-white/[0.2]'
@@ -977,6 +1016,7 @@ export function InboxTable({
                       }`}
                     >
                       <option value={10}>10</option>
+                      <option value={20}>20</option>
                       <option value={25}>25</option>
                       <option value={50}>50</option>
                     </select>
@@ -989,7 +1029,7 @@ export function InboxTable({
                     {/* First Page */}
                     <button
                       type="button"
-                      onClick={() => setCurrentPage(1)}
+                      onClick={() => handlePageChange(1)}
                       disabled={safeCurrentPage === 1}
                       className={`p-1.5 rounded-full border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                         isDark
@@ -1007,7 +1047,7 @@ export function InboxTable({
                     {/* Previous Page */}
                     <button
                       type="button"
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      onClick={() => handlePageChange(Math.max(1, safeCurrentPage - 1))}
                       disabled={safeCurrentPage === 1}
                       className={`p-1.5 rounded-full border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                         isDark
@@ -1035,7 +1075,7 @@ export function InboxTable({
                         <button
                           key={p}
                           type="button"
-                          onClick={() => setCurrentPage(Number(p))}
+                          onClick={() => handlePageChange(Number(p))}
                           className={`min-w-[28px] h-7 px-2 rounded-full border text-xs font-mono font-normal transition cursor-pointer ${
                             isCurrent
                               ? isDark
@@ -1054,7 +1094,7 @@ export function InboxTable({
                     {/* Next Page */}
                     <button
                       type="button"
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      onClick={() => handlePageChange(Math.min(totalPages, safeCurrentPage + 1))}
                       disabled={safeCurrentPage === totalPages}
                       className={`p-1.5 rounded-full border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                         isDark
@@ -1071,7 +1111,7 @@ export function InboxTable({
                     {/* Last Page */}
                     <button
                       type="button"
-                      onClick={() => setCurrentPage(totalPages)}
+                      onClick={() => handlePageChange(totalPages)}
                       disabled={safeCurrentPage === totalPages}
                       className={`p-1.5 rounded-full border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                         isDark

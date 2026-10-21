@@ -779,7 +779,7 @@ export function ExpenseTracker({
                   Expense Tracker
                 </h1>
                 <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] truncate mt-0.5">
-                  Monitor spending, manage categories, and review daily expenditure
+                  Monitor spending, manage categories and review daily expenditure
                 </p>
               </div>
             </div>

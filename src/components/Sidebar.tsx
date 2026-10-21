@@ -257,18 +257,35 @@ export function Sidebar({
     }
   }, [isSettingsOpen])
 
+  // Apple Design System Tokens
   const sidebarBg = isDark
-    ? 'bg-[#0d0d10] border-white/[0.06] text-zinc-400'
-    : 'bg-white border-zinc-200 text-zinc-600'
-  const headerBorder = isDark ? 'border-white/[0.06]' : 'border-zinc-200'
-  const textPrimary = isDark ? 'text-zinc-100' : 'text-zinc-900'
-  const itemHover = isDark ? 'hover:bg-white/[0.04] hover:text-zinc-200' : 'hover:bg-zinc-100 hover:text-zinc-900'
+    ? 'bg-[#121214] border-white/[0.08] text-[#86868b]'
+    : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#86868b]'
+  const headerBorder = isDark ? 'border-white/[0.08]' : 'border-[#e5e5ea]'
+  const textPrimary = isDark ? 'text-[#f5f5f7]' : 'text-[#1d1d1f]'
+  const itemHover = isDark
+    ? 'hover:bg-white/[0.05] hover:text-[#f5f5f7] text-[#a1a1a6]'
+    : 'hover:bg-black/[0.04] hover:text-[#1d1d1f] text-[#515154]'
   const itemActive = isDark
-    ? 'bg-white/[0.08] text-white font-medium border border-white/[0.12]'
-    : 'bg-zinc-100 text-zinc-950 font-semibold border border-zinc-300/80 shadow-2xs'
+    ? 'bg-white/[0.12] text-white font-semibold shadow-2xs'
+    : 'bg-black/[0.07] text-[#1d1d1f] font-semibold shadow-2xs'
   const inputBg = isDark
-    ? 'bg-black/40 border-white/[0.08] text-zinc-200'
-    : 'bg-zinc-50 border-zinc-200 text-zinc-900'
+    ? 'bg-white/[0.04] border-white/[0.08] text-[#f5f5f7] placeholder-[#86868b] focus:border-[#2997ff] focus:ring-1 focus:ring-[#2997ff]/20'
+    : 'bg-white border-[#e5e5ea] text-[#1d1d1f] placeholder-[#86868b] focus:border-[#0071e3] focus:ring-1 focus:ring-[#0071e3]/20 shadow-2xs'
+  const ghostBtn = isDark
+    ? 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-[#f5f5f7] active:scale-95'
+    : 'bg-white hover:bg-[#fafafc] border-[#e5e5ea] text-[#1d1d1f] shadow-2xs active:scale-95'
+
+  const countBadge = (isSelected: boolean) =>
+    `text-[10px] font-mono px-2 py-0.5 rounded-full font-medium transition ${
+      isSelected
+        ? isDark
+          ? 'bg-white/20 text-white'
+          : 'bg-black/10 text-zinc-900'
+        : isDark
+        ? 'bg-white/[0.06] text-[#86868b]'
+        : 'bg-black/[0.04] text-[#86868b]'
+    }`
 
   const activeStatuses = selectedStatuses ?? (selectedStatus && selectedStatus !== 'ALL' ? [selectedStatus] : [])
   const activePriorities = selectedPriorities ?? (selectedPriority && selectedPriority !== 'ALL' ? [selectedPriority] : [])
@@ -308,7 +325,7 @@ export function Sidebar({
       {isOpen && (
         <div
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-md lg:hidden transition-opacity"
         />
       )}
 
@@ -322,10 +339,10 @@ export function Sidebar({
           {/* Brand Header */}
           <div className={`h-14 px-4 flex items-center justify-between border-b ${headerBorder}`}>
             <div className="flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+              <div className={`w-8 h-8 rounded-[10px] flex items-center justify-center transition-all shrink-0 border ${
                 isDark
-                  ? 'bg-zinc-800 border border-zinc-700/80 text-white shadow-xs'
-                  : 'bg-zinc-900 border border-zinc-800 text-white shadow-xs'
+                  ? 'bg-white/[0.08] border-white/[0.1] text-white shadow-2xs'
+                  : 'bg-white border-[#e5e5ea] text-zinc-950 shadow-2xs'
               }`}>
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
@@ -336,20 +353,20 @@ export function Sidebar({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className={`font-semibold text-xs tracking-wider ${textPrimary}`}>
+                  <span className={`font-semibold text-xs tracking-tight ${textPrimary}`}>
                     TicketFlow
                   </span>
                   <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[11px] font-medium border leading-none select-none ${
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full font-mono text-[10px] font-medium border leading-none select-none ${
                       isDark
-                        ? 'bg-zinc-800/90 text-zinc-300 border-zinc-700/80 shadow-2xs'
-                        : 'bg-zinc-100 text-zinc-700 border-zinc-300/80 shadow-2xs'
+                        ? 'bg-white/[0.06] text-[#a1a1a6] border-white/[0.08]'
+                        : 'bg-black/[0.04] text-[#86868b] border-black/[0.06]'
                     }`}
                   >
                     v{packageInfo.version}
                   </span>
                 </div>
-                <span className={`block text-[11px] font-medium leading-none mt-1 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                <span className="block text-[11px] font-normal leading-none mt-1 text-[#86868b]">
                   Maintain Daily Work
                 </span>
               </div>
@@ -358,7 +375,8 @@ export function Sidebar({
             {/* Mobile Close Button */}
             <button
               onClick={onClose}
-              className={`lg:hidden p-1.5 rounded-lg transition ${itemHover}`}
+              className={`lg:hidden w-7 h-7 rounded-full flex items-center justify-center transition active:scale-90 cursor-pointer ${itemHover}`}
+              aria-label="Close sidebar"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -369,10 +387,8 @@ export function Sidebar({
 
           {/* New item button */}
           <div className="p-3">
-            <Button
-              variant="ticket"
-              size="md"
-              theme={theme}
+            <button
+              type="button"
               onClick={() => {
                 if (activeTab === 'expenses' && onOpenAddExpenseModal) {
                   onOpenAddExpenseModal()
@@ -381,56 +397,50 @@ export function Sidebar({
                 }
                 onClose()
               }}
-              className="w-full justify-center shadow-xs"
-              leftIcon={
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-              }
-            >
-              {activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
-            </Button>
-
-          {/* Version Management button */}
-          {onOpenVersionModal && (
-            <button
-              type="button"
-              onClick={() => {
-                onOpenVersionModal()
-                onClose()
-              }}
-              className={`w-full mt-2 py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer ${
+              className={`w-full h-10 rounded-full text-xs font-semibold flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer shadow-sm ${
                 isDark
-                  ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.04]'
-                  : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50 shadow-2xs'
+                  ? 'bg-white hover:bg-zinc-100 text-zinc-950'
+                  : 'bg-zinc-950 hover:bg-zinc-800 text-white'
               }`}
-              title="Manage release versions"
             >
-              <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                <line x1="7" y1="7" x2="7.01" y2="7" />
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              <span>Manage Versions</span>
+              <span>{activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}</span>
             </button>
-          )}
 
-          {/* Activity Heatmap button below New Ticket */}
-          {onOpenActivityModal && (
-            <button
-              type="button"
-              onClick={() => {
-                onOpenActivityModal()
-                onClose()
-              }}
-              className={`w-full ${onOpenVersionModal ? 'mt-1.5' : 'mt-2'} py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                isDark
-                  ? 'border-white/[0.08] text-zinc-300 hover:bg-white/[0.04]'
-                  : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50 shadow-2xs'
-              }`}
-              title="View consistency activity heatmap"
-            >
-                <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {/* Version Management button */}
+            {onOpenVersionModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenVersionModal()
+                  onClose()
+                }}
+                className={`w-full mt-2 h-9 px-3 rounded-full border text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer ${ghostBtn}`}
+                title="Manage release versions"
+              >
+                <svg className="w-3.5 h-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                  <line x1="7" y1="7" x2="7.01" y2="7" />
+                </svg>
+                <span>Manage Versions</span>
+              </button>
+            )}
+
+            {/* Activity Heatmap button below New Ticket */}
+            {onOpenActivityModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenActivityModal()
+                  onClose()
+                }}
+                className={`w-full ${onOpenVersionModal ? 'mt-1.5' : 'mt-2'} h-9 px-3 rounded-full border text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer ${ghostBtn}`}
+                title="View consistency activity heatmap"
+              >
+                <svg className="w-3.5 h-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="7" height="7" rx="1" />
                   <rect x="14" y="3" width="7" height="7" rx="1" />
                   <rect x="14" y="14" width="7" height="7" rx="1" />
@@ -445,15 +455,15 @@ export function Sidebar({
           <div className="flex-1 overflow-y-auto px-3 py-1 space-y-5 text-xs custom-scrollbar">
             {/* Workspaces Facet */}
             <div>
-              <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                 <span>{activeTab === 'expenses' ? 'Expense Folders' : 'Workspaces'}</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-mono">{visibleWorkspaces.length}</span>
+                  <span className="font-mono text-[10px] text-[#86868b]">{visibleWorkspaces.length}</span>
                   {onOpenCreateWorkspaceModal && (
                     <button
                       onClick={onOpenCreateWorkspaceModal}
                       type="button"
-                      className="p-0.5 rounded hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-100 transition cursor-pointer"
+                      className={`w-5 h-5 rounded-full flex items-center justify-center transition active:scale-90 cursor-pointer ${itemHover}`}
                       title={activeTab === 'expenses' ? 'Create new expense workspace' : 'Create new project workspace'}
                     >
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -470,12 +480,12 @@ export function Sidebar({
                     onSelectProject('ALL')
                     onClose()
                   }}
-                  className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer text-left ${
+                  className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between transition cursor-pointer text-left active:scale-[0.99] ${
                     selectedProject === 'ALL' ? itemActive : itemHover
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="10" />
                       <line x1="2" y1="12" x2="22" y2="12" />
                       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z" />
@@ -494,7 +504,7 @@ export function Sidebar({
                   return (
                     <div
                       key={proj}
-                      className={`group/ws w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer text-left ${
+                      className={`group/ws w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between transition cursor-pointer text-left active:scale-[0.99] ${
                         isSelected ? itemActive : itemHover
                       }`}
                       onClick={() => {
@@ -503,7 +513,7 @@ export function Sidebar({
                       }}
                     >
                       <div className="flex items-center gap-2 truncate flex-1 min-w-0 pr-1">
-                        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                         </svg>
                         <span className="truncate">{proj}</span>
@@ -521,10 +531,10 @@ export function Sidebar({
                               e.stopPropagation()
                               onDeleteWorkspace(proj)
                             }}
-                            className={`p-1 rounded transition cursor-pointer sm:opacity-0 group-hover/ws:opacity-100 focus:opacity-100 ${
+                            className={`p-1 rounded-full transition cursor-pointer sm:opacity-0 group-hover/ws:opacity-100 focus:opacity-100 ${
                               isDark
-                                ? 'text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.08]'
-                                : 'text-zinc-400 hover:text-zinc-800 hover:bg-zinc-200/60'
+                                ? 'text-zinc-400 hover:text-red-400 hover:bg-white/[0.08]'
+                                : 'text-zinc-400 hover:text-red-600 hover:bg-black/[0.04]'
                             }`}
                             title={`Delete workspace "${proj}"`}
                           >
@@ -543,13 +553,13 @@ export function Sidebar({
                   <button
                     onClick={onOpenCreateWorkspaceModal}
                     type="button"
-                    className={`w-full mt-1.5 px-2.5 py-1.5 rounded-lg border border-dashed flex items-center gap-2 transition cursor-pointer text-left text-xs ${
+                    className={`w-full mt-1.5 px-2.5 py-1.5 rounded-[10px] border border-dashed flex items-center gap-2 transition cursor-pointer text-left text-xs active:scale-98 ${
                       isDark
-                        ? 'border-white/[0.1] text-zinc-400 hover:text-zinc-200 hover:border-white/[0.2] hover:bg-white/[0.02]'
-                        : 'border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400 hover:bg-zinc-100'
+                        ? 'border-white/[0.1] text-[#86868b] hover:text-[#f5f5f7] hover:border-white/[0.2] hover:bg-white/[0.02]'
+                        : 'border-[#d2d2d7] text-[#86868b] hover:text-[#1d1d1f] hover:border-[#86868b] hover:bg-black/[0.02]'
                     }`}
                   >
-                    <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="w-3.5 h-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <line x1="12" y1="5" x2="12" y2="19" />
                       <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
@@ -564,12 +574,12 @@ export function Sidebar({
               <>
                 {/* 1. Month / Period Filter */}
                 <div>
-                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Month / Period</span>
                     {selectedExpenseMonth !== 'ALL' && (
                       <button
                         onClick={() => onSelectExpenseMonth?.('ALL')}
-                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                        className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
                       >
                         All Time
                       </button>
@@ -582,7 +592,7 @@ export function Sidebar({
                         onSelectExpenseMonth?.(e.target.value)
                         onClose()
                       }}
-                      className={`w-full rounded-lg px-2.5 py-1.5 text-[11px] focus:outline-none font-medium cursor-pointer ${inputBg}`}
+                      className={`w-full h-9 rounded-[10px] px-2.5 py-1.5 text-xs font-medium border outline-none cursor-pointer ${inputBg}`}
                     >
                       <option value="ALL">All Time</option>
                       {availableExpenseMonths?.map((m) => {
@@ -601,13 +611,13 @@ export function Sidebar({
 
                 {/* 3. Expense Categories Filter */}
                 <div>
-                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Expense Categories</span>
                     <div className="flex items-center gap-1.5">
                       {selectedExpenseCategory !== 'ALL' && (
                         <button
                           onClick={() => onSelectExpenseCategory?.('ALL')}
-                          className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                          className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
                         >
                           Reset
                         </button>
@@ -615,7 +625,7 @@ export function Sidebar({
                       {onOpenCategoryModal && (
                         <button
                           onClick={onOpenCategoryModal}
-                          className="p-0.5 rounded hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-100 transition cursor-pointer"
+                          className={`w-5 h-5 rounded-full flex items-center justify-center transition active:scale-90 cursor-pointer ${itemHover}`}
                           title="Manage Categories"
                         >
                           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -632,18 +642,14 @@ export function Sidebar({
                         onSelectExpenseCategory?.('ALL')
                         onClose()
                       }}
-                      className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
+                      className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
                         selectedExpenseCategory === 'ALL' ? itemActive : itemHover
                       }`}
                     >
-                      <span className={selectedExpenseCategory === 'ALL' ? 'font-medium' : 'text-zinc-600 dark:text-zinc-400'}>
+                      <span className={selectedExpenseCategory === 'ALL' ? 'font-semibold' : ''}>
                         All Categories
                       </span>
-                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition ${
-                        selectedExpenseCategory === 'ALL'
-                          ? isDark ? 'bg-white/10 text-white font-medium' : 'bg-zinc-200 text-zinc-900 font-medium'
-                          : isDark ? 'bg-white/[0.04] text-zinc-400' : 'bg-zinc-100 text-zinc-600'
-                      }`}>
+                      <span className={countBadge(selectedExpenseCategory === 'ALL')}>
                         {expenseCounts?.total ?? 0}
                       </span>
                     </button>
@@ -657,18 +663,14 @@ export function Sidebar({
                             onSelectExpenseCategory?.(isSelected ? 'ALL' : cat)
                             onClose()
                           }}
-                          className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
+                          className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
                             isSelected ? itemActive : itemHover
                           }`}
                         >
-                          <span className={`truncate pr-1 ${isSelected ? 'font-medium' : 'text-zinc-600 dark:text-zinc-400'}`}>
+                          <span className={`truncate pr-1 ${isSelected ? 'font-semibold' : ''}`}>
                             {cat}
                           </span>
-                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 transition ${
-                            isSelected
-                              ? isDark ? 'bg-white/10 text-white font-medium' : 'bg-zinc-200 text-zinc-900 font-medium'
-                              : isDark ? 'bg-white/[0.04] text-zinc-400' : 'bg-zinc-100 text-zinc-600'
-                          }`}>
+                          <span className={countBadge(isSelected)}>
                             {count}
                           </span>
                         </button>
@@ -679,12 +681,12 @@ export function Sidebar({
 
                 {/* 4. Payment Methods Filter */}
                 <div>
-                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Payment Methods</span>
                     {selectedPaymentMethod !== 'ALL' && (
                       <button
                         onClick={() => onSelectPaymentMethod?.('ALL')}
-                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                        className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
                       >
                         Reset
                       </button>
@@ -701,16 +703,16 @@ export function Sidebar({
                             onSelectPaymentMethod?.(pm.id)
                             onClose()
                           }}
-                          className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between transition cursor-pointer text-left ${
+                          className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between transition cursor-pointer text-left active:scale-[0.99] ${
                             isSelected ? itemActive : itemHover
                           }`}
                         >
                           <div className="flex items-center gap-2">
-                            <span className="text-zinc-400 shrink-0">{renderPaymentMethodIcon(pm.id)}</span>
+                            <span className="opacity-70 shrink-0">{renderPaymentMethodIcon(pm.id)}</span>
                             <span>{pm.label}</span>
                           </div>
                           {typeof count === 'number' && (
-                            <span className="text-[10px] font-mono opacity-60">{count}</span>
+                            <span className={countBadge(isSelected)}>{count}</span>
                           )}
                         </button>
                       )
@@ -720,7 +722,7 @@ export function Sidebar({
 
                 {/* 5. Amount Range Filter */}
                 <div>
-                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Amount Range (₹)</span>
                     {(expenseMinAmount || expenseMaxAmount) && (
                       <button
@@ -728,7 +730,7 @@ export function Sidebar({
                           onMinAmountChange?.('')
                           onMaxAmountChange?.('')
                         }}
-                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                        className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
                       >
                         Reset
                       </button>
@@ -736,26 +738,26 @@ export function Sidebar({
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="relative flex-1">
-                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400">₹</span>
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#86868b]">₹</span>
                       <input
                         type="number"
                         min="0"
                         placeholder="Min"
                         value={expenseMinAmount}
                         onChange={(e) => onMinAmountChange?.(e.target.value)}
-                        className={`w-full pl-5 pr-2 py-1.5 rounded-lg text-xs font-mono focus:outline-none border ${inputBg}`}
+                        className={`w-full h-9 pl-5 pr-2 rounded-[10px] text-xs font-mono border outline-none ${inputBg}`}
                       />
                     </div>
-                    <span className="text-zinc-500 text-xs font-mono">to</span>
+                    <span className="text-[#86868b] text-xs font-mono">to</span>
                     <div className="relative flex-1">
-                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400">₹</span>
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#86868b]">₹</span>
                       <input
                         type="number"
                         min="0"
                         placeholder="Max"
                         value={expenseMaxAmount}
                         onChange={(e) => onMaxAmountChange?.(e.target.value)}
-                        className={`w-full pl-5 pr-2 py-1.5 rounded-lg text-xs font-mono focus:outline-none border ${inputBg}`}
+                        className={`w-full h-9 pl-5 pr-2 rounded-[10px] text-xs font-mono border outline-none ${inputBg}`}
                       />
                     </div>
                   </div>
@@ -766,19 +768,19 @@ export function Sidebar({
               <>
                 {/* Ticket ID Filter */}
                 <div>
-                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Ticket ID Filter</span>
                     {ticketIdFilter && onClearTicketIdFilter && (
                       <button
                         onClick={onClearTicketIdFilter}
-                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                        className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
                       >
                         Reset
                       </button>
                     )}
                   </div>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-zinc-400 font-semibold select-none pointer-events-none">#</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#86868b] font-semibold select-none pointer-events-none">#</span>
                     <input
                       type="text"
                       placeholder="Filter by ID (e.g. 1035)"
@@ -789,13 +791,13 @@ export function Sidebar({
                           onClearTicketIdFilter?.()
                         }
                       }}
-                      className={`w-full pl-6 pr-6 py-1.5 rounded-lg text-xs font-mono focus:outline-none border ${inputBg}`}
+                      className={`w-full h-9 pl-6 pr-6 py-1.5 rounded-[10px] text-xs font-mono border outline-none transition-all duration-150 ${inputBg}`}
                     />
                     {ticketIdFilter && onClearTicketIdFilter && (
                       <button
                         type="button"
                         onClick={onClearTicketIdFilter}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer p-0.5"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white transition cursor-pointer"
                         title="Clear ID filter"
                       >
                         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -809,9 +811,9 @@ export function Sidebar({
 
                 {/* Version Filter */}
                 <div>
-                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span className="flex items-center gap-1.5">
-                      <svg className="w-3 h-3 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg className="w-3 h-3 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
                         <line x1="7" y1="7" x2="7.01" y2="7" />
                       </svg>
@@ -821,7 +823,7 @@ export function Sidebar({
                       {selectedVersions.length > 0 && onSelectVersion && (
                         <button
                           onClick={() => onSelectVersion('ALL')}
-                          className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                          className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
                         >
                           Reset
                         </button>
@@ -830,7 +832,7 @@ export function Sidebar({
                         <button
                           type="button"
                           onClick={onOpenVersionModal}
-                          className="p-0.5 rounded hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-100 transition cursor-pointer"
+                          className={`w-5 h-5 rounded-full flex items-center justify-center transition active:scale-90 cursor-pointer ${itemHover}`}
                           title="Manage Versions"
                         >
                           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -841,21 +843,17 @@ export function Sidebar({
                       )}
                     </div>
                   </div>
-                  <div className="space-y-1 max-h-44 overflow-y-auto pr-0.5 custom-scrollbar">
+                  <div className="space-y-0.5 max-h-44 overflow-y-auto pr-0.5 custom-scrollbar">
                     <button
                       onClick={() => onSelectVersion?.('ALL')}
-                      className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
+                      className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
                         selectedVersions.length === 0 ? itemActive : itemHover
                       }`}
                     >
-                      <span className={selectedVersions.length === 0 ? 'font-medium' : 'text-zinc-600 dark:text-zinc-400'}>
+                      <span className={selectedVersions.length === 0 ? 'font-semibold' : ''}>
                         All Versions
                       </span>
-                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition ${
-                        selectedVersions.length === 0
-                          ? isDark ? 'bg-white/10 text-white font-medium' : 'bg-zinc-200 text-zinc-900 font-medium'
-                          : isDark ? 'bg-white/[0.04] text-zinc-400' : 'bg-zinc-100 text-zinc-600'
-                      }`}>
+                      <span className={countBadge(selectedVersions.length === 0)}>
                         {ticketCounts?.total ?? 0}
                       </span>
                     </button>
@@ -868,18 +866,14 @@ export function Sidebar({
                           <button
                             key={ver}
                             onClick={() => onSelectVersion?.(ver)}
-                            className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
+                            className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
                               isSelected ? itemActive : itemHover
                             }`}
                           >
-                            <span className={`font-mono text-xs ${isSelected ? 'font-medium' : 'text-zinc-600 dark:text-zinc-400'}`}>
+                            <span className={`font-mono text-xs ${isSelected ? 'font-semibold' : ''}`}>
                               {ver}
                             </span>
-                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition ${
-                              isSelected
-                                ? isDark ? 'bg-white/10 text-white font-medium' : 'bg-zinc-200 text-zinc-900 font-medium'
-                                : isDark ? 'bg-white/[0.04] text-zinc-400' : 'bg-zinc-100 text-zinc-600'
-                            }`}>
+                            <span className={countBadge(isSelected)}>
                               {count}
                             </span>
                           </button>
@@ -890,12 +884,12 @@ export function Sidebar({
 
                 {/* Status Filter */}
                 <div>
-                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Status Filter</span>
                     {activeStatuses.length > 0 && (
                       <button
                         onClick={() => onSelectStatus('ALL')}
-                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                        className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer font-medium"
                       >
                         Reset
                       </button>
@@ -918,18 +912,14 @@ export function Sidebar({
                           onClick={() => {
                             onSelectStatus(item.id as TicketStatus | 'ALL')
                           }}
-                          className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
+                          className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
                             isSelected ? itemActive : itemHover
                           }`}
                         >
-                          <span className={isSelected ? 'font-medium' : 'text-zinc-600 dark:text-zinc-400'}>
+                          <span className={isSelected ? 'font-semibold' : ''}>
                             {item.label}
                           </span>
-                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition ${
-                            isSelected
-                              ? isDark ? 'bg-white/10 text-white font-medium' : 'bg-zinc-200 text-zinc-900 font-medium'
-                              : isDark ? 'bg-white/[0.04] text-zinc-400' : 'bg-zinc-100 text-zinc-600'
-                          }`}>
+                          <span className={countBadge(isSelected)}>
                             {item.count}
                           </span>
                         </button>
@@ -940,12 +930,12 @@ export function Sidebar({
 
                 {/* Priority Filter */}
                 <div>
-                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Priority Filter</span>
                     {activePriorities.length > 0 && (
                       <button
                         onClick={() => onSelectPriority('ALL')}
-                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                        className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer font-medium"
                       >
                         Reset
                       </button>
@@ -968,14 +958,14 @@ export function Sidebar({
                           onClick={() => {
                             onSelectPriority(item.id as TicketPriority | 'ALL')
                           }}
-                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center border active:scale-[0.98] ${
+                          className={`px-2.5 py-1.5 rounded-[10px] text-xs font-medium transition cursor-pointer flex items-center justify-center border active:scale-[0.98] ${
                             item.fullWidth ? 'col-span-2' : ''
                           } ${
                             isSelected
                               ? itemActive
                               : isDark
-                              ? 'bg-zinc-900/60 border-white/[0.06] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] hover:border-white/[0.1]'
-                              : 'bg-zinc-50 border-zinc-200/80 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 hover:border-zinc-300'
+                              ? 'bg-white/[0.04] border-white/[0.08] text-[#a1a1a6] hover:text-[#f5f5f7] hover:bg-white/[0.08]'
+                              : 'bg-white border-[#e5e5ea] text-[#515154] hover:text-[#1d1d1f] hover:bg-[#fafafc] shadow-2xs'
                           }`}
                         >
                           <span>{item.label}</span>
@@ -987,12 +977,12 @@ export function Sidebar({
 
                 {/* Category Filter */}
                 <div>
-                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Category Filter</span>
                     {activeCategories.length > 0 && (
                       <button
                         onClick={() => onSelectCategory('ALL')}
-                        className="text-[10px] text-zinc-400 hover:text-zinc-200 hover:underline cursor-pointer"
+                        className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer font-medium"
                       >
                         Reset
                       </button>
@@ -1011,23 +1001,19 @@ export function Sidebar({
                           onClick={() => {
                             onSelectCategory(item.id)
                           }}
-                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-between gap-1 border active:scale-[0.98] ${
+                          className={`px-2.5 py-1.5 rounded-[10px] text-xs font-medium transition cursor-pointer flex items-center justify-between gap-1 border active:scale-[0.98] ${
                             isAll ? 'col-span-2' : ''
                           } ${
                             isSelected
                               ? itemActive
                               : isDark
-                              ? 'bg-zinc-900/60 border-white/[0.06] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] hover:border-white/[0.1]'
-                              : 'bg-zinc-50 border-zinc-200/80 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 hover:border-zinc-300'
+                              ? 'bg-white/[0.04] border-white/[0.08] text-[#a1a1a6] hover:text-[#f5f5f7] hover:bg-white/[0.08]'
+                              : 'bg-white border-[#e5e5ea] text-[#515154] hover:text-[#1d1d1f] hover:bg-[#fafafc] shadow-2xs'
                           }`}
                         >
                           <span className="truncate">{isAll ? 'All Categories' : item.label}</span>
                           {typeof count === 'number' && (
-                            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded shrink-0 transition ${
-                              isSelected
-                                ? isDark ? 'bg-white/10 text-white font-medium' : 'bg-zinc-200 text-zinc-900 font-medium'
-                                : isDark ? 'bg-white/[0.04] text-zinc-400' : 'bg-zinc-200/60 text-zinc-600'
-                            }`}>
+                            <span className={countBadge(isSelected)}>
                               {count}
                             </span>
                           )}
@@ -1039,12 +1025,12 @@ export function Sidebar({
 
                 {/* Date Range Filtration (From - To) */}
                 <div>
-                  <div className="px-2 pb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Date Range Filter</span>
                     {(fromDate || toDate) && (
                       <button
                         onClick={onClearDateRange}
-                        className="text-[10px] text-rose-400 hover:underline cursor-pointer"
+                        className="text-[11px] text-[#ff453a] hover:underline cursor-pointer font-medium"
                       >
                         Clear
                       </button>
@@ -1052,21 +1038,21 @@ export function Sidebar({
                   </div>
                   <div className="space-y-1.5">
                     <div>
-                      <span className="block text-[10px] text-zinc-500 mb-0.5">From Date</span>
+                      <span className="block text-[11px] font-medium text-[#86868b] mb-1">From Date</span>
                       <input
                         type="date"
                         value={fromDate}
                         onChange={(e) => onSelectFromDate(e.target.value)}
-                        className={`w-full rounded-lg px-2.5 py-1 text-[11px] focus:outline-none font-mono ${inputBg}`}
+                        className={`w-full rounded-[10px] px-2.5 py-1.5 text-xs focus:outline-none font-mono ${inputBg}`}
                       />
                     </div>
                     <div>
-                      <span className="block text-[10px] text-zinc-500 mb-0.5">To Date</span>
+                      <span className="block text-[11px] font-medium text-[#86868b] mb-1">To Date</span>
                       <input
                         type="date"
                         value={toDate}
                         onChange={(e) => onSelectToDate(e.target.value)}
-                        className={`w-full rounded-lg px-2.5 py-1 text-[11px] focus:outline-none font-mono ${inputBg}`}
+                        className={`w-full rounded-[10px] px-2.5 py-1.5 text-xs focus:outline-none font-mono ${inputBg}`}
                       />
                     </div>
                   </div>
@@ -1082,27 +1068,27 @@ export function Sidebar({
               <div
                 className={`absolute bottom-full left-3 right-3 mb-2 p-1.5 rounded-xl border shadow-xl z-50 transition-all ${
                   isDark
-                    ? 'bg-[#151518] border-white/[0.12] text-zinc-200 shadow-black/80'
-                    : 'bg-white border-zinc-200 text-zinc-900 shadow-zinc-500/20'
+                    ? 'bg-[#1c1c1e]/95 border-white/[0.12] text-[#f5f5f7] shadow-black/80'
+                    : 'bg-white/95 border-[#e5e5ea] text-[#1d1d1f] shadow-xl'
                 }`}
               >
-                <div className="px-2 pt-1 pb-1.5 text-[10px] font-mono font-medium uppercase tracking-wider text-zinc-500">
+                <div className="px-2.5 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                   Settings
                 </div>
 
                 {/* Appearance Theme Switcher */}
-                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg">
+                <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[12px]">
                   <span className="text-xs font-medium">Appearance</span>
-                  <div className={`inline-flex p-0.5 rounded-lg border ${
-                    isDark ? 'bg-zinc-900 border-white/[0.08]' : 'bg-zinc-100 border-zinc-200'
+                  <div className={`inline-flex p-0.5 rounded-full border ${
+                    isDark ? 'bg-white/[0.06] border-white/[0.08]' : 'bg-[#e5e5ea]/60 border-[#e5e5ea]'
                   }`}>
                     <button
                       type="button"
                       onClick={() => isDark && onToggleTheme()}
-                      className={`px-2 py-1 text-[11px] font-medium rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 py-1 text-[11px] font-medium rounded-full transition cursor-pointer flex items-center gap-1.5 ${
                         !isDark
-                          ? 'bg-white text-zinc-900 shadow-xs'
-                          : 'text-zinc-400 hover:text-zinc-200'
+                          ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                          : 'text-[#86868b] hover:text-[#f5f5f7]'
                       }`}
                     >
                       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1121,10 +1107,10 @@ export function Sidebar({
                     <button
                       type="button"
                       onClick={() => !isDark && onToggleTheme()}
-                      className={`px-2 py-1 text-[11px] font-medium rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 py-1 text-[11px] font-medium rounded-full transition cursor-pointer flex items-center gap-1.5 ${
                         isDark
-                          ? 'bg-zinc-800 text-white shadow-xs'
-                          : 'text-zinc-600 hover:text-zinc-900'
+                          ? 'bg-white/[0.18] text-white shadow-xs font-semibold'
+                          : 'text-[#86868b] hover:text-[#1d1d1f]'
                       }`}
                     >
                       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1136,20 +1122,20 @@ export function Sidebar({
                 </div>
 
                 {/* App Version */}
-                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg text-xs">
-                  <span className={`font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Version</span>
+                <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[12px] text-xs">
+                  <span className="font-medium text-[#86868b]">Version</span>
                   <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[11px] font-medium border leading-none select-none ${
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full font-mono text-[10px] font-medium border leading-none select-none ${
                       isDark
-                        ? 'bg-zinc-800/90 text-zinc-300 border-zinc-700/80 shadow-2xs'
-                        : 'bg-zinc-100 text-zinc-700 border-zinc-300/80 shadow-2xs'
+                        ? 'bg-white/[0.06] text-[#86868b] border-white/[0.08]'
+                        : 'bg-[#e5e5ea]/60 text-[#86868b] border-[#e5e5ea]'
                     }`}
                   >
                     v{packageInfo.version}
                   </span>
                 </div>
 
-                <div className={`my-1 border-t ${isDark ? 'border-white/[0.08]' : 'border-zinc-100'}`} />
+                <div className={`my-1 border-t ${isDark ? 'border-white/[0.08]' : 'border-[#e5e5ea]'}`} />
 
                 {/* Log Out Option */}
                 {onLogout && (
@@ -1159,13 +1145,9 @@ export function Sidebar({
                       setIsSettingsOpen(false)
                       onLogout()
                     }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer text-left ${
-                      isDark
-                        ? 'text-zinc-300 hover:text-red-400 hover:bg-white/[0.06]'
-                        : 'text-zinc-700 hover:text-red-600 hover:bg-zinc-100'
-                    }`}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[10px] text-xs font-medium text-[#ff453a] hover:bg-[#ff453a]/10 transition cursor-pointer text-left active:scale-[0.98]"
                   >
-                    <svg className="w-3.5 h-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                       <polyline points="16 17 21 12 16 7" />
                       <line x1="21" y1="12" x2="9" y2="12" />
@@ -1177,27 +1159,27 @@ export function Sidebar({
             )}
 
             {/* Profile Card with Settings Gear Trigger */}
-            <div className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition ${
-              isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-zinc-50 border-zinc-200'
+            <div className={`p-2 rounded-[16px] border flex items-center justify-between gap-2.5 transition ${
+              isDark ? 'bg-white/[0.03] border-white/[0.08]' : 'bg-white border-[#e5e5ea] shadow-2xs'
             }`}>
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1 pl-1">
                 <div className="relative shrink-0">
                   {user?.avatarUrl ? (
                     <img
                       src={user.avatarUrl}
                       alt=""
-                      className="w-8 h-8 rounded-lg object-cover shrink-0 border border-white/[0.08]"
+                      className="w-8 h-8 rounded-full object-cover shrink-0 border border-white/[0.08]"
                     />
                   ) : (
-                    <div className={`w-8 h-8 rounded-lg font-semibold text-xs flex items-center justify-center shrink-0 uppercase ${
-                      isDark ? 'bg-white/[0.08] text-zinc-200' : 'bg-zinc-200 text-zinc-800'
+                    <div className={`w-8 h-8 rounded-full font-semibold text-xs flex items-center justify-center shrink-0 uppercase ${
+                      isDark ? 'bg-white/[0.1] text-[#f5f5f7]' : 'bg-[#e5e5ea] text-[#1d1d1f]'
                     }`}>
                       {user?.name ? user.name.slice(0, 2) : 'US'}
                     </div>
                   )}
                   <span
-                    className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ${
-                      isDark ? 'ring-zinc-900' : 'ring-zinc-50'
+                    className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#34c759] ring-2 ${
+                      isDark ? 'ring-[#121214]' : 'ring-white'
                     }`}
                   />
                 </div>
@@ -1205,7 +1187,7 @@ export function Sidebar({
                   <span className={`block text-xs font-semibold truncate ${textPrimary}`}>
                     {user?.name || 'User'}
                   </span>
-                  <span className="block text-[11px] text-zinc-500 truncate">
+                  <span className="block text-[11px] text-[#86868b] truncate">
                     {user?.email || (user?.username ? `@${user.username}` : 'authenticated')}
                   </span>
                 </div>
@@ -1215,14 +1197,14 @@ export function Sidebar({
               <button
                 type="button"
                 onClick={() => setIsSettingsOpen((prev) => !prev)}
-                className={`p-1.5 rounded-lg border transition cursor-pointer shrink-0 ${
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition cursor-pointer shrink-0 ${
                   isSettingsOpen
                     ? isDark
-                      ? 'bg-white/[0.1] border-white/[0.2] text-white'
-                      : 'bg-zinc-200 border-zinc-300 text-zinc-900'
+                      ? 'bg-white/[0.15] text-white'
+                      : 'bg-black/[0.08] text-[#1d1d1f]'
                     : isDark
-                      ? 'bg-transparent border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] hover:border-white/[0.08]'
-                      : 'bg-transparent border-transparent text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/70 hover:border-zinc-300'
+                      ? 'text-[#86868b] hover:text-[#f5f5f7] hover:bg-white/[0.08]'
+                      : 'text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.05]'
                 }`}
                 title="Settings & Appearance"
                 aria-label="Settings"

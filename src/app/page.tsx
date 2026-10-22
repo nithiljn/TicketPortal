@@ -98,6 +98,7 @@ export default function Home() {
   const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [expenseCategories, setExpenseCategories] = useState<string[]>([])
+  const [serverExpenseMonths, setServerExpenseMonths] = useState<string[]>([])
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null)
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
@@ -720,12 +721,14 @@ export default function Home() {
             updatedAt
           }
           expenseCategories(userEmail: $userEmail)
+          expenseMonths(userEmail: $userEmail, projectName: $projectName)
         }
       `
       const data = await fetchGraphQL<{
         expenseProjects?: string[]
         expenses: Expense[]
         expenseCategories: string[]
+        expenseMonths?: string[]
       }>(query, {
         userEmail: user.email,
         projectName: selectedExpenseProject !== 'ALL' ? selectedExpenseProject : null,
@@ -736,6 +739,9 @@ export default function Home() {
 
       setExpenses(data.expenses || [])
       setExpenseCategories(data.expenseCategories || [])
+      if (data.expenseMonths && data.expenseMonths.length > 0) {
+        setServerExpenseMonths(data.expenseMonths)
+      }
       if (data.expenseProjects) {
         const filtered = data.expenseProjects.filter(
           (p) => !p.startsWith('version:::') && !p.includes(':::version:::')
@@ -1095,7 +1101,7 @@ export default function Home() {
 
   // Expense available months
   const availableExpenseMonths = useMemo(() => {
-    const set = new Set<string>()
+    const set = new Set<string>(serverExpenseMonths)
     const now = new Date()
     const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     set.add(currentMonthKey)
@@ -1105,7 +1111,7 @@ export default function Home() {
       }
     })
     return Array.from(set).sort().reverse()
-  }, [expenses])
+  }, [serverExpenseMonths, expenses])
 
   // Expense Counts for Sidebar
   const expenseCounts = useMemo(() => {
@@ -1660,6 +1666,7 @@ export default function Home() {
       await fetchGraphQL(mutation, { id: expenseToDelete.id, userEmail: user?.email })
       setExpenses((prev) => prev.filter((e) => e.id !== expenseToDelete.id))
       setExpenseToDelete(null)
+      loadExpensesData()
       setToast({
         isOpen: true,
         title: 'Expense Deleted',
@@ -2205,6 +2212,7 @@ export default function Home() {
                   availableProjects={availableExpenseProjects}
                   selectedProject={selectedExpenseProject}
                   categories={expenseCategories}
+                  availableMonths={availableExpenseMonths}
                   onAddExpense={handleOpenAddExpense}
                   onEditExpense={handleOpenEditExpense}
                   onDeleteExpense={(exp) => setExpenseToDelete(exp)}

@@ -165,6 +165,7 @@ const typeDefs = /* GraphQL */ `
       offset: Int
     ): [Expense!]!
     expenseCategories(userEmail: String): [String!]!
+    expenseMonths(userEmail: String, projectName: String): [String!]!
   }
 
   # MUTATIONS
@@ -1151,6 +1152,66 @@ const resolvers = {
 
       fallbackCategories.forEach((c) => categorySet.add(c))
       return Array.from(categorySet)
+    },
+
+    expenseMonths: async (
+      _: unknown,
+      {
+        userEmail,
+        projectName,
+      }: {
+        userEmail?: string
+        projectName?: string
+      },
+      context?: GraphQLContext
+    ) => {
+      const monthSet = new Set<string>()
+      const now = new Date()
+      monthSet.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+
+      const email = resolveTargetEmail(userEmail, context)
+      if (!email) {
+        return Array.from(monthSet).sort().reverse()
+      }
+
+      const prefix = email.split('@')[0]
+      try {
+        let q = supabase.from('expenses').select('date').order('date', { ascending: false })
+        if (email === 'admin@ticketflow.io') {
+          q = q.or(
+            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+          )
+        } else {
+          q = q.or(
+            `created_by.eq.${email},created_by.eq.@${prefix},created_by.eq.${prefix}`
+          )
+        }
+        if (projectName && projectName !== 'ALL') {
+          q = q.eq('project_name', projectName)
+        }
+        const { data, error } = await q
+        if (!error && data) {
+          data.forEach((r: { date: string }) => {
+            if (r.date && typeof r.date === 'string' && r.date.length >= 7) {
+              monthSet.add(r.date.slice(0, 7))
+            }
+          })
+        }
+      } catch (err) {
+        console.warn('Error fetching expense months:', err)
+      }
+
+      fallbackExpenses.forEach((e) => {
+        if (
+          (!projectName || projectName === 'ALL' || e.projectName === projectName) &&
+          e.date &&
+          e.date.length >= 7
+        ) {
+          monthSet.add(e.date.slice(0, 7))
+        }
+      })
+
+      return Array.from(monthSet).sort().reverse()
     },
   },
 

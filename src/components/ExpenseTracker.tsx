@@ -10,6 +10,7 @@ interface ExpenseTrackerProps {
   availableProjects: string[]
   selectedProject: string
   categories: string[]
+  availableMonths?: string[]
   onAddExpense: () => void
   onEditExpense: (expense: Expense) => void
   onDeleteExpense: (expense: Expense) => void
@@ -203,6 +204,7 @@ export function ExpenseTracker({
   availableProjects,
   selectedProject,
   categories,
+  availableMonths: propAvailableMonths,
   onAddExpense,
   onEditExpense,
   onDeleteExpense,
@@ -303,9 +305,9 @@ export function ExpenseTracker({
 
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc')
 
-  // Generate available months from actual expense dates + current month
+  // Generate available months from server/prop list + actual expense dates + current month
   const availableMonths = useMemo(() => {
-    const set = new Set<string>()
+    const set = new Set<string>(propAvailableMonths || [])
     set.add(currentMonthKey)
     expenses.forEach((e) => {
       if (e.date && e.date.length >= 7) {
@@ -313,7 +315,7 @@ export function ExpenseTracker({
       }
     })
     return Array.from(set).sort().reverse()
-  }, [expenses, currentMonthKey])
+  }, [propAvailableMonths, expenses, currentMonthKey])
 
   // Filtered expenses based on all active criteria
   const filteredExpenses = useMemo(() => {

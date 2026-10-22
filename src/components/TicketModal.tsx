@@ -42,6 +42,9 @@ export function TicketModal({
   onOpenCreateVersionModal,
 }: TicketModalProps) {
   const [isEditing, setIsEditing] = useState(initialMode === 'edit' || !existingTicket)
+  const prevIsOpenRef = useRef(false)
+  const prevTicketIdRef = useRef<string | undefined>(undefined)
+  const prevFormTicketIdRef = useRef<string | undefined>(undefined)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [commands, setCommands] = useState('')
@@ -135,32 +138,50 @@ export function TicketModal({
   }
 
   useEffect(() => {
-    if (!existingTicket) {
-      setIsEditing(true)
+    const isOpening = isOpen && !prevIsOpenRef.current
+    const ticketChanged = existingTicket?.id !== prevTicketIdRef.current
+
+    if (isOpen) {
+      if (isOpening || ticketChanged) {
+        setIsEditing(!existingTicket || initialMode === 'edit')
+      }
     } else {
-      setIsEditing(initialMode === 'edit')
+      prevTicketIdRef.current = undefined
     }
-  }, [existingTicket, initialMode, isOpen])
+    prevIsOpenRef.current = isOpen
+    if (existingTicket?.id) {
+      prevTicketIdRef.current = existingTicket.id
+    }
+  }, [isOpen, existingTicket?.id, initialMode])
 
   useEffect(() => {
     if (existingTicket) {
-      setTitle(existingTicket.title)
-      if (existingTicket.description !== undefined) {
+      const ticketChanged = existingTicket.id !== prevFormTicketIdRef.current
+      if (ticketChanged) {
+        prevFormTicketIdRef.current = existingTicket.id
+        setTitle(existingTicket.title || '')
         setDescription(existingTicket.description || '')
-      }
-      if (existingTicket.commands !== undefined) {
         setCommands(existingTicket.commands || '')
+        setStatus(existingTicket.status)
+        setPriority(existingTicket.priority)
+        setCategory(existingTicket.category || 'DEV')
+        setVersion(existingTicket.version || '')
+        setProjectName(
+          existingTicket.projectName ||
+            (availableProjects[0] || 'General')
+        )
+        setAuthor(existingTicket.updatedBy || 'James Nithil')
+      } else {
+        // Same ticket receiving deferred fields (e.g. description/commands loaded via background query)
+        if (existingTicket.description !== undefined && !description) {
+          setDescription(existingTicket.description || '')
+        }
+        if (existingTicket.commands !== undefined && !commands) {
+          setCommands(existingTicket.commands || '')
+        }
       }
-      setStatus(existingTicket.status)
-      setPriority(existingTicket.priority)
-      setCategory(existingTicket.category || 'DEV')
-      setVersion(existingTicket.version || '')
-      setProjectName(
-        existingTicket.projectName ||
-          (availableProjects[0] || 'General')
-      )
-      setAuthor(existingTicket.updatedBy || 'James Nithil')
     } else {
+      prevFormTicketIdRef.current = undefined
       setTitle('')
       setDescription('')
       setCommands('')

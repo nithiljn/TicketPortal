@@ -353,9 +353,11 @@ export default function Home() {
     setEditingTicket(ticket)
     setModalMode('view')
     setIsModalOpen(true)
+    const targetRef = ticket.ticketId || ticket.id
+    openedTicketFromUrlRef.current = targetRef
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href)
-      url.searchParams.set('ticket', ticket.ticketId || ticket.id)
+      url.searchParams.set('ticket', targetRef)
       window.history.replaceState(null, '', url.toString())
     }
 
@@ -402,9 +404,11 @@ export default function Home() {
     setEditingTicket(ticket)
     setModalMode('edit')
     setIsModalOpen(true)
+    const targetRef = ticket.ticketId || ticket.id
+    openedTicketFromUrlRef.current = targetRef
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href)
-      url.searchParams.set('ticket', ticket.ticketId || ticket.id)
+      url.searchParams.set('ticket', targetRef)
       window.history.replaceState(null, '', url.toString())
     }
 
@@ -897,6 +901,18 @@ export default function Home() {
     const rawTargetId = params.get('ticket') || params.get('ticketId')
     if (!rawTargetId || openedTicketFromUrlRef.current === rawTargetId) return
     const targetId = rawTargetId.replace(/^#/, '').trim()
+
+    // If modal is already open for this exact ticket, avoid resetting modalMode
+    if (
+      isModalOpen &&
+      editingTicket &&
+      (String(editingTicket.ticketId || '').toLowerCase() === targetId.toLowerCase() ||
+        editingTicket.id.toLowerCase() === targetId.toLowerCase() ||
+        editingTicket.id.slice(0, 4).toLowerCase() === targetId.toLowerCase())
+    ) {
+      openedTicketFromUrlRef.current = rawTargetId
+      return
+    }
 
     const match = tickets.find(
       (t) =>

@@ -2067,7 +2067,7 @@ export default function Home() {
         )}
 
         {/* Main Display Area */}
-        <div className="flex-1 overflow-auto flex flex-col">
+        <div className={`flex-1 flex flex-col min-w-0 ${activeTab === 'notes' ? 'overflow-auto lg:overflow-hidden' : 'overflow-auto'}`}>
           {loading || isFilterLoading || isTabSwitching ? (
             <ThemeSpinner
               theme={theme}
@@ -2097,7 +2097,7 @@ export default function Home() {
               }
             />
           ) : (
-            <div className="flex-1 flex flex-col min-w-0 animate-in fade-in duration-150">
+            <div className={`flex-1 flex flex-col min-w-0 ${activeTab === 'notes' ? 'lg:h-full lg:overflow-hidden' : ''} animate-in fade-in duration-150`}>
               {/* View 1: Inbox (Primary Table View) */}
               {activeTab === 'inbox' && (
                 <InboxTable
@@ -2170,7 +2170,7 @@ export default function Home() {
 
               {/* View 4: Daily Work Logs */}
               {activeTab === 'notes' && (
-                <div className="p-2.5 sm:p-6">
+                <div className="p-2.5 sm:p-5 pb-20 sm:pb-5 lg:p-5 lg:flex-1 lg:min-h-0 lg:h-full lg:flex lg:flex-col lg:overflow-hidden">
                   <DailyNotes
                     notes={dailyNotes}
                     onAddNote={handleAddDailyNote}

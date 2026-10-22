@@ -445,10 +445,10 @@ export function DailyNotes({
       : 'notebook-page-flip-next'
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-5">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-5 lg:flex-1 lg:min-h-0 lg:h-full lg:overflow-hidden">
       {/* Left Column: Compose Note Section */}
-      <div className={`lg:col-span-1 rounded-[20px] border p-4 sm:p-5 h-fit ${cardContainer}`}>
-        <div className={`flex items-center justify-between pb-3 mb-3.5 border-b ${headerBorder}`}>
+      <div className={`lg:col-span-1 rounded-[20px] border p-4 sm:p-5 flex flex-col h-fit lg:h-full lg:min-h-0 lg:overflow-y-auto custom-scrollbar ${cardContainer}`}>
+        <div className={`flex items-center justify-between pb-3 mb-3.5 border-b shrink-0 ${headerBorder}`}>
           <h2 className="text-[11px] font-semibold tracking-wider uppercase text-[#86868b]">
             Log Daily Work
           </h2>
@@ -627,9 +627,9 @@ export function DailyNotes({
       </div>
 
       {/* Right Column: Redesigned Spiral Notebook (One Page Per Day with Timeline) */}
-      <div className="lg:col-span-2 flex flex-col space-y-3">
+      <div className="lg:col-span-2 flex flex-col space-y-3 lg:min-h-0 lg:h-full lg:overflow-hidden">
         {/* Navigation & Jump Bar */}
-        <div className={`p-3 rounded-[20px] border flex flex-wrap items-center justify-between gap-2.5 ${cardContainer}`}>
+        <div className={`p-3 rounded-[20px] border flex flex-wrap items-center justify-between gap-2.5 shrink-0 ${cardContainer}`}>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -701,19 +701,19 @@ export function DailyNotes({
         </div>
 
         {/* The Spiral Notebook Container */}
-        <div className={`rounded-[24px] border overflow-hidden transition-all ${notebookPaperBg}`}>
+        <div className={`rounded-[24px] border overflow-hidden transition-all lg:flex-1 lg:min-h-0 flex flex-col ${notebookPaperBg}`}>
           {/* Top Spiral Binding Strip */}
-          <div className={`pt-2.5 pb-1 ${notebookBindingBg}`}>
+          <div className={`pt-2.5 pb-1 shrink-0 ${notebookBindingBg}`}>
             <SpiralBinding isDark={isDark} />
           </div>
 
           {/* Notebook Page Content Area (With Top Spiral 3D Page Flip Animation) */}
           <div
             key={`${activeDate}-${flipKey}`}
-            className={`p-4 sm:p-6 min-h-[500px] flex flex-col ${pageFlipAnimClass}`}
+            className={`p-4 sm:p-6 min-h-[450px] lg:min-h-0 flex-1 flex flex-col lg:overflow-hidden ${pageFlipAnimClass}`}
           >
             {/* Page Header: Date, Stats, Author & Actions */}
-            <div className={`pb-4 mb-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${headerBorder}`}>
+            <div className={`pb-4 mb-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 ${headerBorder}`}>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-base sm:text-lg font-bold tracking-tight text-[#1d1d1f] dark:text-[#f5f5f7] font-sans">
@@ -795,7 +795,7 @@ export function DailyNotes({
             {/* Notebook Page Body: Timeline vs Empty State */}
             {!currentNote ? (
               /* Clear Empty State for Days with No Log */
-              <div className="flex-1 flex flex-col items-center justify-center py-16 px-4 text-center">
+              <div className="flex-1 flex flex-col items-center justify-center py-12 px-4 text-center lg:min-h-0 lg:overflow-y-auto custom-scrollbar">
                 <div className={`w-12 h-12 rounded-[16px] border border-dashed flex items-center justify-center mb-3 text-[#86868b] ${
                   isDark ? 'border-white/10 bg-white/[0.02]' : 'border-black/10 bg-black/[0.02]'
                 }`}>
@@ -826,7 +826,7 @@ export function DailyNotes({
               </div>
             ) : (
               /* Populated Page Content */
-              <div className="flex-1 flex flex-col justify-between">
+              <div className="flex-1 flex flex-col justify-between lg:min-h-0 lg:overflow-y-auto custom-scrollbar pr-1">
                 <div>
                   {/* Vertical Timeline with Completion Time Markers */}
                   {parsedPageData.tasks.length > 0 && (

@@ -787,19 +787,28 @@ export function ExpenseTracker({
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             {/* Quick Month Filter Selector */}
-            <select
-              value={activeMonth}
-              onChange={(e) => handleMonthChange(e.target.value)}
-              className={`h-8.5 px-3.5 rounded-full border text-xs font-medium focus:outline-none cursor-pointer transition active:scale-95 ${filterBtnBg}`}
-              title="Filter expenses by month"
-            >
-              <option value="ALL">All Time</option>
-              {availableMonths.map((m) => (
-                <option key={m} value={m}>
-                  {formatMonthName(m)}
+            <div className="relative inline-flex items-center">
+              <select
+                value={activeMonth}
+                onChange={(e) => handleMonthChange(e.target.value)}
+                className={`h-8.5 pl-4 pr-8 rounded-full border text-xs font-medium focus:outline-none cursor-pointer transition active:scale-95 appearance-none ${filterBtnBg}`}
+                title="Filter expenses by month"
+              >
+                <option value="ALL" className={isDark ? 'bg-[#1c1c1e] text-white' : 'bg-white text-zinc-900'}>
+                  All Time
                 </option>
-              ))}
-            </select>
+                {availableMonths.map((m) => (
+                  <option key={m} value={m} className={isDark ? 'bg-[#1c1c1e] text-white' : 'bg-white text-zinc-900'}>
+                    {formatMonthName(m)}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-3 flex items-center text-[#86868b]">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+            </div>
 
             {/* Download PDF Report Button */}
             <button
@@ -1136,16 +1145,31 @@ export function ExpenseTracker({
                 : filteredExpenses.length}
             </span>
           </div>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className={`rounded-full border px-3.5 py-1.5 text-xs font-medium focus:outline-none cursor-pointer transition active:scale-95 ${filterBtnBg}`}
-          >
-            <option value="date-desc">Sort: Newest Date</option>
-            <option value="date-asc">Sort: Oldest Date</option>
-            <option value="amount-desc">Sort: Highest Amount</option>
-            <option value="amount-asc">Sort: Lowest Amount</option>
-          </select>
+          <div className="relative inline-flex items-center">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className={`h-8.5 pl-4 pr-8 rounded-full border text-xs font-medium focus:outline-none cursor-pointer transition active:scale-95 appearance-none ${filterBtnBg}`}
+            >
+              <option value="date-desc" className={isDark ? 'bg-[#1c1c1e] text-white' : 'bg-white text-zinc-900'}>
+                Sort: Newest Date
+              </option>
+              <option value="date-asc" className={isDark ? 'bg-[#1c1c1e] text-white' : 'bg-white text-zinc-900'}>
+                Sort: Oldest Date
+              </option>
+              <option value="amount-desc" className={isDark ? 'bg-[#1c1c1e] text-white' : 'bg-white text-zinc-900'}>
+                Sort: Highest Amount
+              </option>
+              <option value="amount-asc" className={isDark ? 'bg-[#1c1c1e] text-white' : 'bg-white text-zinc-900'}>
+                Sort: Lowest Amount
+              </option>
+            </select>
+            <div className="pointer-events-none absolute right-3 flex items-center text-[#86868b]">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         {filteredExpenses.length === 0 ? (

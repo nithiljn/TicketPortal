@@ -585,27 +585,34 @@ export function Sidebar({
                       </button>
                     )}
                   </div>
-                  <div className="space-y-1">
+                  <div className="relative">
                     <select
                       value={selectedExpenseMonth || 'ALL'}
                       onChange={(e) => {
                         onSelectExpenseMonth?.(e.target.value)
                         onClose()
                       }}
-                      className={`w-full h-9 rounded-[10px] px-2.5 py-1.5 text-xs font-medium border outline-none cursor-pointer ${inputBg}`}
+                      className={`w-full h-9 rounded-[10px] pl-3 pr-8 py-1.5 text-xs font-medium border outline-none cursor-pointer appearance-none ${inputBg}`}
                     >
-                      <option value="ALL">All Time</option>
+                      <option value="ALL" className={isDark ? 'bg-[#1c1c1e] text-white' : 'bg-white text-zinc-900'}>
+                        All Time
+                      </option>
                       {availableExpenseMonths?.map((m) => {
                         const [year, month] = m.split('-')
                         const dateObj = new Date(Number(year), Number(month) - 1, 1)
                         const label = dateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
                         return (
-                          <option key={m} value={m}>
+                          <option key={m} value={m} className={isDark ? 'bg-[#1c1c1e] text-white' : 'bg-white text-zinc-900'}>
                             {label}
                           </option>
                         )
                       })}
                     </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-[#86868b]">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
 

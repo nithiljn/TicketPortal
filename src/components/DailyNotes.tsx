@@ -775,14 +775,14 @@ export function DailyNotes({
                   <button
                     type="button"
                     onClick={() => onDeleteNote(currentNote)}
-                    className={`h-8 px-3.5 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1.5 ${
+                    className={`h-8 px-3.5 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1.5 group ${
                       isDark
-                        ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.04] hover:bg-white/[0.08] text-[#86868b] hover:text-[#f5f5f7]'
-                        : 'border-black/[0.08] hover:border-black/[0.18] bg-white hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] shadow-2xs'
+                        ? 'border-white/[0.08] bg-white/[0.04] text-[#86868b] hover:bg-[#c04742] hover:border-[#c04742] hover:text-white'
+                        : 'border-black/[0.08] bg-white text-[#86868b] shadow-2xs hover:bg-[#c04742] hover:border-[#c04742] hover:text-white'
                     }`}
                     title="Delete this day's work log"
                   >
-                    <svg className="w-3.5 h-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="w-3.5 h-3.5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <polyline points="3 6 5 6 21 6" />
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                     </svg>

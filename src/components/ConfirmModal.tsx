@@ -105,11 +105,7 @@ export function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`h-9 px-4 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-50 ${
-              isDark
-                ? 'bg-white hover:bg-zinc-200 text-zinc-950 border-white'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-white border-zinc-900'
-            }`}
+            className="h-9 px-4 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-50 bg-[#c04742] hover:bg-[#a83c38] text-white border-[#c04742] hover:border-[#a83c38]"
           >
             {loading ? (
               <span>Deleting...</span>

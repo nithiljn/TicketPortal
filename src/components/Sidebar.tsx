@@ -1066,7 +1066,7 @@ export function Sidebar({
             {/* Settings Popover Dropdown Menu */}
             {isSettingsOpen && (
               <div
-                className={`absolute bottom-full left-3 right-3 mb-2 p-1.5 rounded-xl border shadow-xl z-50 transition-all ${
+                className={`absolute bottom-full left-1.5 right-1.5 mb-2 p-1.5 rounded-xl border shadow-2xl backdrop-blur-md z-50 transition-all ${
                   isDark
                     ? 'bg-[#1c1c1e]/95 border-white/[0.12] text-[#f5f5f7] shadow-black/80'
                     : 'bg-white/95 border-[#e5e5ea] text-[#1d1d1f] shadow-xl'
@@ -1077,21 +1077,21 @@ export function Sidebar({
                 </div>
 
                 {/* Appearance Theme Switcher */}
-                <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[12px]">
-                  <span className="text-xs font-medium">Appearance</span>
-                  <div className={`inline-flex p-0.5 rounded-full border ${
+                <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[12px] gap-2">
+                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">Appearance</span>
+                  <div className={`inline-flex p-0.5 rounded-full border shrink-0 ${
                     isDark ? 'bg-white/[0.06] border-white/[0.08]' : 'bg-[#e5e5ea]/60 border-[#e5e5ea]'
                   }`}>
                     <button
                       type="button"
                       onClick={() => isDark && onToggleTheme()}
-                      className={`px-2.5 py-1 text-[11px] font-medium rounded-full transition cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 py-0.5 text-[11px] font-medium rounded-full transition cursor-pointer flex items-center gap-1.5 ${
                         !isDark
                           ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
                           : 'text-[#86868b] hover:text-[#f5f5f7]'
                       }`}
                     >
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <circle cx="12" cy="12" r="5" />
                         <line x1="12" y1="1" x2="12" y2="3" />
                         <line x1="12" y1="21" x2="12" y2="23" />
@@ -1107,13 +1107,13 @@ export function Sidebar({
                     <button
                       type="button"
                       onClick={() => !isDark && onToggleTheme()}
-                      className={`px-2.5 py-1 text-[11px] font-medium rounded-full transition cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 py-0.5 text-[11px] font-medium rounded-full transition cursor-pointer flex items-center gap-1.5 ${
                         isDark
                           ? 'bg-white/[0.18] text-white shadow-xs font-semibold'
                           : 'text-[#86868b] hover:text-[#1d1d1f]'
                       }`}
                     >
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                       </svg>
                       <span>Dark</span>
@@ -1145,18 +1145,26 @@ export function Sidebar({
                       setIsSettingsOpen(false)
                       onLogout()
                     }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[10px] text-xs font-medium transition cursor-pointer text-left active:scale-[0.98] ${
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-xs font-medium transition cursor-pointer text-left active:scale-[0.98] ${
                       isDark
                         ? 'text-zinc-300 hover:text-white hover:bg-white/[0.08]'
                         : 'text-zinc-700 hover:text-zinc-950 hover:bg-black/[0.05]'
                     }`}
                   >
-                    <svg className="w-3.5 h-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" y1="12" x2="9" y2="12" />
+                    <svg
+                      className="w-4 h-4 shrink-0 opacity-80"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M14 8v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2" />
+                      <polyline points="16 8 20 12 16 16" />
+                      <line x1="9" y1="12" x2="20" y2="12" />
                     </svg>
-                    <span>Log Out</span>
+                    <span>Log out</span>
                   </button>
                 )}
               </div>

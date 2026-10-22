@@ -78,6 +78,14 @@ const NAV_TABS = [
   },
 ] as const
 
+function formatMonthKey(key: string) {
+  if (!key || key === 'ALL') return 'All Time'
+  const [y, m] = key.split('-')
+  if (!y || !m) return key
+  const d = new Date(Number(y), Number(m) - 1, 1)
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
+
 export default function Home() {
   const { user, isLoading: isAuthLoading, logout } = useAuth()
 
@@ -99,6 +107,7 @@ export default function Home() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [expenseCategories, setExpenseCategories] = useState<string[]>([])
   const [serverExpenseMonths, setServerExpenseMonths] = useState<string[]>([])
+  const [isExpenseLoading, setIsExpenseLoading] = useState(false)
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null)
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
@@ -232,10 +241,20 @@ export default function Home() {
 
   const handleSelectExpenseWorkspace = useCallback(
     (workspace: string) => {
+      if (workspace === selectedExpenseProject) return
+      setIsExpenseLoading(true)
       setSelectedExpenseProject(workspace)
     },
-    []
+    [selectedExpenseProject]
   )
+
+  const handleSelectExpenseMonth = useCallback((month: string) => {
+    setSelectedExpenseMonth((prev) => {
+      if (prev === month) return prev
+      setIsExpenseLoading(true)
+      return month
+    })
+  }, [])
 
   const handleSelectStatus = useCallback(
     (status: TicketStatus | 'ALL') => {
@@ -690,6 +709,7 @@ export default function Home() {
   // 3. Expenses Loader
   const loadExpensesData = useCallback(async () => {
     if (!user?.email) return
+    setIsExpenseLoading(true)
     try {
       const query = /* GraphQL */ `
         query GetExpensesData(
@@ -750,6 +770,8 @@ export default function Home() {
       }
     } catch (err) {
       console.error('Error loading expenses:', err)
+    } finally {
+      setIsExpenseLoading(false)
     }
   }, [user?.email, selectedExpenseProject, selectedExpenseMonth])
 
@@ -1792,7 +1814,7 @@ export default function Home() {
         expenseSearchQuery={expenseSearchQuery}
         onExpenseSearchChange={setExpenseSearchQuery}
         selectedExpenseMonth={selectedExpenseMonth}
-        onSelectExpenseMonth={setSelectedExpenseMonth}
+        onSelectExpenseMonth={handleSelectExpenseMonth}
         availableExpenseMonths={availableExpenseMonths}
         expenseCounts={expenseCounts}
         onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
@@ -2091,7 +2113,7 @@ export default function Home() {
 
         {/* Main Display Area */}
         <div className={`flex-1 flex flex-col min-w-0 ${activeTab === 'notes' ? 'overflow-auto lg:overflow-hidden' : 'overflow-auto'}`}>
-          {loading || isFilterLoading || isTabSwitching ? (
+          {loading || isFilterLoading || isTabSwitching || (activeTab === 'expenses' && isExpenseLoading) ? (
             <ThemeSpinner
               theme={theme}
               title={
@@ -2109,6 +2131,12 @@ export default function Home() {
                     : tabSwitchTarget === 'expenses'
                     ? 'Loading Expense Tracker & Analytics...'
                     : 'Loading Inbox & Tickets...'
+                  : isExpenseLoading
+                  ? selectedExpenseMonth !== 'ALL'
+                    ? `Loading expenses for ${formatMonthKey(selectedExpenseMonth)}...`
+                    : selectedExpenseProject !== 'ALL'
+                    ? `Loading workspace "${selectedExpenseProject}"...`
+                    : 'Loading all expenses...'
                   : 'Updating filtered tickets...'
               }
               subtitle={
@@ -2116,6 +2144,8 @@ export default function Home() {
                   ? 'TicketFlow • Syncing with server'
                   : isTabSwitching
                   ? 'TicketFlow • Switching View'
+                  : isExpenseLoading
+                  ? 'TicketFlow • Fetching Data'
                   : 'TicketFlow • Applying Filter'
               }
             />
@@ -2223,19 +2253,19 @@ export default function Home() {
                   selectedPaymentMethod={selectedPaymentMethod}
                   onSelectPaymentMethod={setSelectedPaymentMethod}
                   selectedMonth={selectedExpenseMonth}
-                  onSelectMonth={setSelectedExpenseMonth}
+                  onSelectMonth={handleSelectExpenseMonth}
                   minAmount={expenseMinAmount}
                   maxAmount={expenseMaxAmount}
                   onMinAmountChange={setExpenseMinAmount}
                   onMaxAmountChange={setExpenseMaxAmount}
                   searchQuery={expenseSearchQuery}
                   onExpenseSearchChange={setExpenseSearchQuery}
-                  onSelectWorkspace={setSelectedExpenseProject}
+                  onSelectWorkspace={handleSelectExpenseWorkspace}
                   onClearAllFilters={() => {
                     setSelectedExpenseCategory('ALL')
                     setSelectedPaymentMethod('ALL')
-                    setSelectedExpenseMonth('ALL')
-                    setSelectedExpenseProject('ALL')
+                    handleSelectExpenseMonth('ALL')
+                    handleSelectExpenseWorkspace('ALL')
                     setExpenseMinAmount('')
                     setExpenseMaxAmount('')
                     setExpenseSearchQuery('')

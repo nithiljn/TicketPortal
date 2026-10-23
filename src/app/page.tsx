@@ -201,6 +201,15 @@ export default function Home() {
   const filterTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const tabTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const openedTicketFromUrlRef = useRef<string | null>(null)
+  const expenseFetchIdRef = useRef(0)
+  const prevExpenseFiltersRef = useRef({
+    project: selectedExpenseProject,
+    month: selectedExpenseMonth,
+  })
+  const prevBoardFiltersRef = useRef({
+    project: selectedProject,
+    search: searchTerm,
+  })
 
   // Segmented control refs & smooth sliding pill measurement
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({})
@@ -709,6 +718,7 @@ export default function Home() {
   // 3. Expenses Loader
   const loadExpensesData = useCallback(async () => {
     if (!user?.email) return
+    const fetchId = ++expenseFetchIdRef.current
     setIsExpenseLoading(true)
     try {
       const query = /* GraphQL */ `
@@ -757,6 +767,8 @@ export default function Home() {
         offset: 0,
       })
 
+      if (fetchId !== expenseFetchIdRef.current) return
+
       setExpenses(data.expenses || [])
       setExpenseCategories(data.expenseCategories || [])
       if (data.expenseMonths && data.expenseMonths.length > 0) {
@@ -769,9 +781,13 @@ export default function Home() {
         setAvailableExpenseProjects((prev) => Array.from(new Set([...prev, ...filtered])))
       }
     } catch (err) {
-      console.error('Error loading expenses:', err)
+      if (fetchId === expenseFetchIdRef.current) {
+        console.error('Error loading expenses:', err)
+      }
     } finally {
-      setIsExpenseLoading(false)
+      if (fetchId === expenseFetchIdRef.current) {
+        setIsExpenseLoading(false)
+      }
     }
   }, [user?.email, selectedExpenseProject, selectedExpenseMonth])
 
@@ -908,17 +924,42 @@ export default function Home() {
 
   // Re-fetch expenses when expense filters change while on expenses tab
   useEffect(() => {
-    if (activeTab === 'expenses' && loadedTabs.has('expenses')) {
+    if (activeTab !== 'expenses' || !loadedTabs.has('expenses')) return
+
+    const filtersChanged =
+      prevExpenseFiltersRef.current.project !== selectedExpenseProject ||
+      prevExpenseFiltersRef.current.month !== selectedExpenseMonth
+
+    prevExpenseFiltersRef.current = {
+      project: selectedExpenseProject,
+      month: selectedExpenseMonth,
+    }
+
+    if (filtersChanged) {
       loadExpensesData()
     }
   }, [activeTab, loadedTabs, selectedExpenseProject, selectedExpenseMonth, loadExpensesData])
 
   // Re-fetch board / dashboard when workspace changes
   useEffect(() => {
-    if (activeTab === 'board' && loadedTabs.has('board')) {
-      loadBoardData()
-    } else if (activeTab === 'dashboard' && loadedTabs.has('dashboard')) {
-      loadDashboardData()
+    if (activeTab !== 'board' && activeTab !== 'dashboard') return
+    if (!loadedTabs.has(activeTab)) return
+
+    const filtersChanged =
+      prevBoardFiltersRef.current.project !== selectedProject ||
+      prevBoardFiltersRef.current.search !== searchTerm
+
+    prevBoardFiltersRef.current = {
+      project: selectedProject,
+      search: searchTerm,
+    }
+
+    if (filtersChanged) {
+      if (activeTab === 'board') {
+        loadBoardData()
+      } else if (activeTab === 'dashboard') {
+        loadDashboardData()
+      }
     }
   }, [activeTab, loadedTabs, selectedProject, searchTerm, loadBoardData, loadDashboardData])
 

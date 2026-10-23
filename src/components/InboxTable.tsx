@@ -324,8 +324,18 @@ export function InboxTable({
           <span className={subHeaderTitle}>
             {selectedProject === 'ALL' ? 'All Workspaces' : selectedProject}
           </span>
-          <span className={isDark ? 'text-[#ebebf5]/20' : 'text-black/20'}>•</span>
-          <span className={`font-mono text-[11px] ${isDark ? 'text-[#ebebf5]/40' : 'text-[#1d1d1f]/40'}`}>{tickets.length} items</span>
+          <span
+            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-normal border transition-colors ${
+              isDark
+                ? 'bg-white/[0.06] text-[#ebebf5]/70 border-white/[0.08]'
+                : 'bg-black/[0.04] text-[#1d1d1f]/70 border-black/[0.06]'
+            }`}
+          >
+            <span className="font-mono font-medium">{tickets.length}</span>
+            <span className={isDark ? 'text-[#ebebf5]/40 text-[11px]' : 'text-[#1d1d1f]/40 text-[11px]'}>
+              {tickets.length === 1 ? 'item' : 'items'}
+            </span>
+          </span>
 
           {/* Active Status Filter Chips */}
           {activeStatuses.map((status) => {

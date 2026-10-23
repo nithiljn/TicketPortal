@@ -602,9 +602,17 @@ export function ExpenseTracker({
           <span className={subHeaderTitle}>
             {selectedProject === 'ALL' ? 'All Workspaces' : selectedProject}
           </span>
-          <span className={isDark ? 'text-zinc-600' : 'text-zinc-300'}>•</span>
-          <span className="text-[11px] text-[#86868b] dark:text-[#a1a1a6]">
-            {filteredExpenses.length} {filteredExpenses.length === 1 ? 'item' : 'items'}
+          <span
+            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-normal border transition-colors ${
+              isDark
+                ? 'bg-white/[0.06] text-[#ebebf5]/70 border-white/[0.08]'
+                : 'bg-black/[0.04] text-[#1d1d1f]/70 border-black/[0.06]'
+            }`}
+          >
+            <span className="font-mono font-medium">{filteredExpenses.length}</span>
+            <span className={isDark ? 'text-[#ebebf5]/40 text-[11px]' : 'text-[#1d1d1f]/40 text-[11px]'}>
+              {filteredExpenses.length === 1 ? 'item' : 'items'}
+            </span>
           </span>
 
           {/* Active Workspace Filter Chip */}

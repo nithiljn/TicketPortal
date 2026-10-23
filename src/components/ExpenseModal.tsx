@@ -465,7 +465,7 @@ export function ExpenseModal({
           {/* Title */}
           <div>
             <label className={`block text-[11px] font-medium mb-1.5 ${labelColor}`}>
-              Expense Title / Paid For *
+              Expense Title / Paid For <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -483,7 +483,7 @@ export function ExpenseModal({
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className={`text-[11px] font-medium ${labelColor}`}>
-                  Category *
+                  Category <span className="text-red-500">*</span>
                 </label>
                 <button
                   type="button"
@@ -602,9 +602,6 @@ export function ExpenseModal({
               onKeyDown={handleNotesKeyDown}
               className={`w-full rounded-[14px] border p-3.5 text-xs focus:outline-none min-h-[96px] max-h-[190px] resize-y overflow-y-auto leading-relaxed custom-scrollbar transition ${inputBg}`}
             />
-            <p className="mt-1.5 text-[11px] text-[#86868b] dark:text-[#a1a1a6]">
-              Tip: Press Enter on a bullet line to automatically continue the next bullet.
-            </p>
           </div>
 
           {/* Footer Actions */}

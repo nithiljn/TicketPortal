@@ -886,7 +886,7 @@ export function TicketModal({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelColor}`}>
-                    Workspace *
+                    Workspace <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <select
@@ -912,14 +912,11 @@ export function TicketModal({
                       </svg>
                     </div>
                   </div>
-                  <p className="mt-1 text-[10px] text-[#86868b]">
-                    Grouping workspace.
-                  </p>
                 </div>
 
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelColor}`}>
-                    Category *
+                    Category <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <select
@@ -941,9 +938,6 @@ export function TicketModal({
                       </svg>
                     </div>
                   </div>
-                  <p className="mt-1 text-[10px] text-[#86868b]">
-                    Domain of the task.
-                  </p>
                 </div>
 
                 <div>
@@ -990,16 +984,13 @@ export function TicketModal({
                       </svg>
                     </div>
                   </div>
-                  <p className="mt-1 text-[10px] text-[#86868b]">
-                    Optional release tag.
-                  </p>
                 </div>
               </div>
 
               {/* Row 2: Ticket Title */}
               <div>
                 <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelColor}`}>
-                  Ticket Title *
+                  Ticket Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -1039,9 +1030,6 @@ export function TicketModal({
                   onKeyDown={handleDescriptionKeyDown}
                   className={`w-full rounded-[12px] border p-3.5 text-xs sm:text-sm focus:outline-none transition min-h-[100px] max-h-[220px] resize-y overflow-y-auto leading-relaxed custom-scrollbar font-sans ${inputBg}`}
                 />
-                <p className="mt-1 text-[10px] text-[#86868b]">
-                  Tip: Press Enter on a bullet line to automatically continue the next bullet.
-                </p>
               </div>
 
               {/* Row 4: Commands & Extra Details */}
@@ -1084,9 +1072,6 @@ export function TicketModal({
                   onKeyDown={handleCommandsKeyDown}
                   className={`w-full rounded-[12px] border p-3.5 text-xs sm:text-sm focus:outline-none transition min-h-[100px] max-h-[220px] resize-y overflow-y-auto leading-relaxed custom-scrollbar font-mono ${inputBg}`}
                 />
-                <p className="mt-1 text-[10px] text-[#86868b]">
-                  Tip: Press Enter on a bullet (•) or command ($) line to automatically continue on the next line.
-                </p>
               </div>
 
               {/* Row 5: Status, Priority, Author */}

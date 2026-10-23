@@ -270,23 +270,31 @@ export function LoginScreen({ theme, onToggleTheme }: LoginScreenProps) {
           {errorMsg && (
             <div
               role="alert"
-              className="px-3.5 py-2.5 rounded-[12px] text-xs flex items-center justify-between gap-2.5 border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 animate-in fade-in duration-150"
+              className="px-3.5 py-2.5 rounded-xl text-xs flex items-center justify-between gap-3 border transition-colors animate-in fade-in duration-150 border-red-200/80 dark:border-red-900/50 bg-red-50/70 dark:bg-red-950/30 text-red-900 dark:text-red-200 shadow-2xs"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                <svg
+                  className="w-4 h-4 shrink-0 text-red-600 dark:text-red-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
-                <span className="text-[12px] leading-snug font-medium truncate">{errorMsg}</span>
+                <span className="text-[12px] leading-snug font-medium truncate tracking-tight text-white">{errorMsg}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setErrorMsg('')}
-                className="p-1 rounded-full transition cursor-pointer shrink-0 hover:bg-red-500/10"
+                className="p-1 rounded-md transition cursor-pointer shrink-0 text-red-700/60 hover:text-red-900 hover:bg-red-100/60 dark:text-red-300/60 dark:hover:text-red-100 dark:hover:bg-red-900/30"
                 aria-label="Dismiss error"
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>

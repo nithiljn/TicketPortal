@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react'
 import { Ticket, TicketStatus, TicketPriority } from '@/types'
+import { HighlightText } from '@/components/HighlightText'
 
 interface InboxTableProps {
   tickets: Ticket[]
@@ -35,6 +36,7 @@ interface InboxTableProps {
   onRemoveVersion?: (version: string) => void
   onClearAllVersions?: () => void
   ticketIdFilter?: string
+  searchTerm?: string
   onSelectTicketIdFilter?: (id: string) => void
   onClearTicketIdFilter?: () => void
   onClearAllFilters?: () => void
@@ -94,6 +96,7 @@ export function InboxTable({
   onRemoveVersion,
   onClearAllVersions,
   ticketIdFilter = '',
+  searchTerm = '',
   onSelectTicketIdFilter,
   onClearTicketIdFilter,
   onClearAllFilters,
@@ -114,6 +117,7 @@ export function InboxTable({
   const activeCurrentPage = serverPagination && controlledPage !== undefined ? controlledPage : internalCurrentPage
   const activePageSize = serverPagination && controlledPageSize !== undefined ? controlledPageSize : internalPageSize
   const effectiveTotalCount = serverPagination && typeof totalTicketsCount === 'number' ? totalTicketsCount : tickets.length
+  const searchHighlightQuery = (searchTerm || ticketIdFilter || '').trim()
 
   // Reset internal page when tickets count or filters change (for client pagination)
   useEffect(() => {
@@ -652,7 +656,7 @@ export function InboxTable({
                           }`}
                           title={`Filter by #${ticket.ticketId || ticket.id.slice(0, 4)}`}
                         >
-                          #{ticket.ticketId || ticket.id.slice(0, 4)}
+                          #<HighlightText text={ticket.ticketId || ticket.id.slice(0, 4)} query={searchHighlightQuery} />
                         </button>
                       </td>
 
@@ -665,7 +669,7 @@ export function InboxTable({
                       <td className="py-3 px-4 max-w-sm">
                         <div className="flex items-center gap-2">
                           <span className={`font-medium transition truncate ${ticketTitle}`}>
-                            {ticket.title}
+                            <HighlightText text={ticket.title} query={searchHighlightQuery} />
                           </span>
                         </div>
                       </td>
@@ -819,7 +823,7 @@ export function InboxTable({
                         }`}
                         title={`Filter by #${ticket.ticketId || ticket.id.slice(0, 4)}`}
                       >
-                        #{ticket.ticketId || ticket.id.slice(0, 4)}
+                        #<HighlightText text={ticket.ticketId || ticket.id.slice(0, 4)} query={searchHighlightQuery} />
                       </button>
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[10px] font-mono ${workspaceBadge}`}>
                         <svg className="w-2.5 h-2.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -877,7 +881,7 @@ export function InboxTable({
 
                   <div>
                     <h3 className={`font-medium text-xs ${ticketTitle}`}>
-                      {ticket.title}
+                      <HighlightText text={ticket.title} query={searchHighlightQuery} />
                     </h3>
                   </div>
 

@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { Ticket, TicketStatus } from '@/types'
+import { HighlightText } from '@/components/HighlightText'
 
 interface KanbanBoardProps {
   tickets: Ticket[]
@@ -10,6 +11,7 @@ interface KanbanBoardProps {
   onEditTicket: (ticket: Ticket) => void
   onDeleteTicket: (ticket: Ticket) => void
   theme?: 'dark' | 'light'
+  searchTerm?: string
 }
 
 const COLUMNS: {
@@ -29,6 +31,7 @@ export function KanbanBoard({
   onEditTicket,
   onDeleteTicket,
   theme = 'dark',
+  searchTerm = '',
 }: KanbanBoardProps) {
   const isDark = theme === 'dark'
 
@@ -188,14 +191,14 @@ export function KanbanBoard({
                     {/* Title */}
                     <div className="mb-1">
                       <h3 className={`font-medium text-xs leading-snug transition truncate ${cardTitle}`}>
-                        {ticket.title}
+                        <HighlightText text={ticket.title} query={searchTerm} />
                       </h3>
                     </div>
 
                     {/* Description preview */}
                     {ticket.description && (
                       <p className={`text-[11px] line-clamp-2 mb-2.5 leading-relaxed ${cardDesc}`}>
-                        {ticket.description}
+                        <HighlightText text={ticket.description} query={searchTerm} />
                       </p>
                     )}
 

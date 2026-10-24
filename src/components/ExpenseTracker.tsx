@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react'
 import { Expense, PaymentMethod } from '@/types'
 import { Button } from '@/components/Button'
 import { generateExpensePdf } from '@/lib/generateExpensePdf'
+import { HighlightText } from '@/components/HighlightText'
 
 interface ExpenseTrackerProps {
   expenses: Expense[]
@@ -358,16 +359,10 @@ export function ExpenseTracker({
       result = result.filter((e) => Number(e.amount) <= maxVal)
     }
 
-    // 6. Search Query (title, category, or notes)
+    // 6. Search Query (title only)
     if (searchQuery && searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim()
-      result = result.filter(
-        (e) =>
-          e.title.toLowerCase().includes(q) ||
-          e.category.toLowerCase().includes(q) ||
-          (e.notes && e.notes.toLowerCase().includes(q)) ||
-          e.projectName.toLowerCase().includes(q)
-      )
+      result = result.filter((e) => (e.title || '').toLowerCase().includes(q))
     }
 
     // 7. Sort
@@ -1275,7 +1270,7 @@ export function ExpenseTracker({
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-1.5 mb-1">
                               <span className="text-xs sm:text-sm font-semibold text-[#1d1d1f] dark:text-white break-words">
-                                {exp.title}
+                                <HighlightText text={exp.title} query={searchQuery} />
                               </span>
                               {isHigh && (
                                 <span

@@ -2198,6 +2198,7 @@ export default function Home() {
               {activeTab === 'inbox' && (
                 <InboxTable
                   tickets={tickets}
+                  searchTerm={searchTerm}
                   serverPagination={true}
                   currentPage={inboxPage}
                   pageSize={inboxPageSize}
@@ -2255,6 +2256,7 @@ export default function Home() {
                 <div className="p-4 sm:p-6">
                   <KanbanBoard
                     tickets={boardTickets.length > 0 ? boardTickets : tickets}
+                    searchTerm={searchTerm}
                     onStatusChange={handleStatusChange}
                     onViewTicket={handleOpenViewTicket}
                     onEditTicket={handleOpenEditTicket}

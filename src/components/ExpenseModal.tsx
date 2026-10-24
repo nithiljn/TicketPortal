@@ -278,12 +278,8 @@ export function ExpenseModal({
         {/* Header */}
         <div className={`px-5 sm:px-6 py-4 border-b ${borderBottom} flex items-center justify-between gap-3`}>
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 border ${
-              isDark
-                ? 'bg-white/[0.08] border-white/[0.1] text-white'
-                : 'bg-[#f5f5f7] border-black/[0.08] text-[#1d1d1f]'
-            }`}>
-              <span className="font-semibold text-sm leading-none select-none font-sans">₹</span>
+            <div className="w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 bg-[#0071e3] text-white shadow-xs">
+              <span className="font-semibold text-[15px] leading-none select-none font-sans text-white">₹</span>
             </div>
             <div className="min-w-0">
               <h2 className="text-sm font-semibold tracking-tight truncate">
@@ -319,7 +315,7 @@ export function ExpenseModal({
           <div className={`p-4 sm:p-4.5 rounded-[18px] border ${cardSectionBg}`}>
             <div className="flex items-center justify-between mb-2">
               <label className={`block text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
-                Expense Amount *
+                Expense Amount <span className="text-red-500">*</span>
               </label>
               <button
                 type="button"
@@ -342,20 +338,25 @@ export function ExpenseModal({
             </div>
 
             <div className="flex items-center gap-2.5">
-              <div className="relative shrink-0 w-24">
+              <div className="relative shrink-0 w-28">
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className={`w-full rounded-[12px] border px-2.5 py-2 text-xs font-semibold focus:outline-none cursor-pointer transition ${inputBg}`}
+                  className={`w-full h-11 rounded-[12px] border pl-3 pr-8 text-xs font-semibold focus:outline-none cursor-pointer transition appearance-none ${inputBg}`}
                 >
-                  <option value="INR">₹ INR</option>
-                  <option value="USD">$ USD</option>
-                  <option value="EUR">€ EUR</option>
-                  <option value="GBP">£ GBP</option>
+                  <option value="INR" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>₹ INR</option>
+                  <option value="USD" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>$ USD</option>
+                  <option value="EUR" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>€ EUR</option>
+                  <option value="GBP" className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>£ GBP</option>
                 </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-[#86868b]">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
               </div>
               <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#86868b] font-mono pointer-events-none">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#86868b] font-mono pointer-events-none">
                   {currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£'}
                 </span>
                 <input
@@ -366,7 +367,7 @@ export function ExpenseModal({
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className={`w-full rounded-[12px] border pl-7 pr-3 py-2 text-base font-semibold font-mono focus:outline-none transition ${inputBg}`}
+                  className={`w-full h-11 rounded-[12px] border pl-8 pr-3 text-base font-semibold font-mono focus:outline-none transition ${inputBg}`}
                 />
               </div>
             </div>
@@ -464,16 +465,18 @@ export function ExpenseModal({
 
           {/* Title */}
           <div>
-            <label className={`block text-[11px] font-medium mb-1.5 ${labelColor}`}>
-              Expense Title / Paid For <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-1.5 h-5">
+              <label className={`block text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
+                Expense Title / Paid For <span className="text-red-500">*</span>
+              </label>
+            </div>
             <input
               type="text"
               required
               placeholder="e.g. AWS Cloud Hosting, Team Lunch, Office Chairs..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className={`w-full rounded-[12px] border px-3.5 py-2 text-xs focus:outline-none transition ${inputBg}`}
+              className={`w-full h-10 rounded-[12px] border px-3.5 text-xs focus:outline-none transition ${inputBg}`}
             />
           </div>
 
@@ -481,107 +484,134 @@ export function ExpenseModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {/* Category */}
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className={`text-[11px] font-medium ${labelColor}`}>
+              <div className="flex items-center justify-between mb-1.5 h-5">
+                <label className={`text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
                   Category <span className="text-red-500">*</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsAddingCategory(!isAddingCategory)}
-                  className="text-xs text-[#0071e3] dark:text-[#2997ff] hover:underline font-normal cursor-pointer transition-colors"
+                  className="text-xs text-[#0071e3] dark:text-[#2997ff] hover:underline font-normal cursor-pointer transition-colors leading-none"
                 >
                   {isAddingCategory ? 'Cancel' : '+ New Category'}
                 </button>
               </div>
 
               {isAddingCategory ? (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 h-10">
                   <input
                     type="text"
                     placeholder="New category..."
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
-                    className={`flex-1 rounded-[12px] border px-3 py-1.5 text-xs focus:outline-none transition ${inputBg}`}
+                    className={`flex-1 h-10 rounded-[12px] border px-3 text-xs focus:outline-none transition ${inputBg}`}
                   />
                   <button
                     type="button"
                     onClick={handleQuickAddCategory}
                     disabled={catLoading || !newCatName.trim()}
-                    className="px-3.5 py-1.5 rounded-full bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-medium cursor-pointer disabled:opacity-50 active:scale-95 transition-all shadow-xs"
+                    className="h-10 px-3.5 rounded-[12px] bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-medium cursor-pointer disabled:opacity-50 active:scale-95 transition-all shadow-xs shrink-0"
                   >
                     Add
                   </button>
                 </div>
               ) : (
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className={`w-full rounded-[12px] border px-3.5 py-2 text-xs focus:outline-none cursor-pointer transition ${inputBg}`}
-                >
-                  {categories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className={`w-full h-10 rounded-[12px] border pl-3.5 pr-8 text-xs font-medium focus:outline-none cursor-pointer transition appearance-none ${inputBg}`}
+                  >
+                    {categories.map((c) => (
+                      <option key={c} value={c} className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#86868b]">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </div>
+                </div>
               )}
             </div>
 
             {/* Workspace */}
             <div>
-              <label className={`block text-[11px] font-medium mb-1.5 ${labelColor}`}>
-                Workspace / Project
-              </label>
-              <select
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                className={`w-full rounded-[12px] border px-3.5 py-2 text-xs focus:outline-none cursor-pointer transition ${inputBg}`}
-              >
-                {availableProjects.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between mb-1.5 h-5">
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
+                  Workspace / Project
+                </label>
+              </div>
+              <div className="relative">
+                <select
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  className={`w-full h-10 rounded-[12px] border pl-3.5 pr-8 text-xs font-medium focus:outline-none cursor-pointer transition appearance-none ${inputBg}`}
+                >
+                  {availableProjects.map((p) => (
+                    <option key={p} value={p} className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#86868b]">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Date & Payment Method */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className={`block text-[11px] font-medium mb-1.5 ${labelColor}`}>
-                Expense Date
-              </label>
+              <div className="flex items-center justify-between mb-1.5 h-5">
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
+                  Expense Date
+                </label>
+              </div>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className={`w-full rounded-[12px] border px-3.5 py-2 text-xs font-mono focus:outline-none transition ${inputBg}`}
+                className={`w-full h-10 rounded-[12px] border px-3.5 text-xs font-mono focus:outline-none transition ${inputBg}`}
               />
             </div>
 
             <div>
-              <label className={`block text-[11px] font-medium mb-1.5 ${labelColor}`}>
-                Payment Method
-              </label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                className={`w-full rounded-[12px] border px-3.5 py-2 text-xs focus:outline-none cursor-pointer transition ${inputBg}`}
-              >
-                {PAYMENT_METHODS.map((pm) => (
-                  <option key={pm.id} value={pm.id}>
-                    {pm.label}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between mb-1.5 h-5">
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
+                  Payment Method
+                </label>
+              </div>
+              <div className="relative">
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                  className={`w-full h-10 rounded-[12px] border pl-3.5 pr-8 text-xs font-medium focus:outline-none cursor-pointer transition appearance-none ${inputBg}`}
+                >
+                  {PAYMENT_METHODS.map((pm) => (
+                    <option key={pm.id} value={pm.id} className={isDark ? 'bg-[#1c1c1e]' : 'bg-white'}>
+                      {pm.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#86868b]">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Notes */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className={`text-[11px] font-medium ${labelColor}`}>
+            <div className="flex items-center justify-between mb-1.5 h-5">
+              <label className={`text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
                 Notes / Receipt Remarks (Optional)
               </label>
               <button
@@ -589,7 +619,7 @@ export function ExpenseModal({
                 onClick={() => {
                   setNotes((prev) => (prev ? `${prev}\n• ` : '• '))
                 }}
-                className="text-xs text-[#0071e3] dark:text-[#2997ff] hover:underline font-normal cursor-pointer select-none inline-flex items-center gap-1 transition-colors"
+                className="text-xs text-[#0071e3] dark:text-[#2997ff] hover:underline font-normal cursor-pointer select-none inline-flex items-center gap-1 transition-colors leading-none"
               >
                 <span>+ Add Bullet (•)</span>
               </button>

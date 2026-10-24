@@ -779,8 +779,8 @@ export function ExpenseTracker({
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-base shrink-0 border ${
                 isDark
-                  ? 'bg-white/[0.08] border-white/[0.1] text-white'
-                  : 'bg-[#f5f5f7] border-black/[0.08] text-[#1d1d1f]'
+                  ? 'bg-[#0071e3] border-white/[0.1] text-white shadow-xs'
+                  : 'bg-[#0071e3] border-black/[0.08] text-white shadow-xs'
               }`}>
                 ₹
               </div>

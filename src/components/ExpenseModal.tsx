@@ -25,6 +25,7 @@ interface ExpenseModalProps {
   currentWorkspace?: string
   onCreateCategory?: (newCategory: string) => Promise<void>
   theme?: 'dark' | 'light'
+  isLoadingNotes?: boolean
 }
 
 const PAYMENT_METHODS: { id: PaymentMethod; label: string }[] = [
@@ -46,9 +47,11 @@ export function ExpenseModal({
   currentWorkspace,
   onCreateCategory,
   theme = 'light',
+  isLoadingNotes = false,
 }: ExpenseModalProps) {
   const isDark = theme === 'dark'
   const todayStr = new Date().toISOString().split('T')[0]
+  const prevExpenseIdRef = React.useRef<string | null>(null)
 
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
@@ -168,15 +171,21 @@ export function ExpenseModal({
       setCalcExpression('')
       setCalcResult(null)
       if (expense) {
-        setTitle(expense.title)
-        setAmount(String(expense.amount))
-        setCurrency(expense.currency || 'INR')
-        setCategory(expense.category)
-        setDate(expense.date || todayStr)
-        setPaymentMethod((expense.paymentMethod as PaymentMethod) || 'UPI')
-        setProjectName(expense.projectName || 'General')
-        setNotes(expense.notes || '')
+        if (expense.id !== prevExpenseIdRef.current) {
+          prevExpenseIdRef.current = expense.id
+          setTitle(expense.title)
+          setAmount(String(expense.amount))
+          setCurrency(expense.currency || 'INR')
+          setCategory(expense.category)
+          setDate(expense.date || todayStr)
+          setPaymentMethod((expense.paymentMethod as PaymentMethod) || 'UPI')
+          setProjectName(expense.projectName || 'General')
+          setNotes(expense.notes || '')
+        } else if (expense.notes && !notes) {
+          setNotes(expense.notes)
+        }
       } else {
+        prevExpenseIdRef.current = null
         setTitle('')
         setAmount('')
         setCurrency('INR')
@@ -193,8 +202,10 @@ export function ExpenseModal({
       setErrorMessage('')
       setIsAddingCategory(false)
       setNewCatName('')
+    } else {
+      prevExpenseIdRef.current = null
     }
-  }, [isOpen, expense, categories, availableProjects, currentWorkspace, todayStr])
+  }, [isOpen, expense, categories, availableProjects, currentWorkspace, todayStr, notes])
 
   if (!isOpen) return null
 
@@ -611,9 +622,17 @@ export function ExpenseModal({
           {/* Notes */}
           <div>
             <div className="flex items-center justify-between mb-1.5 h-5">
-              <label className={`text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
-                Notes / Receipt Remarks (Optional)
-              </label>
+              <div className="flex items-center gap-2">
+                <label className={`text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}>
+                  Notes / Receipt Remarks (Optional)
+                </label>
+                {isLoadingNotes && (
+                  <span className="text-[10px] text-[#0071e3] dark:text-[#2997ff] flex items-center gap-1 font-normal">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0071e3] dark:bg-[#2997ff] animate-ping" />
+                    loading remarks...
+                  </span>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => {

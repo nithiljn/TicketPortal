@@ -154,6 +154,7 @@ const typeDefs = /* GraphQL */ `
     projects(userEmail: String, type: String): [String!]!
     versions(userEmail: String): [String!]!
     dailyNotes(date: String, userEmail: String, limit: Int, offset: Int): [DailyNote!]!
+    expense(id: ID!): Expense
     expenses(
       userEmail: String
       projectName: String
@@ -968,6 +969,26 @@ const resolvers = {
         throw new Error(error.message)
       }
       return ((data as NoteRow[]) || []).map(formatDailyNote)
+    },
+
+    expense: async (_: unknown, { id }: { id: string }) => {
+      if (!id) return null
+      try {
+        const { data, error } = await supabase
+          .from('expenses')
+          .select('*')
+          .eq('id', id)
+          .single()
+
+        if (!error && data) {
+          return formatExpense(data as ExpenseRow)
+        }
+      } catch (err) {
+        console.warn('Error fetching single expense from Supabase:', err)
+      }
+
+      const found = fallbackExpenses.find((e) => e.id === id)
+      return found || null
     },
 
     expenses: async (

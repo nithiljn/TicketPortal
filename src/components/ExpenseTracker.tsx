@@ -32,6 +32,8 @@ interface ExpenseTrackerProps {
   onMaxAmountChange?: (val: string) => void
   onExpenseSearchChange?: (val: string) => void
   onClearAllFilters?: () => void
+  onFetchExpenseDetails?: (id: string) => Promise<Expense | null>
+  onFetchExpensesForPdf?: () => Promise<Expense[]>
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -225,6 +227,8 @@ export function ExpenseTracker({
   onMaxAmountChange,
   onExpenseSearchChange,
   onClearAllFilters,
+  onFetchExpenseDetails,
+  onFetchExpensesForPdf,
 }: ExpenseTrackerProps) {
   const isDark = theme === 'dark'
 
@@ -238,7 +242,27 @@ export function ExpenseTracker({
   const [internalPaymentMethod, setInternalPaymentMethod] = useState<string>('ALL')
   const [internalHighExpense, setInternalHighExpense] = useState<boolean>(false)
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null)
+  const [isLoadingViewingNotes, setIsLoadingViewingNotes] = useState(false)
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
+
+  const handleOpenViewExpense = async (exp: Expense) => {
+    setViewingExpense(exp)
+    if (exp.notes === undefined || exp.notes === null) {
+      if (onFetchExpenseDetails) {
+        setIsLoadingViewingNotes(true)
+        try {
+          const full = await onFetchExpenseDetails(exp.id)
+          if (full) {
+            setViewingExpense((prev) =>
+              prev && prev.id === exp.id ? { ...prev, notes: full.notes } : prev
+            )
+          }
+        } finally {
+          setIsLoadingViewingNotes(false)
+        }
+      }
+    }
+  }
 
   const activeMonth = propMonth !== undefined ? propMonth : internalMonth
   const handleMonthChange = (m: string) => {
@@ -532,6 +556,20 @@ export function ExpenseTracker({
     if (filteredExpenses.length === 0 || isGeneratingPdf) return
     setIsGeneratingPdf(true)
     try {
+      let expensesForPdf = filteredExpenses
+
+      // Fetch full details with notes if needed for PDF export
+      if (onFetchExpensesForPdf) {
+        const fullServerExpenses = await onFetchExpensesForPdf()
+        if (fullServerExpenses && fullServerExpenses.length > 0) {
+          const notesMap = new Map(fullServerExpenses.map((e) => [e.id, e.notes]))
+          expensesForPdf = filteredExpenses.map((e) => ({
+            ...e,
+            notes: notesMap.get(e.id) !== undefined ? notesMap.get(e.id) : e.notes,
+          }))
+        }
+      }
+
       const categoryBreakdown = Object.entries(stats.categoryTotals)
         .sort((a, b) => b[1] - a[1])
         .map(([category, amount], idx) => ({
@@ -544,7 +582,7 @@ export function ExpenseTracker({
       await new Promise((resolve) => setTimeout(resolve, 60))
 
       generateExpensePdf({
-        expenses: filteredExpenses,
+        expenses: expensesForPdf,
         activeMonth,
         selectedProject,
         activeCategory,
@@ -586,8 +624,8 @@ export function ExpenseTracker({
     ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.04] hover:bg-white/[0.08] text-[#f5f5f7]'
     : 'border-[#e5e5ea] hover:border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] shadow-2xs'
   const appleDeleteBtn = isDark
-    ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.04] hover:bg-white/[0.08] text-[#86868b] hover:text-[#ff453a]'
-    : 'border-[#e5e5ea] hover:border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#ff3b30] shadow-2xs'
+    ? 'border-white/[0.08] hover:border-red-600 bg-white/[0.04] hover:bg-red-600 text-[#86868b] hover:text-white transition-all duration-150'
+    : 'border-[#e5e5ea] hover:border-red-600 bg-white hover:bg-red-600 text-[#86868b] hover:text-white shadow-2xs transition-all duration-150'
 
   return (
     <div className="flex flex-col flex-1 min-w-0 bg-[#f5f5f7] dark:bg-[#000000] font-sans">
@@ -868,7 +906,7 @@ export function ExpenseTracker({
                 Total Spent
               </span>
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
-                {stats.count} txns
+                {stats.count} {stats.count === 1 ? 'item' : 'items'}
               </span>
             </div>
             <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
@@ -1235,7 +1273,7 @@ export function ExpenseTracker({
                       {dateStr}
                     </span>
                     <span className="text-[11px] text-[#86868b] dark:text-[#a1a1a6] whitespace-nowrap">
-                      ({dayExpenses.length} {dayExpenses.length === 1 ? 'txn' : 'txns'})
+                      ({dayExpenses.length} {dayExpenses.length === 1 ? 'item' : 'items'})
                     </span>
                   </div>
                   <div className="text-xs font-semibold text-[#1d1d1f] dark:text-white whitespace-nowrap">
@@ -1253,14 +1291,14 @@ export function ExpenseTracker({
                     return (
                       <div
                         key={exp.id}
-                        onDoubleClick={() => setViewingExpense(exp)}
+                        onDoubleClick={() => handleOpenViewExpense(exp)}
                         className={`p-3.5 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition cursor-pointer select-none ${
                           isDark ? 'hover:bg-white/[0.04]' : 'hover:bg-[#f5f5f7]/60'
                         }`}
                         title="Double-click to view receipt details"
                       >
-                        {/* Left Info */}
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                        {/* Left Info - Vertically Centered */}
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border ${
                             isDark ? 'bg-white/[0.06] border-white/[0.08]' : 'bg-[#f5f5f7] border-black/[0.04]'
                           }`}>
@@ -1268,7 +1306,7 @@ export function ExpenseTracker({
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
                               <span className="text-xs sm:text-sm font-semibold text-[#1d1d1f] dark:text-white break-words">
                                 <HighlightText text={exp.title} query={searchQuery} />
                               </span>
@@ -1290,14 +1328,6 @@ export function ExpenseTracker({
                                 #{exp.projectName}
                               </span>
                             </div>
-
-                            {exp.notes && (
-                              <div className="mt-1">
-                                <p className="text-[11px] text-zinc-400 whitespace-pre-line line-clamp-2 leading-relaxed break-words">
-                                  {exp.notes}
-                                </p>
-                              </div>
-                            )}
                           </div>
                         </div>
 
@@ -1313,55 +1343,55 @@ export function ExpenseTracker({
                           </div>
 
                           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                            {/* View Details Button */}
+                            {/* View Details Button (Icon Only) */}
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation()
-                                setViewingExpense(exp)
+                                handleOpenViewExpense(exp)
                               }}
-                              className={`h-7.5 px-2.5 sm:px-3 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer inline-flex items-center gap-1.5 ${appleActionBtn}`}
+                              className={`w-7.5 h-7.5 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer inline-flex items-center justify-center shrink-0 ${appleActionBtn}`}
                               title="View Details"
+                              aria-label="View Details"
                             >
                               <svg className="w-3.5 h-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                 <circle cx="12" cy="12" r="3" />
                               </svg>
-                              <span className="hidden min-[480px]:inline">View</span>
                             </button>
 
-                            {/* Edit Button */}
+                            {/* Edit Button (Icon Only) */}
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 onEditExpense(exp)
                               }}
-                              className={`h-7.5 px-2.5 sm:px-3 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer inline-flex items-center gap-1.5 ${appleActionBtn}`}
+                              className={`w-7.5 h-7.5 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer inline-flex items-center justify-center shrink-0 ${appleActionBtn}`}
                               title="Edit Expense"
+                              aria-label="Edit Expense"
                             >
                               <svg className="w-3.5 h-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M12 20h9" />
                                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                               </svg>
-                              <span className="hidden min-[480px]:inline">Edit</span>
                             </button>
 
-                            {/* Delete Button */}
+                            {/* Delete Button (Icon Only) */}
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 onDeleteExpense(exp)
                               }}
-                              className={`h-7.5 px-2.5 sm:px-3 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer inline-flex items-center gap-1.5 ${appleDeleteBtn}`}
+                              className={`w-7.5 h-7.5 rounded-full border text-xs font-normal transition-all duration-150 active:scale-95 cursor-pointer inline-flex items-center justify-center shrink-0 group ${appleDeleteBtn}`}
                               title="Delete Expense"
+                              aria-label="Delete Expense"
                             >
-                              <svg className="w-3.5 h-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <svg className="w-3.5 h-3.5 shrink-0 opacity-70 group-hover:opacity-100 group-hover:text-white transition-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <polyline points="3 6 5 6 21 6" />
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                               </svg>
-                              <span className="hidden min-[480px]:inline">Delete</span>
                             </button>
                           </div>
                         </div>
@@ -1513,7 +1543,12 @@ export function ExpenseTracker({
                   )}
                 </div>
 
-                {viewingExpense.notes ? (
+                {isLoadingViewingNotes ? (
+                  <div className="flex items-center gap-2 py-3 text-xs text-[#86868b] dark:text-[#a1a1a6]">
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-[#0071e3] border-t-transparent animate-spin shrink-0" />
+                    <span>Loading receipt remarks from server...</span>
+                  </div>
+                ) : viewingExpense.notes ? (
                   <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
                     {viewingExpense.notes.split('\n').map((line, idx) => {
                       const trimmed = line.trim()
@@ -1555,9 +1590,9 @@ export function ExpenseTracker({
                   setViewingExpense(null)
                   onDeleteExpense(exp)
                 }}
-                className={`w-full sm:w-auto px-4 py-2 rounded-full border text-xs font-medium transition cursor-pointer inline-flex items-center justify-center gap-1.5 active:scale-95 ${appleDeleteBtn}`}
+                className={`w-full sm:w-auto px-4 py-2 rounded-full border text-xs font-medium transition cursor-pointer inline-flex items-center justify-center gap-1.5 active:scale-95 group ${appleDeleteBtn}`}
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg className="w-3.5 h-3.5 group-hover:text-white shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="3 6 5 6 21 6" />
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                 </svg>

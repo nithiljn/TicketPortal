@@ -745,7 +745,6 @@ export default function Home() {
             date
             paymentMethod
             projectName
-            notes
             createdBy
             createdAt
             updatedAt
@@ -1636,15 +1635,112 @@ export default function Home() {
   }
 
   // Expense Handlers
+  const [isExpenseNotesLoading, setIsExpenseNotesLoading] = useState(false)
+
+  const handleFetchExpenseDetails = useCallback(async (id: string): Promise<Expense | null> => {
+    try {
+      const res = await fetchGraphQL<{ expense: Expense | null }>(
+        /* GraphQL */ `
+          query GetSingleExpenseDetails($id: ID!) {
+            expense(id: $id) {
+              id
+              title
+              amount
+              currency
+              category
+              date
+              paymentMethod
+              projectName
+              notes
+              createdBy
+              createdAt
+              updatedAt
+            }
+          }
+        `,
+        { id }
+      )
+      if (res?.expense) {
+        setExpenses((prev) =>
+          prev.map((e) => (e.id === id ? { ...e, ...res.expense } : e))
+        )
+        return res.expense
+      }
+    } catch (err) {
+      console.error('Error fetching single expense details:', err)
+    }
+    return null
+  }, [])
+
   const handleOpenAddExpense = () => {
     setExpenseToEdit(null)
+    setIsExpenseNotesLoading(false)
     setIsExpenseModalOpen(true)
   }
 
-  const handleOpenEditExpense = (exp: Expense) => {
+  const handleOpenEditExpense = async (exp: Expense) => {
     setExpenseToEdit(exp)
     setIsExpenseModalOpen(true)
+    if (exp.notes === undefined || exp.notes === null) {
+      setIsExpenseNotesLoading(true)
+      try {
+        const full = await handleFetchExpenseDetails(exp.id)
+        if (full) {
+          setExpenseToEdit(full)
+        }
+      } finally {
+        setIsExpenseNotesLoading(false)
+      }
+    }
   }
+
+  const handleFetchExpensesForPdf = useCallback(async (): Promise<Expense[]> => {
+    if (!user?.email) return expenses
+    try {
+      const query = /* GraphQL */ `
+        query GetExpensesForPdf(
+          $userEmail: String
+          $projectName: String
+          $month: String
+        ) {
+          expenses(
+            userEmail: $userEmail
+            projectName: $projectName
+            month: $month
+            limit: 1000
+          ) {
+            id
+            title
+            amount
+            currency
+            category
+            date
+            paymentMethod
+            projectName
+            notes
+            createdBy
+            createdAt
+            updatedAt
+          }
+        }
+      `
+      const data = await fetchGraphQL<{ expenses: Expense[] }>(query, {
+        userEmail: user.email,
+        projectName: selectedExpenseProject !== 'ALL' ? selectedExpenseProject : null,
+        month: selectedExpenseMonth !== 'ALL' ? selectedExpenseMonth : null,
+      })
+      if (data?.expenses) {
+        setExpenses((prev) => {
+          const map = new Map(data.expenses.map((e) => [e.id, e]))
+          return prev.map((e) => map.get(e.id) || e)
+        })
+        return data.expenses
+      }
+    } catch (err) {
+      console.error('Error fetching expenses with notes for PDF:', err)
+    }
+    return expenses
+  }, [user?.email, selectedExpenseProject, selectedExpenseMonth, expenses])
 
   const handleSaveExpense = async (
     expenseData: {
@@ -2306,6 +2402,8 @@ export default function Home() {
                   searchQuery={expenseSearchQuery}
                   onExpenseSearchChange={setExpenseSearchQuery}
                   onSelectWorkspace={handleSelectExpenseWorkspace}
+                  onFetchExpenseDetails={handleFetchExpenseDetails}
+                  onFetchExpensesForPdf={handleFetchExpensesForPdf}
                   onClearAllFilters={() => {
                     setSelectedExpenseCategory('ALL')
                     setSelectedPaymentMethod('ALL')
@@ -2459,6 +2557,7 @@ export default function Home() {
         onClose={() => {
           setIsExpenseModalOpen(false)
           setExpenseToEdit(null)
+          setIsExpenseNotesLoading(false)
         }}
         onSave={handleSaveExpense}
         expense={expenseToEdit}
@@ -2466,6 +2565,7 @@ export default function Home() {
         availableProjects={availableExpenseProjects}
         currentWorkspace={selectedExpenseProject}
         onCreateCategory={handleCreateExpenseCategory}
+        isLoadingNotes={isExpenseNotesLoading}
         theme={theme}
       />
 

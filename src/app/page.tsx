@@ -183,8 +183,8 @@ export default function Home() {
 
   // Expense Specific Filters
   const [selectedExpenseProject, setSelectedExpenseProject] = useState<string>('ALL')
-  const [selectedExpenseCategory, setSelectedExpenseCategory] = useState<string | 'ALL'>('ALL')
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | 'ALL'>('ALL')
+  const [selectedExpenseCategories, setSelectedExpenseCategories] = useState<string[]>([])
+  const [selectedPaymentMethods, setSelectedPaymentMethods] = useState<string[]>([])
   const [selectedExpenseMonth, setSelectedExpenseMonth] = useState<string>(() => {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -192,6 +192,14 @@ export default function Home() {
   const [expenseMinAmount, setExpenseMinAmount] = useState<string>('')
   const [expenseMaxAmount, setExpenseMaxAmount] = useState<string>('')
   const [expenseSearchQuery, setExpenseSearchQuery] = useState<string>('')
+
+  const selectedExpenseCategory = selectedExpenseCategories.length === 1
+    ? selectedExpenseCategories[0]
+    : selectedExpenseCategories.length === 0 ? 'ALL' : selectedExpenseCategories.join(', ')
+
+  const selectedPaymentMethod = selectedPaymentMethods.length === 1
+    ? selectedPaymentMethods[0]
+    : selectedPaymentMethods.length === 0 ? 'ALL' : selectedPaymentMethods.join(', ')
 
   // Loading & Transition States
   const [loading, setLoading] = useState(true)
@@ -263,6 +271,29 @@ export default function Home() {
       setIsExpenseLoading(true)
       return month
     })
+  }, [])
+
+  const handleSelectExpenseCategory = useCallback((category: string | 'ALL') => {
+    if (category === 'ALL') {
+      setSelectedExpenseCategories([])
+    } else {
+      setSelectedExpenseCategories((prev) =>
+        prev.some((c) => c.toLowerCase() === category.toLowerCase())
+          ? prev.filter((c) => c.toLowerCase() !== category.toLowerCase())
+          : [...prev, category]
+      )
+    }
+  }, [])
+
+  const handleSelectPaymentMethod = useCallback((pm: string | 'ALL') => {
+    if (pm === 'ALL') {
+      setSelectedPaymentMethods([])
+    } else {
+      const upper = pm.toUpperCase()
+      setSelectedPaymentMethods((prev) =>
+        prev.includes(upper) ? prev.filter((p) => p !== upper) : [...prev, upper]
+      )
+    }
   }, [])
 
   const handleSelectStatus = useCallback(
@@ -1943,9 +1974,11 @@ export default function Home() {
         activeTab={activeTab}
         expenseCategories={expenseCategories}
         selectedExpenseCategory={selectedExpenseCategory}
-        onSelectExpenseCategory={setSelectedExpenseCategory}
+        selectedExpenseCategories={selectedExpenseCategories}
+        onSelectExpenseCategory={handleSelectExpenseCategory}
         selectedPaymentMethod={selectedPaymentMethod}
-        onSelectPaymentMethod={setSelectedPaymentMethod}
+        selectedPaymentMethods={selectedPaymentMethods}
+        onSelectPaymentMethod={handleSelectPaymentMethod}
         expenseMinAmount={expenseMinAmount}
         expenseMaxAmount={expenseMaxAmount}
         onMinAmountChange={setExpenseMinAmount}
@@ -2390,9 +2423,11 @@ export default function Home() {
                   onOpenCategoryManager={() => setIsCategoryModalOpen(true)}
                   theme={theme}
                   selectedCategory={selectedExpenseCategory}
-                  onSelectCategory={setSelectedExpenseCategory}
+                  selectedCategories={selectedExpenseCategories}
+                  onSelectCategory={handleSelectExpenseCategory}
                   selectedPaymentMethod={selectedPaymentMethod}
-                  onSelectPaymentMethod={setSelectedPaymentMethod}
+                  selectedPaymentMethods={selectedPaymentMethods}
+                  onSelectPaymentMethod={handleSelectPaymentMethod}
                   selectedMonth={selectedExpenseMonth}
                   onSelectMonth={handleSelectExpenseMonth}
                   minAmount={expenseMinAmount}
@@ -2405,8 +2440,8 @@ export default function Home() {
                   onFetchExpenseDetails={handleFetchExpenseDetails}
                   onFetchExpensesForPdf={handleFetchExpensesForPdf}
                   onClearAllFilters={() => {
-                    setSelectedExpenseCategory('ALL')
-                    setSelectedPaymentMethod('ALL')
+                    setSelectedExpenseCategories([])
+                    setSelectedPaymentMethods([])
                     handleSelectExpenseMonth('ALL')
                     handleSelectExpenseWorkspace('ALL')
                     setExpenseMinAmount('')

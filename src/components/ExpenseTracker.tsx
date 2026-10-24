@@ -19,8 +19,10 @@ interface ExpenseTrackerProps {
   theme?: 'dark' | 'light'
   // Synced Filter Props from Page / Sidebar
   selectedCategory?: string | 'ALL'
+  selectedCategories?: string[]
   onSelectCategory?: (cat: string | 'ALL') => void
   selectedPaymentMethod?: string | 'ALL'
+  selectedPaymentMethods?: string[]
   onSelectPaymentMethod?: (pm: string | 'ALL') => void
   selectedMonth?: string
   onSelectMonth?: (m: string) => void
@@ -214,8 +216,10 @@ export function ExpenseTracker({
   onOpenCategoryManager,
   theme = 'light',
   selectedCategory: propCategory,
+  selectedCategories: propCategories,
   onSelectCategory,
   selectedPaymentMethod: propPaymentMethod,
+  selectedPaymentMethods: propPaymentMethods,
   onSelectPaymentMethod,
   selectedMonth: propMonth,
   onSelectMonth,
@@ -238,8 +242,8 @@ export function ExpenseTracker({
 
   // Filters State - sync with props if provided, otherwise internal fallback
   const [internalMonth, setInternalMonth] = useState<string>(currentMonthKey)
-  const [internalCategory, setInternalCategory] = useState<string>('ALL')
-  const [internalPaymentMethod, setInternalPaymentMethod] = useState<string>('ALL')
+  const [internalCategories, setInternalCategories] = useState<string[]>([])
+  const [internalPaymentMethods, setInternalPaymentMethods] = useState<string[]>([])
   const [internalHighExpense, setInternalHighExpense] = useState<boolean>(false)
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null)
   const [isLoadingViewingNotes, setIsLoadingViewingNotes] = useState(false)
@@ -270,16 +274,47 @@ export function ExpenseTracker({
     if (onSelectMonth) onSelectMonth(m)
   }
 
-  const activeCategory = propCategory !== undefined ? propCategory : internalCategory
+  const activeCategories: string[] = useMemo(() => {
+    if (propCategories !== undefined) return propCategories
+    if (propCategory && propCategory !== 'ALL') return [propCategory]
+    return internalCategories
+  }, [propCategories, propCategory, internalCategories])
+
+  const activePaymentMethods: string[] = useMemo(() => {
+    if (propPaymentMethods !== undefined) return propPaymentMethods
+    if (propPaymentMethod && propPaymentMethod !== 'ALL') return [propPaymentMethod]
+    return internalPaymentMethods
+  }, [propPaymentMethods, propPaymentMethod, internalPaymentMethods])
+
   const handleCategoryChange = (c: string | 'ALL') => {
-    setInternalCategory(c)
-    if (onSelectCategory) onSelectCategory(c)
+    if (onSelectCategory) {
+      onSelectCategory(c)
+    } else {
+      if (c === 'ALL') {
+        setInternalCategories([])
+      } else {
+        setInternalCategories((prev) =>
+          prev.some((cat) => cat.toLowerCase() === c.toLowerCase())
+            ? prev.filter((cat) => cat.toLowerCase() !== c.toLowerCase())
+            : [...prev, c]
+        )
+      }
+    }
   }
 
-  const activePaymentMethod = propPaymentMethod !== undefined ? propPaymentMethod : internalPaymentMethod
   const handlePaymentMethodChange = (pm: string | 'ALL') => {
-    setInternalPaymentMethod(pm)
-    if (onSelectPaymentMethod) onSelectPaymentMethod(pm)
+    if (onSelectPaymentMethod) {
+      onSelectPaymentMethod(pm)
+    } else {
+      if (pm === 'ALL') {
+        setInternalPaymentMethods([])
+      } else {
+        const upper = pm.toUpperCase()
+        setInternalPaymentMethods((prev) =>
+          prev.includes(upper) ? prev.filter((p) => p !== upper) : [...prev, upper]
+        )
+      }
+    }
   }
 
   const handleClearMonth = () => {
@@ -323,8 +358,8 @@ export function ExpenseTracker({
   const activeFiltersCount =
     (selectedProject !== 'ALL' ? 1 : 0) +
     (activeMonth !== 'ALL' ? 1 : 0) +
-    (activeCategory !== 'ALL' ? 1 : 0) +
-    (activePaymentMethod !== 'ALL' ? 1 : 0) +
+    activeCategories.length +
+    activePaymentMethods.length +
     (Boolean(minAmount || maxAmount) ? 1 : 0) +
     (Boolean(searchQuery && searchQuery.trim()) ? 1 : 0)
 
@@ -358,18 +393,16 @@ export function ExpenseTracker({
       )
     }
 
-    // 3. Category Filter
-    if (activeCategory !== 'ALL') {
-      result = result.filter(
-        (e) => (e.category || '').toLowerCase() === activeCategory.toLowerCase()
-      )
+    // 3. Category Filter (multi-select)
+    if (activeCategories.length > 0) {
+      const lower = activeCategories.map((c) => c.toLowerCase())
+      result = result.filter((e) => lower.includes((e.category || '').toLowerCase()))
     }
 
-    // 4. Payment Method Filter
-    if (activePaymentMethod !== 'ALL') {
-      result = result.filter(
-        (e) => (e.paymentMethod || '').toUpperCase() === activePaymentMethod.toUpperCase()
-      )
+    // 4. Payment Method Filter (multi-select)
+    if (activePaymentMethods.length > 0) {
+      const upper = activePaymentMethods.map((m) => m.toUpperCase())
+      result = result.filter((e) => upper.includes((e.paymentMethod || '').toUpperCase()))
     }
 
     // 5. Amount Range Filter (Custom Spending Level)
@@ -402,8 +435,8 @@ export function ExpenseTracker({
     expenses,
     activeMonth,
     selectedProject,
-    activeCategory,
-    activePaymentMethod,
+    activeCategories,
+    activePaymentMethods,
     minAmount,
     maxAmount,
     searchQuery,
@@ -585,8 +618,8 @@ export function ExpenseTracker({
         expenses: expensesForPdf,
         activeMonth,
         selectedProject,
-        activeCategory,
-        activePaymentMethod,
+        activeCategory: activeCategories.length === 1 ? activeCategories[0] : activeCategories.length === 0 ? 'ALL' : activeCategories.join(', '),
+        activePaymentMethod: activePaymentMethods.length === 1 ? activePaymentMethods[0] : activePaymentMethods.length === 0 ? 'ALL' : activePaymentMethods.join(', '),
         minAmount,
         maxAmount,
         searchQuery,
@@ -692,18 +725,19 @@ export function ExpenseTracker({
             </span>
           )}
 
-          {/* Active Category Filter Chip */}
-          {activeCategory !== 'ALL' && (
+          {/* Active Category Filter Chips (Multi-select) */}
+          {activeCategories.map((cat) => (
             <span
+              key={cat}
               className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-normal border ${appleCapsule}`}
             >
               <span className="text-[#86868b] dark:text-[#a1a1a6] text-[11px]">Category:</span>
-              <span className="truncate max-w-[140px] sm:max-w-[200px]">{activeCategory}</span>
+              <span className="truncate max-w-[140px] sm:max-w-[200px]">{cat}</span>
               <button
                 type="button"
-                onClick={handleClearCategory}
+                onClick={() => handleCategoryChange(cat)}
                 className="w-3.5 h-3.5 rounded-full flex items-center justify-center transition-opacity hover:opacity-100 opacity-60 cursor-pointer ml-0.5"
-                title={`Remove ${activeCategory} filter`}
+                title={`Remove ${cat} filter`}
               >
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -711,20 +745,21 @@ export function ExpenseTracker({
                 </svg>
               </button>
             </span>
-          )}
+          ))}
 
-          {/* Active Payment Method Filter Chip */}
-          {activePaymentMethod !== 'ALL' && (
+          {/* Active Payment Method Filter Chips (Multi-select) */}
+          {activePaymentMethods.map((pm) => (
             <span
+              key={pm}
               className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-normal border ${appleCapsule}`}
             >
               <span className="text-[#86868b] dark:text-[#a1a1a6] text-[11px]">Payment:</span>
-              <span>{PAYMENT_METHOD_LABELS[activePaymentMethod] || activePaymentMethod}</span>
+              <span>{PAYMENT_METHOD_LABELS[pm] || pm}</span>
               <button
                 type="button"
-                onClick={handleClearPaymentMethod}
+                onClick={() => handlePaymentMethodChange(pm)}
                 className="w-3.5 h-3.5 rounded-full flex items-center justify-center transition-opacity hover:opacity-100 opacity-60 cursor-pointer ml-0.5"
-                title="Remove payment method filter"
+                title={`Remove ${PAYMENT_METHOD_LABELS[pm] || pm} filter`}
               >
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -732,7 +767,7 @@ export function ExpenseTracker({
                 </svg>
               </button>
             </span>
-          )}
+          ))}
 
           {/* Active Amount Range Filter Chip */}
           {(minAmount || maxAmount) && (
@@ -1007,7 +1042,7 @@ export function ExpenseTracker({
                     const isHovered =
                       hoveredCategory?.toLowerCase() === seg.category.toLowerCase()
                     const isSelected =
-                      activeCategory?.toLowerCase() === seg.category.toLowerCase()
+                      activeCategories.some((c) => c.toLowerCase() === seg.category.toLowerCase())
                     const isAnyHovered = Boolean(hoveredCategory)
 
                     return (
@@ -1024,9 +1059,7 @@ export function ExpenseTracker({
                         opacity={isHovered || isSelected ? 1 : isAnyHovered ? 0.35 : 1}
                         className="transition-all duration-200 cursor-pointer"
                         onMouseEnter={() => setHoveredCategory(seg.category)}
-                        onClick={() =>
-                          handleCategoryChange(seg.category === activeCategory ? 'ALL' : seg.category)
-                        }
+                        onClick={() => handleCategoryChange(seg.category)}
                       >
                         <title>{`${seg.category}: ${formatMoney(seg.amount)} (${seg.percentage}%)`}</title>
                       </circle>
@@ -1069,15 +1102,15 @@ export function ExpenseTracker({
                 {donutSegments.map((seg) => {
                   const isHovered =
                     hoveredCategory?.toLowerCase() === seg.category.toLowerCase()
-                  const isSelected = activeCategory === seg.category
+                  const isSelected = activeCategories.some(
+                    (c) => c.toLowerCase() === seg.category.toLowerCase()
+                  )
 
                   return (
                     <div
                       key={seg.category}
                       onMouseEnter={() => setHoveredCategory(seg.category)}
-                      onClick={() =>
-                        handleCategoryChange(seg.category === activeCategory ? 'ALL' : seg.category)
-                      }
+                      onClick={() => handleCategoryChange(seg.category)}
                       className={`flex items-center justify-between p-1.5 rounded-lg text-xs cursor-pointer transition-all duration-150 ${
                         isSelected
                           ? isDark

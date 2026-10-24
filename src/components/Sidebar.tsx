@@ -147,8 +147,10 @@ interface SidebarProps {
   // Expense Specific Filters (used when activeTab === 'expenses')
   expenseCategories?: string[]
   selectedExpenseCategory?: string | 'ALL'
+  selectedExpenseCategories?: string[]
   onSelectExpenseCategory?: (cat: string | 'ALL') => void
   selectedPaymentMethod?: string | 'ALL'
+  selectedPaymentMethods?: string[]
   onSelectPaymentMethod?: (pm: string | 'ALL') => void
   onlyHighExpense?: boolean
   onToggleHighExpense?: () => void
@@ -211,8 +213,10 @@ export function Sidebar({
   activeTab = 'inbox',
   expenseCategories,
   selectedExpenseCategory = 'ALL',
+  selectedExpenseCategories,
   onSelectExpenseCategory,
   selectedPaymentMethod = 'ALL',
+  selectedPaymentMethods,
   onSelectPaymentMethod,
   onlyHighExpense = false,
   onToggleHighExpense,
@@ -291,6 +295,8 @@ export function Sidebar({
   const activeStatuses = selectedStatuses ?? (selectedStatus && selectedStatus !== 'ALL' ? [selectedStatus] : [])
   const activePriorities = selectedPriorities ?? (selectedPriority && selectedPriority !== 'ALL' ? [selectedPriority] : [])
   const activeCategories = selectedCategories ?? (selectedCategory && selectedCategory !== 'ALL' ? [selectedCategory] : [])
+  const activeExpenseCategories = selectedExpenseCategories ?? (selectedExpenseCategory && selectedExpenseCategory !== 'ALL' ? [selectedExpenseCategory] : [])
+  const activePaymentMethods = selectedPaymentMethods ?? (selectedPaymentMethod && selectedPaymentMethod !== 'ALL' ? [selectedPaymentMethod] : [])
 
   const DEFAULT_CATEGORIES: { id: string; label: string }[] = [
     { id: 'ALL', label: 'All' },
@@ -617,12 +623,12 @@ export function Sidebar({
                   </div>
                 </div>
 
-                {/* 3. Expense Categories Filter */}
+                {/* 3. Expense Categories Filter (Multi-select) */}
                 <div>
                   <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Expense Categories</span>
                     <div className="flex items-center gap-1.5">
-                      {selectedExpenseCategory !== 'ALL' && (
+                      {activeExpenseCategories.length > 0 && (
                         <button
                           onClick={() => onSelectExpenseCategory?.('ALL')}
                           className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
@@ -648,36 +654,41 @@ export function Sidebar({
                     <button
                       onClick={() => {
                         onSelectExpenseCategory?.('ALL')
-                        onClose()
                       }}
                       className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
-                        selectedExpenseCategory === 'ALL' ? itemActive : itemHover
+                        activeExpenseCategories.length === 0 ? itemActive : itemHover
                       }`}
                     >
-                      <span className={selectedExpenseCategory === 'ALL' ? 'font-semibold' : ''}>
+                      <span className={activeExpenseCategories.length === 0 ? 'font-semibold' : ''}>
                         All Categories
                       </span>
-                      <span className={countBadge(selectedExpenseCategory === 'ALL')}>
+                      <span className={countBadge(activeExpenseCategories.length === 0)}>
                         {expenseCounts?.total ?? 0}
                       </span>
                     </button>
                     {expenseCategories?.map((cat) => {
-                      const isSelected = selectedExpenseCategory?.toLowerCase() === cat.toLowerCase()
+                      const isSelected = activeExpenseCategories.some(
+                        (c) => c.toLowerCase() === cat.toLowerCase()
+                      )
                       const count = expenseCounts?.byCategory[cat] ?? 0
                       return (
                         <button
                           key={cat}
                           onClick={() => {
-                            onSelectExpenseCategory?.(isSelected ? 'ALL' : cat)
-                            onClose()
+                            onSelectExpenseCategory?.(cat)
                           }}
                           className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
                             isSelected ? itemActive : itemHover
                           }`}
                         >
-                          <span className={`truncate pr-1 ${isSelected ? 'font-semibold' : ''}`}>
-                            {cat}
-                          </span>
+                          <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1">
+                            {isSelected && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                            )}
+                            <span className={`truncate ${isSelected ? 'font-semibold' : ''}`}>
+                              {cat}
+                            </span>
+                          </div>
                           <span className={countBadge(isSelected)}>
                             {count}
                           </span>
@@ -687,11 +698,11 @@ export function Sidebar({
                   </div>
                 </div>
 
-                {/* 4. Payment Methods Filter */}
+                {/* 4. Payment Methods Filter (Multi-select) */}
                 <div>
                   <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Payment Methods</span>
-                    {selectedPaymentMethod !== 'ALL' && (
+                    {activePaymentMethods.length > 0 && (
                       <button
                         onClick={() => onSelectPaymentMethod?.('ALL')}
                         className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
@@ -702,14 +713,15 @@ export function Sidebar({
                   </div>
                   <div className="space-y-0.5">
                     {SIDEBAR_PAYMENT_METHODS.map((pm) => {
-                      const isSelected = selectedPaymentMethod?.toUpperCase() === pm.id
+                      const isSelected = pm.id === 'ALL'
+                        ? activePaymentMethods.length === 0
+                        : activePaymentMethods.includes(pm.id)
                       const count = pm.id === 'ALL' ? expenseCounts?.total : expenseCounts?.byMethod[pm.id] ?? 0
                       return (
                         <button
                           key={pm.id}
                           onClick={() => {
                             onSelectPaymentMethod?.(pm.id)
-                            onClose()
                           }}
                           className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between transition cursor-pointer text-left active:scale-[0.99] ${
                             isSelected ? itemActive : itemHover
@@ -719,9 +731,14 @@ export function Sidebar({
                             <span className="opacity-70 shrink-0">{renderPaymentMethodIcon(pm.id)}</span>
                             <span>{pm.label}</span>
                           </div>
-                          {typeof count === 'number' && (
-                            <span className={countBadge(isSelected)}>{count}</span>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {isSelected && pm.id !== 'ALL' && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                            )}
+                            {typeof count === 'number' && (
+                              <span className={countBadge(isSelected)}>{count}</span>
+                            )}
+                          </div>
                         </button>
                       )
                     })}

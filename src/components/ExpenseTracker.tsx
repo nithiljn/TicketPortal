@@ -624,8 +624,8 @@ export function ExpenseTracker({
     ? 'border-white/[0.08] hover:border-white/[0.18] bg-white/[0.04] hover:bg-white/[0.08] text-[#f5f5f7]'
     : 'border-[#e5e5ea] hover:border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] shadow-2xs'
   const appleDeleteBtn = isDark
-    ? 'border-white/[0.08] hover:border-red-600 bg-white/[0.04] hover:bg-red-600 text-[#86868b] hover:text-white transition-all duration-150'
-    : 'border-[#e5e5ea] hover:border-red-600 bg-white hover:bg-red-600 text-[#86868b] hover:text-white shadow-2xs transition-all duration-150'
+    ? 'border-white/[0.08] hover:border-[#C04742] bg-white/[0.04] hover:bg-[#C04742] text-[#86868b] hover:text-white transition-all duration-150'
+    : 'border-[#e5e5ea] hover:border-[#C04742] bg-white hover:bg-[#C04742] text-[#86868b] hover:text-white shadow-2xs transition-all duration-150'
 
   return (
     <div className="flex flex-col flex-1 min-w-0 bg-[#f5f5f7] dark:bg-[#000000] font-sans">

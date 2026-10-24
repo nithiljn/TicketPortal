@@ -234,7 +234,7 @@ export function KanbanBoard({
                         </button>
                         <button
                           onClick={() => onDeleteTicket(ticket)}
-                          className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
+                          className="p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-[#C04742] transition cursor-pointer"
                           title="Delete ticket"
                         >
                           <svg

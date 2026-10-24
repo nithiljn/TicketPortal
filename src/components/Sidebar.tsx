@@ -1,7 +1,31 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { TicketStatus, TicketPriority, AuthUser } from '@/types'
+import { TicketStatus, TicketPriority, AuthUser, DailyNote } from '@/types'
 import { Button } from '@/components/Button'
 import packageInfo from '../../package.json'
+
+function formatSidebarNoteDate(dateStr: string): string {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    const dt = new Date(y, m - 1, d)
+    return dt.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    })
+  } catch {
+    return dateStr
+  }
+}
+
+function formatMonthYear(monthStr: string): string {
+  try {
+    const [y, m] = monthStr.split('-').map(Number)
+    const dt = new Date(y, m - 1, 1)
+    return dt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  } catch {
+    return monthStr
+  }
+}
 
 const SIDEBAR_PAYMENT_METHODS: { id: string; label: string }[] = [
   { id: 'ALL', label: 'All Methods' },
@@ -176,6 +200,17 @@ interface SidebarProps {
   selectedVersions?: string[]
   onSelectVersion?: (version: string | 'ALL') => void
   versionCounts?: Record<string, number>
+
+  // Notes Specific Filters (used when activeTab === 'notes')
+  dailyNotes?: DailyNote[]
+  selectedNoteDate?: string
+  onSelectNoteDate?: (date: string) => void
+  notesMonthFilter?: string
+  onSelectNotesMonth?: (month: string) => void
+  notesStatusFilter?: 'ALL' | 'PENDING' | 'COMPLETED' | 'MEMO'
+  onSelectNotesStatus?: (status: 'ALL' | 'PENDING' | 'COMPLETED' | 'MEMO') => void
+  notesSearchQuery?: string
+  onNotesSearchChange?: (val: string) => void
 }
 
 export function Sidebar({
@@ -239,6 +274,15 @@ export function Sidebar({
   selectedVersions = [],
   onSelectVersion,
   versionCounts,
+  dailyNotes = [],
+  selectedNoteDate,
+  onSelectNoteDate,
+  notesMonthFilter = 'ALL',
+  onSelectNotesMonth,
+  notesStatusFilter = 'ALL',
+  onSelectNotesStatus,
+  notesSearchQuery = '',
+  onNotesSearchChange,
 }: SidebarProps) {
   const isDark = theme === 'dark'
   const visibleWorkspaces = availableProjects.filter(
@@ -297,6 +341,127 @@ export function Sidebar({
   const activeCategories = selectedCategories ?? (selectedCategory && selectedCategory !== 'ALL' ? [selectedCategory] : [])
   const activeExpenseCategories = selectedExpenseCategories ?? (selectedExpenseCategory && selectedExpenseCategory !== 'ALL' ? [selectedExpenseCategory] : [])
   const activePaymentMethods = selectedPaymentMethods ?? (selectedPaymentMethod && selectedPaymentMethod !== 'ALL' ? [selectedPaymentMethod] : [])
+
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
+  const yesterdayStr = useMemo(() => {
+    const d = new Date()
+    d.setDate(d.getDate() - 1)
+    return d.toISOString().split('T')[0]
+  }, [])
+
+  // Parsed note entries for Notes tab
+  const noteEntries = useMemo(() => {
+    if (!dailyNotes || dailyNotes.length === 0) return []
+    return dailyNotes.map((note) => {
+      const lines = note.content.split('\n')
+      let totalTasks = 0
+      let completedTasks = 0
+      for (const line of lines) {
+        const match = line.match(/^\s*-\s*\[([ xX])\]/)
+        if (match) {
+          totalTasks++
+          if (match[1].toLowerCase() === 'x') completedTasks++
+        }
+      }
+      const pendingTasks = totalTasks - completedTasks
+      const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+      const isCompleted = totalTasks > 0 && completedTasks === totalTasks
+      const hasPending = pendingTasks > 0
+      const isMemo = totalTasks === 0
+      const month = note.date.slice(0, 7) // 'YYYY-MM'
+
+      return {
+        id: note.id,
+        date: note.date,
+        content: note.content,
+        totalTasks,
+        completedTasks,
+        pendingTasks,
+        percentage,
+        isCompleted,
+        hasPending,
+        isMemo,
+        month,
+      }
+    }).sort((a, b) => b.date.localeCompare(a.date))
+  }, [dailyNotes])
+
+  // Aggregate stats for Notes tab
+  const notesStats = useMemo(() => {
+    let totalTasks = 0
+    let completedTasks = 0
+    let pendingDays = 0
+    let completedDays = 0
+    let memoDays = 0
+
+    noteEntries.forEach((entry) => {
+      totalTasks += entry.totalTasks
+      completedTasks += entry.completedTasks
+      if (entry.hasPending) pendingDays++
+      if (entry.isCompleted) completedDays++
+      if (entry.isMemo) memoDays++
+    })
+
+    const totalDays = noteEntries.length
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+    const hasToday = noteEntries.some((e) => e.date === todayStr)
+
+    return {
+      totalDays,
+      totalTasks,
+      completedTasks,
+      pendingTasks: totalTasks - completedTasks,
+      pendingDays,
+      completedDays,
+      memoDays,
+      completionRate,
+      hasToday,
+    }
+  }, [noteEntries, todayStr])
+
+  // Available months from notes
+  const availableNoteMonths = useMemo(() => {
+    const counts: Record<string, number> = {}
+    noteEntries.forEach((e) => {
+      if (e.month) {
+        counts[e.month] = (counts[e.month] || 0) + 1
+      }
+    })
+    return Object.entries(counts)
+      .map(([month, count]) => ({ month, count, label: formatMonthYear(month) }))
+      .sort((a, b) => b.month.localeCompare(a.month))
+  }, [noteEntries])
+
+  // Filtered note entries based on active filters
+  const filteredNoteEntries = useMemo(() => {
+    let result = noteEntries
+
+    // 1. Month Filter
+    if (notesMonthFilter && notesMonthFilter !== 'ALL') {
+      result = result.filter((e) => e.month === notesMonthFilter)
+    }
+
+    // 2. Status Filter
+    if (notesStatusFilter && notesStatusFilter !== 'ALL') {
+      if (notesStatusFilter === 'PENDING') {
+        result = result.filter((e) => e.hasPending)
+      } else if (notesStatusFilter === 'COMPLETED') {
+        result = result.filter((e) => e.isCompleted)
+      } else if (notesStatusFilter === 'MEMO') {
+        result = result.filter((e) => e.isMemo)
+      }
+    }
+
+    // 3. Search query
+    if (notesSearchQuery && notesSearchQuery.trim()) {
+      const q = notesSearchQuery.toLowerCase().trim()
+      result = result.filter(
+        (e) => e.date.toLowerCase().includes(q) || e.content.toLowerCase().includes(q)
+      )
+    }
+
+    return result
+  }, [noteEntries, notesMonthFilter, notesStatusFilter, notesSearchQuery])
 
   const DEFAULT_CATEGORIES: { id: string; label: string }[] = [
     { id: 'ALL', label: 'All' },
@@ -392,30 +557,32 @@ export function Sidebar({
             </button>
           </div>
 
-          {/* New item button */}
+          {/* New item / Top action buttons */}
           <div className="p-3">
-            <button
-              type="button"
-              onClick={() => {
-                if (activeTab === 'expenses' && onOpenAddExpenseModal) {
-                  onOpenAddExpenseModal()
-                } else {
-                  onOpenCreateModal()
-                }
-                onClose()
-              }}
-              className={`w-full h-10 rounded-full text-xs font-semibold flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer shadow-sm ${
-                isDark
-                  ? 'bg-white hover:bg-zinc-100 text-zinc-950'
-                  : 'bg-zinc-950 hover:bg-zinc-800 text-white'
-              }`}
-            >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span>{activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}</span>
-            </button>
+            {activeTab !== 'notes' && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeTab === 'expenses' && onOpenAddExpenseModal) {
+                    onOpenAddExpenseModal()
+                  } else {
+                    onOpenCreateModal()
+                  }
+                  onClose()
+                }}
+                className={`w-full h-10 rounded-full text-xs font-semibold flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer shadow-sm ${
+                  isDark
+                    ? 'bg-white hover:bg-zinc-100 text-zinc-950'
+                    : 'bg-zinc-950 hover:bg-zinc-800 text-white'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                <span>{activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}</span>
+              </button>
+            )}
 
             {/* Version Management button — Only on ticket tabs (inbox, dashboard, board) */}
             {onOpenVersionModal && isTicketTab && (
@@ -436,7 +603,7 @@ export function Sidebar({
               </button>
             )}
 
-            {/* Activity Heatmap button — Only on notes tab */}
+            {/* Activity Heatmap button — Only on notes tab (styled as primary action) */}
             {onOpenActivityModal && activeTab === 'notes' && (
               <button
                 type="button"
@@ -444,14 +611,18 @@ export function Sidebar({
                   onOpenActivityModal()
                   onClose()
                 }}
-                className={`w-full mt-2 h-9 px-3 rounded-full border text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer ${ghostBtn}`}
+                className={`w-full h-10 rounded-full text-xs font-semibold flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer shadow-sm ${
+                  isDark
+                    ? 'bg-white hover:bg-zinc-100 text-zinc-950'
+                    : 'bg-zinc-950 hover:bg-zinc-800 text-white'
+                }`}
                 title="View consistency activity heatmap"
               >
-                <svg className="w-3.5 h-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="7" height="7" rx="1" />
-                  <rect x="14" y="3" width="7" height="7" rx="1" />
-                  <rect x="14" y="14" width="7" height="7" rx="1" />
-                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                <svg className="w-4 h-4 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                  <rect x="3" y="14" width="7" height="7" rx="1.5" />
                 </svg>
                 <span>Activity Heatmap</span>
               </button>
@@ -460,27 +631,28 @@ export function Sidebar({
 
           {/* Scrollable Navigation & Facets */}
           <div className="flex-1 overflow-y-auto px-3 py-1 space-y-5 text-xs custom-scrollbar">
-            {/* Workspaces Facet */}
-            <div>
-              <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
-                <span>{activeTab === 'expenses' ? 'Expense Folders' : 'Workspaces'}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-[10px] text-[#86868b]">{visibleWorkspaces.length}</span>
-                  {onOpenCreateWorkspaceModal && (
-                    <button
-                      onClick={onOpenCreateWorkspaceModal}
-                      type="button"
-                      className={`w-5 h-5 rounded-full flex items-center justify-center transition active:scale-90 cursor-pointer ${itemHover}`}
-                      title={activeTab === 'expenses' ? 'Create new expense workspace' : 'Create new project workspace'}
-                    >
-                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                      </svg>
-                    </button>
-                  )}
+            {/* Workspaces Facet — Only for Tickets and Expenses */}
+            {activeTab !== 'notes' && (
+              <div>
+                <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
+                  <span>{activeTab === 'expenses' ? 'Expense Folders' : 'Workspaces'}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-[10px] text-[#86868b]">{visibleWorkspaces.length}</span>
+                    {onOpenCreateWorkspaceModal && (
+                      <button
+                        onClick={onOpenCreateWorkspaceModal}
+                        type="button"
+                        className={`w-5 h-5 rounded-full flex items-center justify-center transition active:scale-90 cursor-pointer ${itemHover}`}
+                        title={activeTab === 'expenses' ? 'Create new expense workspace' : 'Create new project workspace'}
+                      >
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
               <div className="space-y-0.5">
                 <button
                   onClick={() => {
@@ -575,6 +747,7 @@ export function Sidebar({
                 )}
               </div>
             </div>
+            )}
 
             {activeTab === 'expenses' ? (
               /* Expense Specific Filters */
@@ -788,8 +961,225 @@ export function Sidebar({
                   </div>
                 </div>
               </>
+            ) : activeTab === 'notes' ? (
+              /* Notes Specific Filters */
+              <>
+                {/* 1. Productivity Summary Card */}
+                <div className={`p-3 rounded-[14px] border ${isDark ? 'bg-white/[0.03] border-white/[0.08]' : 'bg-[#fafafc] border-[#e5e5ea]'}`}>
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-[#86868b] uppercase tracking-wider mb-2">
+                    <span>Overview</span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-medium ${isDark ? 'bg-white/[0.06] text-[#86868b]' : 'bg-black/[0.04] text-[#86868b]'}`}>
+                      {notesStats.completionRate}% Done
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden mb-2.5">
+                    <div
+                      className="h-full bg-[#0071e3] dark:bg-[#2997ff] rounded-full transition-all duration-300"
+                      style={{ width: `${notesStats.completionRate}%` }}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                      <div className="text-[#86868b]">Logged Days</div>
+                      <div className="text-sm font-semibold font-mono text-[#1d1d1f] dark:text-[#f5f5f7]">
+                        {notesStats.totalDays}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[#86868b]">Tasks Done</div>
+                      <div className="text-sm font-semibold font-mono text-[#1d1d1f] dark:text-[#f5f5f7]">
+                        {notesStats.completedTasks}/{notesStats.totalTasks}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Jump to Today if not currently on today */}
+                  {selectedNoteDate !== todayStr && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelectNoteDate?.(todayStr)
+                        onClose()
+                      }}
+                      className={`w-full mt-2.5 py-1.5 px-2.5 rounded-[10px] border text-xs font-medium transition cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.98] ${
+                        isDark
+                          ? 'border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] text-[#f5f5f7]'
+                          : 'border-[#e5e5ea] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] shadow-2xs'
+                      }`}
+                    >
+                      <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      <span>Jump to Today</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* 2. Task Status Filter */}
+                <div>
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
+                    <span>Task Status</span>
+                    {notesStatusFilter && notesStatusFilter !== 'ALL' && (
+                      <button
+                        onClick={() => onSelectNotesStatus?.('ALL')}
+                        className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-0.5">
+                    {[
+                      { id: 'ALL', label: 'All Logged Days', count: notesStats.totalDays },
+                      { id: 'PENDING', label: 'Pending Tasks', count: notesStats.pendingDays },
+                      { id: 'COMPLETED', label: '100% Completed', count: notesStats.completedDays },
+                      { id: 'MEMO', label: 'Memos Only', count: notesStats.memoDays },
+                    ].map((item) => {
+                      const isSelected = (notesStatusFilter || 'ALL') === item.id
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            onSelectNotesStatus?.(item.id as any)
+                          }}
+                          className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
+                            isSelected ? itemActive : itemHover
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1">
+                            {isSelected && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                            )}
+                            <span className={`truncate ${isSelected ? 'font-semibold' : ''}`}>
+                              {item.label}
+                            </span>
+                          </div>
+                          <span className={countBadge(isSelected)}>{item.count}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Months Filter */}
+                {availableNoteMonths.length > 0 && (
+                  <div>
+                    <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
+                      <span>Month</span>
+                      {notesMonthFilter && notesMonthFilter !== 'ALL' && (
+                        <button
+                          onClick={() => onSelectNotesMonth?.('ALL')}
+                          className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-0.5">
+                      <button
+                        onClick={() => onSelectNotesMonth?.('ALL')}
+                        className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
+                          (notesMonthFilter || 'ALL') === 'ALL' ? itemActive : itemHover
+                        }`}
+                      >
+                        <span className={(notesMonthFilter || 'ALL') === 'ALL' ? 'font-semibold' : ''}>
+                          All Months
+                        </span>
+                        <span className={countBadge((notesMonthFilter || 'ALL') === 'ALL')}>
+                          {notesStats.totalDays}
+                        </span>
+                      </button>
+                      {availableNoteMonths.map((m) => {
+                        const isSelected = notesMonthFilter === m.month
+                        return (
+                          <button
+                            key={m.month}
+                            onClick={() => onSelectNotesMonth?.(m.month)}
+                            className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
+                              isSelected ? itemActive : itemHover
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1">
+                              {isSelected && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                              )}
+                              <span className={`truncate ${isSelected ? 'font-semibold' : ''}`}>
+                                {m.label}
+                              </span>
+                            </div>
+                            <span className={countBadge(isSelected)}>{m.count}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Logged Entries / Days List */}
+                <div>
+                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
+                    <span>Logged Days</span>
+                    <span className="font-mono text-[10px] text-[#86868b]">
+                      {filteredNoteEntries.length}
+                    </span>
+                  </div>
+
+                  {filteredNoteEntries.length === 0 ? (
+                    <div className="px-2 py-4 text-center text-xs text-[#86868b]">
+                      No logged days match this filter
+                    </div>
+                  ) : (
+                    <div className="space-y-0.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-0.5">
+                      {filteredNoteEntries.map((entry) => {
+                        const isSelected = selectedNoteDate === entry.date
+                        const dateLabel = formatSidebarNoteDate(entry.date)
+                        return (
+                          <button
+                            key={entry.id}
+                            onClick={() => {
+                              onSelectNoteDate?.(entry.date)
+                              onClose()
+                            }}
+                            className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
+                              isSelected ? itemActive : itemHover
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1">
+                              {isSelected && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                              )}
+                              <span className={`truncate ${isSelected ? 'font-semibold' : ''}`}>
+                                {dateLabel}
+                              </span>
+                              {entry.date === todayStr && (
+                                <span className={countBadge(isSelected)}>
+                                  Today
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className={countBadge(isSelected)}>
+                                {entry.totalTasks > 0
+                                  ? entry.isCompleted
+                                    ? '✓ Done'
+                                    : `${entry.completedTasks}/${entry.totalTasks}`
+                                  : 'Memo'}
+                              </span>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </>
             ) : (
-              /* Ticket Specific Filters (Inbox, Dashboard, Board, Notes) */
+              /* Ticket Specific Filters (Inbox, Dashboard, Board) */
               <>
                 {/* Ticket ID Filter */}
                 <div>

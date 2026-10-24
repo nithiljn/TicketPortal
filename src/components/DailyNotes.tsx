@@ -10,6 +10,7 @@ interface DailyNotesProps {
   onDeleteNote: (note: DailyNote) => void
   theme?: 'dark' | 'light'
   initialFilterDate?: string
+  onActiveDateChange?: (date: string) => void
 }
 
 interface PlanItem {
@@ -206,6 +207,7 @@ export function DailyNotes({
   onDeleteNote,
   theme = 'dark',
   initialFilterDate,
+  onActiveDateChange,
 }: DailyNotesProps) {
   const isDark = theme === 'dark'
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
@@ -227,6 +229,13 @@ export function DailyNotes({
     }
     return todayStr
   })
+
+  // Notify parent of activeDate changes
+  useEffect(() => {
+    if (activeDate) {
+      onActiveDateChange?.(activeDate)
+    }
+  }, [activeDate, onActiveDateChange])
 
   const [flipDirection, setFlipDirection] = useState<'next' | 'prev'>('next')
   const [flipKey, setFlipKey] = useState(0)

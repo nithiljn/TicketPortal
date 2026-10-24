@@ -201,6 +201,14 @@ export default function Home() {
     ? selectedPaymentMethods[0]
     : selectedPaymentMethods.length === 0 ? 'ALL' : selectedPaymentMethods.join(', ')
 
+  // Daily Notes Specific State
+  const [selectedNoteDate, setSelectedNoteDate] = useState<string>(() => {
+    return new Date().toISOString().split('T')[0]
+  })
+  const [notesMonthFilter, setNotesMonthFilter] = useState<string>('ALL')
+  const [notesStatusFilter, setNotesStatusFilter] = useState<'ALL' | 'PENDING' | 'COMPLETED' | 'MEMO'>('ALL')
+  const [notesSearchQuery, setNotesSearchQuery] = useState<string>('')
+
   // Loading & Transition States
   const [loading, setLoading] = useState(true)
   const [isFilterLoading, setIsFilterLoading] = useState(false)
@@ -294,6 +302,11 @@ export default function Home() {
         prev.includes(upper) ? prev.filter((p) => p !== upper) : [...prev, upper]
       )
     }
+  }, [])
+
+  const handleSelectNoteDate = useCallback((date: string) => {
+    setSelectedNoteDate(date)
+    setNotesFilterDate(date)
   }, [])
 
   const handleSelectStatus = useCallback(
@@ -1997,6 +2010,15 @@ export default function Home() {
         selectedVersions={selectedVersions}
         onSelectVersion={handleSelectVersion}
         versionCounts={ticketCounts.versionCounts}
+        dailyNotes={dailyNotes}
+        selectedNoteDate={selectedNoteDate}
+        onSelectNoteDate={handleSelectNoteDate}
+        notesMonthFilter={notesMonthFilter}
+        onSelectNotesMonth={setNotesMonthFilter}
+        notesStatusFilter={notesStatusFilter}
+        onSelectNotesStatus={setNotesStatusFilter}
+        notesSearchQuery={notesSearchQuery}
+        onNotesSearchChange={setNotesSearchQuery}
       />
 
       {/* 2. Main Content Canvas */}
@@ -2139,11 +2161,25 @@ export default function Home() {
                   </svg>
                   <input
                     type="text"
-                    placeholder={activeTab === 'expenses' ? 'Search expenses...' : 'Search tickets...'}
-                    value={activeTab === 'expenses' ? expenseSearchQuery : searchTerm}
+                    placeholder={
+                      activeTab === 'expenses'
+                        ? 'Search expenses...'
+                        : activeTab === 'notes'
+                        ? 'Search daily notes...'
+                        : 'Search tickets...'
+                    }
+                    value={
+                      activeTab === 'expenses'
+                        ? expenseSearchQuery
+                        : activeTab === 'notes'
+                        ? notesSearchQuery
+                        : searchTerm
+                    }
                     onChange={(e) => {
                       if (activeTab === 'expenses') {
                         setExpenseSearchQuery(e.target.value)
+                      } else if (activeTab === 'notes') {
+                        setNotesSearchQuery(e.target.value)
                       } else {
                         setSearchTerm(e.target.value)
                       }
@@ -2154,12 +2190,18 @@ export default function Home() {
                         : 'bg-[#f5f5f7] border-black/[0.06] text-[#1d1d1f] placeholder-[#86868b] focus:bg-white focus:border-[#0071e3] focus:ring-1 focus:ring-[#0071e3]/20 shadow-2xs'
                     }`}
                   />
-                  {(activeTab === 'expenses' ? expenseSearchQuery : searchTerm) && (
+                  {(activeTab === 'expenses'
+                    ? expenseSearchQuery
+                    : activeTab === 'notes'
+                    ? notesSearchQuery
+                    : searchTerm) && (
                     <button
                       type="button"
                       onClick={() => {
                         if (activeTab === 'expenses') {
                           setExpenseSearchQuery('')
+                        } else if (activeTab === 'notes') {
+                          setNotesSearchQuery('')
                         } else {
                           setSearchTerm('')
                         }
@@ -2245,26 +2287,28 @@ export default function Home() {
                   })}
                 </nav>
 
-                {/* Primary Action Button (Theme-colored Capsule) */}
-                <button
-                  type="button"
-                  onClick={activeTab === 'expenses' ? handleOpenAddExpense : handleOpenCreateTicket}
-                  className={`h-8.5 px-3 sm:px-4 rounded-full text-xs font-semibold transition-all duration-150 cursor-pointer active:scale-95 inline-flex items-center gap-1.5 shadow-xs shrink-0 ${
-                    isDark
-                      ? 'bg-white hover:bg-zinc-100 text-zinc-950 border border-white'
-                      : 'bg-zinc-950 hover:bg-zinc-800 text-white border border-zinc-950'
-                  }`}
-                  title={activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
-                  aria-label={activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
-                >
-                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                  <span className="hidden sm:inline">
-                    {activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
-                  </span>
-                </button>
+                {/* Primary Action Button (Theme-colored Capsule) — Only for Tickets and Expenses */}
+                {activeTab !== 'notes' && (
+                  <button
+                    type="button"
+                    onClick={activeTab === 'expenses' ? handleOpenAddExpense : handleOpenCreateTicket}
+                    className={`h-8.5 px-3 sm:px-4 rounded-full text-xs font-semibold transition-all duration-150 cursor-pointer active:scale-95 inline-flex items-center gap-1.5 shadow-xs shrink-0 ${
+                      isDark
+                        ? 'bg-white hover:bg-zinc-100 text-zinc-950 border border-white'
+                        : 'bg-zinc-950 hover:bg-zinc-800 text-white border border-zinc-950'
+                    }`}
+                    title={activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+                    aria-label={activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+                  >
+                    <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    <span className="hidden sm:inline">
+                      {activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+                    </span>
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -2405,6 +2449,7 @@ export default function Home() {
                     onDeleteNote={(note) => setNoteToDelete(note)}
                     theme={theme}
                     initialFilterDate={notesFilterDate}
+                    onActiveDateChange={setSelectedNoteDate}
                   />
                 </div>
               )}
@@ -2638,6 +2683,7 @@ export default function Home() {
         notes={dailyNotes}
         theme={theme}
         onSelectDate={(date) => {
+          setSelectedNoteDate(date)
           setNotesFilterDate(date)
           handleTabChange('notes')
         }}

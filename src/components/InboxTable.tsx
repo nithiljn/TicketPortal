@@ -288,7 +288,9 @@ export function InboxTable({
   }
 
   // Theme-aware styles — Apple Design tokens
-  const subHeaderBorder = isDark ? 'border-white/[0.06] text-[#ebebf5]/50' : 'border-black/[0.06] text-[#1d1d1f]/50'
+  const subHeaderBorder = isDark
+    ? 'border-white/[0.06] bg-[#09090b]/80 backdrop-blur-md text-[#ebebf5]/50'
+    : 'border-black/[0.06] bg-white/80 backdrop-blur-md text-[#1d1d1f]/50'
   const subHeaderTitle = isDark ? 'text-[#f5f5f7]' : 'text-[#1d1d1f] font-semibold'
   const emptyBorder = isDark ? 'border-white/[0.08] text-[#ebebf5]/30' : 'border-black/[0.08] text-[#1d1d1f]/30'
   const tableContainer = isDark ? 'border-white/[0.08] bg-[#1c1c1e]' : 'border-black/[0.06] bg-white shadow-sm'
@@ -319,7 +321,7 @@ export function InboxTable({
   return (
     <div className="flex flex-col flex-1 min-w-0">
       {/* Sub-header inside view */}
-      <div className={`px-4 sm:px-6 py-3 border-b flex items-center justify-between text-xs ${subHeaderBorder}`}>
+      <div className={`sticky top-0 z-20 px-4 sm:px-6 py-3 border-b flex items-center justify-between text-xs ${subHeaderBorder}`}>
         <div className="flex items-center gap-2 flex-wrap">
           <span className={subHeaderTitle}>
             {selectedProject === 'ALL' ? 'All Workspaces' : selectedProject}

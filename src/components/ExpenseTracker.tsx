@@ -597,7 +597,7 @@ export function ExpenseTracker({
   return (
     <div className="flex flex-col flex-1 min-w-0 bg-[#f5f5f7] dark:bg-[#000000] font-sans">
       {/* Sub-header inside view (Matches InboxTable filtration bar) */}
-      <div className={`px-4 sm:px-6 py-2.5 sm:py-3 border-b flex items-center justify-between text-xs shrink-0 ${subHeaderBorder}`}>
+      <div className={`sticky top-0 z-20 px-4 sm:px-6 py-2.5 sm:py-3 border-b flex items-center justify-between text-xs shrink-0 ${subHeaderBorder}`}>
         <div className="flex items-center gap-2 flex-wrap">
           <span className={subHeaderTitle}>
             {selectedProject === 'ALL' ? 'All Workspaces' : selectedProject}

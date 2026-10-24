@@ -240,6 +240,7 @@ export function Sidebar({
   const visibleWorkspaces = availableProjects.filter(
     (p) => !p.startsWith('version:::') && !p.includes(':::version:::')
   )
+  const isTicketTab = activeTab === 'inbox' || activeTab === 'dashboard' || activeTab === 'board'
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
 
@@ -410,8 +411,8 @@ export function Sidebar({
               <span>{activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}</span>
             </button>
 
-            {/* Version Management button */}
-            {onOpenVersionModal && (
+            {/* Version Management button — Only on ticket tabs (inbox, dashboard, board) */}
+            {onOpenVersionModal && isTicketTab && (
               <button
                 type="button"
                 onClick={() => {
@@ -429,15 +430,15 @@ export function Sidebar({
               </button>
             )}
 
-            {/* Activity Heatmap button below New Ticket */}
-            {onOpenActivityModal && (
+            {/* Activity Heatmap button — Only on notes tab */}
+            {onOpenActivityModal && activeTab === 'notes' && (
               <button
                 type="button"
                 onClick={() => {
                   onOpenActivityModal()
                   onClose()
                 }}
-                className={`w-full ${onOpenVersionModal ? 'mt-1.5' : 'mt-2'} h-9 px-3 rounded-full border text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer ${ghostBtn}`}
+                className={`w-full mt-2 h-9 px-3 rounded-full border text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer ${ghostBtn}`}
                 title="View consistency activity heatmap"
               >
                 <svg className="w-3.5 h-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -816,78 +817,80 @@ export function Sidebar({
                   </div>
                 </div>
 
-                {/* Version Filter */}
-                <div>
-                  <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
-                    <span className="flex items-center gap-1.5">
-                      <svg className="w-3 h-3 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                        <line x1="7" y1="7" x2="7.01" y2="7" />
-                      </svg>
-                      <span>Version Filter</span>
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {selectedVersions.length > 0 && onSelectVersion && (
-                        <button
-                          onClick={() => onSelectVersion('ALL')}
-                          className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
-                        >
-                          Reset
-                        </button>
-                      )}
-                      {onOpenVersionModal && (
-                        <button
-                          type="button"
-                          onClick={onOpenVersionModal}
-                          className={`w-5 h-5 rounded-full flex items-center justify-center transition active:scale-90 cursor-pointer ${itemHover}`}
-                          title="Manage Versions"
-                        >
-                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <line x1="12" y1="5" x2="12" y2="19" />
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                          </svg>
-                        </button>
-                      )}
+                {/* Version Filter — Only on ticket tabs */}
+                {isTicketTab && (
+                  <div>
+                    <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
+                      <span className="flex items-center gap-1.5">
+                        <svg className="w-3 h-3 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                          <line x1="7" y1="7" x2="7.01" y2="7" />
+                        </svg>
+                        <span>Version Filter</span>
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {selectedVersions.length > 0 && onSelectVersion && (
+                          <button
+                            onClick={() => onSelectVersion('ALL')}
+                            className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
+                          >
+                            Reset
+                          </button>
+                        )}
+                        {onOpenVersionModal && (
+                          <button
+                            type="button"
+                            onClick={onOpenVersionModal}
+                            className={`w-5 h-5 rounded-full flex items-center justify-center transition active:scale-90 cursor-pointer ${itemHover}`}
+                            title="Manage Versions"
+                          >
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <line x1="12" y1="5" x2="12" y2="19" />
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-0.5 max-h-44 overflow-y-auto pr-0.5 custom-scrollbar">
+                      <button
+                        onClick={() => onSelectVersion?.('ALL')}
+                        className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
+                          selectedVersions.length === 0 ? itemActive : itemHover
+                        }`}
+                      >
+                        <span className={selectedVersions.length === 0 ? 'font-semibold' : ''}>
+                          All Versions
+                        </span>
+                        <span className={countBadge(selectedVersions.length === 0)}>
+                          {ticketCounts?.total ?? 0}
+                        </span>
+                      </button>
+                      {availableVersions
+                        .filter((v) => !v.startsWith('version:::') && !v.includes(':::version:::'))
+                        .map((ver) => {
+                          const isSelected = selectedVersions.includes(ver)
+                          const count = versionCounts ? (versionCounts[ver] || 0) : 0
+                          return (
+                            <button
+                              key={ver}
+                              onClick={() => onSelectVersion?.(ver)}
+                              className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
+                                isSelected ? itemActive : itemHover
+                              }`}
+                            >
+                              <span className={`font-mono text-xs ${isSelected ? 'font-semibold' : ''}`}>
+                                {ver}
+                              </span>
+                              <span className={countBadge(isSelected)}>
+                                {count}
+                              </span>
+                            </button>
+                          )
+                        })}
                     </div>
                   </div>
-                  <div className="space-y-0.5 max-h-44 overflow-y-auto pr-0.5 custom-scrollbar">
-                    <button
-                      onClick={() => onSelectVersion?.('ALL')}
-                      className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
-                        selectedVersions.length === 0 ? itemActive : itemHover
-                      }`}
-                    >
-                      <span className={selectedVersions.length === 0 ? 'font-semibold' : ''}>
-                        All Versions
-                      </span>
-                      <span className={countBadge(selectedVersions.length === 0)}>
-                        {ticketCounts?.total ?? 0}
-                      </span>
-                    </button>
-                    {availableVersions
-                      .filter((v) => !v.startsWith('version:::') && !v.includes(':::version:::'))
-                      .map((ver) => {
-                        const isSelected = selectedVersions.includes(ver)
-                        const count = versionCounts ? (versionCounts[ver] || 0) : 0
-                        return (
-                          <button
-                            key={ver}
-                            onClick={() => onSelectVersion?.(ver)}
-                            className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.99] ${
-                              isSelected ? itemActive : itemHover
-                            }`}
-                          >
-                            <span className={`font-mono text-xs ${isSelected ? 'font-semibold' : ''}`}>
-                              {ver}
-                            </span>
-                            <span className={countBadge(isSelected)}>
-                              {count}
-                            </span>
-                          </button>
-                        )
-                      })}
-                  </div>
-                </div>
+                )}
 
                 {/* Status Filter */}
                 <div>

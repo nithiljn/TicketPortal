@@ -898,6 +898,8 @@ export default function Home() {
     async (targetTab: 'inbox' | 'dashboard' | 'board' | 'notes' | 'expenses') => {
       if (targetTab === activeTab) return
       setActiveTab(targetTab)
+      setIsActivityModalOpen(false)
+      setIsVersionModalOpen(false)
 
       if (!loadedTabs.has(targetTab)) {
         setIsTabSwitching(true)

@@ -39,6 +39,11 @@ interface InboxTableProps {
   searchTerm?: string
   onSelectTicketIdFilter?: (id: string) => void
   onClearTicketIdFilter?: () => void
+  fromDate?: string
+  toDate?: string
+  onClearDateRange?: () => void
+  onRemoveFromDate?: () => void
+  onRemoveToDate?: () => void
   onClearAllFilters?: () => void
   theme?: 'dark' | 'light'
   // Server-side pagination
@@ -99,6 +104,11 @@ export function InboxTable({
   searchTerm = '',
   onSelectTicketIdFilter,
   onClearTicketIdFilter,
+  fromDate = '',
+  toDate = '',
+  onClearDateRange,
+  onRemoveFromDate,
+  onRemoveToDate,
   onClearAllFilters,
   theme = 'dark',
   serverPagination = false,
@@ -138,6 +148,8 @@ export function InboxTable({
     selectedVersions?.length,
     showOnlyBookmarked,
     ticketIdFilter,
+    fromDate,
+    toDate,
   ])
 
   const totalPages = Math.max(1, Math.ceil(effectiveTotalCount / activePageSize))
@@ -188,11 +200,13 @@ export function InboxTable({
   const activePriorities = selectedPriorities ?? (selectedPriority && selectedPriority !== 'ALL' ? [selectedPriority] : [])
   const activeCategories = selectedCategories ?? (selectedCategory && selectedCategory !== 'ALL' ? [selectedCategory] : [])
   const activeVersions = selectedVersions ?? (selectedVersion && selectedVersion !== 'ALL' ? [selectedVersion] : [])
+  const hasDateFilter = Boolean(fromDate || toDate)
   const totalActiveFilters =
     activeStatuses.length +
     activePriorities.length +
     activeCategories.length +
     activeVersions.length +
+    (hasDateFilter ? 1 : 0) +
     (showOnlyBookmarked ? 1 : 0) +
     (ticketIdFilter?.trim() ? 1 : 0)
 
@@ -440,6 +454,34 @@ export function InboxTable({
               </button>
             </span>
           ))}
+
+          {/* Active Date Range Filter Chip */}
+          {hasDateFilter && (
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-normal border ${categoryBadge}`}
+            >
+              <span className={`text-[10px] ${isDark ? 'text-[#ebebf5]/30' : 'text-[#1d1d1f]/40'}`}>Date:</span>
+              <span className="font-mono">
+                {fromDate && toDate
+                  ? `${fromDate} → ${toDate}`
+                  : fromDate
+                  ? `From ${fromDate}`
+                  : `Until ${toDate}`}
+              </span>
+              <button
+                type="button"
+                onClick={onClearDateRange}
+                className={`p-0.5 rounded-full transition cursor-pointer ${
+                  isDark ? 'text-[#ebebf5]/40 hover:text-white hover:bg-white/10' : 'text-[#1d1d1f]/40 hover:text-[#1d1d1f] hover:bg-black/10'
+                }`}
+                title="Clear date filter"
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </span>
+          )}
 
           {/* Active Ticket ID Filter Chip */}
           {ticketIdFilter?.trim() && (

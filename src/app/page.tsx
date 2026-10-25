@@ -93,7 +93,17 @@ export default function Home() {
   const [inboxPage, setInboxPage] = useState(1)
   const [inboxPageSize, setInboxPageSize] = useState(20)
   const [inboxTotalCount, setInboxTotalCount] = useState(0)
-  const [ticketStats, setTicketStats] = useState({
+  const [ticketStats, setTicketStats] = useState<{
+    total: number
+    todo: number
+    inProgress: number
+    done: number
+    blocked: number
+    bookmarked: number
+    categoryCountsJson?: string
+    versionCountsJson?: string
+    ticketIdsJson?: string
+  }>({
     total: 0,
     todo: 0,
     inProgress: 0,
@@ -101,6 +111,7 @@ export default function Home() {
     blocked: 0,
     bookmarked: 0,
   })
+  const [availableTicketIds, setAvailableTicketIds] = useState<string[]>([])
   const [boardTickets, setBoardTickets] = useState<Ticket[]>([])
   const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set(['inbox']))
   const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([])
@@ -538,7 +549,7 @@ export default function Home() {
     }
   }
 
-  // 1. Inbox Data Loader (Server-side Paginated)
+  // 1. Inbox Data Loader (Server-side Paginated with 20 limit)
   const loadInboxData = useCallback(
     async (page = 1, pageSize = 20) => {
       if (isAuthLoading || !user?.email) {
@@ -559,28 +570,39 @@ export default function Home() {
             $userEmail: String
             $limit: Int
             $offset: Int
-            $status: TicketStatus
-            $priority: TicketPriority
-            $category: String
+            $statuses: [TicketStatus!]
+            $priorities: [TicketPriority!]
+            $categories: [String!]
+            $versions: [String!]
+            $fromDate: String
+            $toDate: String
+            $ticketId: String
             $isBookmarked: Boolean
           ) {
             projects(userEmail: $userEmail, type: "TICKET")
             expenseProjects: projects(userEmail: $userEmail, type: "EXPENSE")
             versions(userEmail: $userEmail)
+            allTicketIds(projectName: $projectName, userEmail: $userEmail)
             tickets(
               projectName: $projectName
               search: $search
               userEmail: $userEmail
               limit: $limit
               offset: $offset
-              status: $status
-              priority: $priority
-              category: $category
+              statuses: $statuses
+              priorities: $priorities
+              categories: $categories
+              versions: $versions
+              fromDate: $fromDate
+              toDate: $toDate
+              ticketId: $ticketId
               isBookmarked: $isBookmarked
             ) {
               id
               ticketId
               title
+              description
+              commands
               status
               priority
               category
@@ -596,9 +618,13 @@ export default function Home() {
               projectName: $projectName
               search: $search
               userEmail: $userEmail
-              status: $status
-              priority: $priority
-              category: $category
+              statuses: $statuses
+              priorities: $priorities
+              categories: $categories
+              versions: $versions
+              fromDate: $fromDate
+              toDate: $toDate
+              ticketId: $ticketId
               isBookmarked: $isBookmarked
             )
             ticketStats(
@@ -611,6 +637,9 @@ export default function Home() {
               done
               blocked
               bookmarked
+              categoryCountsJson
+              versionCountsJson
+              ticketIdsJson
             }
           }
         `
@@ -619,6 +648,7 @@ export default function Home() {
           projects: string[]
           expenseProjects?: string[]
           versions?: string[]
+          allTicketIds?: string[]
           tickets: Ticket[]
           ticketsCount: number
           ticketStats: {
@@ -628,6 +658,9 @@ export default function Home() {
             done: number
             blocked: number
             bookmarked: number
+            categoryCountsJson?: string
+            versionCountsJson?: string
+            ticketIdsJson?: string
           }
         }>(query, {
           projectName: selectedProject !== 'ALL' ? selectedProject : null,
@@ -635,20 +668,56 @@ export default function Home() {
           userEmail: user.email,
           limit: pageSize,
           offset,
-          status: selectedStatuses.length === 1 ? selectedStatuses[0] : null,
-          priority: selectedPriorities.length === 1 ? selectedPriorities[0] : null,
-          category: selectedCategories.length === 1 ? selectedCategories[0] : null,
+          statuses: selectedStatuses.length > 0 ? selectedStatuses : null,
+          priorities: selectedPriorities.length > 0 ? selectedPriorities : null,
+          categories: selectedCategories.length > 0 ? selectedCategories : null,
+          versions: selectedVersions.length > 0 ? selectedVersions : null,
+          fromDate: fromDate.trim() || null,
+          toDate: toDate.trim() || null,
+          ticketId: ticketIdFilter.trim() || null,
           isBookmarked: showOnlyBookmarked ? true : null,
         })
 
         setTickets(data.tickets || [])
-        setInboxTotalCount(data.ticketsCount ?? 0)
+        setInboxTotalCount(data.ticketsCount ?? (data.tickets?.length || 0))
         setInboxPage(page)
         setInboxPageSize(pageSize)
         if (data.ticketStats) {
           setTicketStats(data.ticketStats)
         }
-        setAvailableVersions(data.versions || [])
+        if (data.allTicketIds && Array.isArray(data.allTicketIds) && data.allTicketIds.length > 0) {
+          setAvailableTicketIds(data.allTicketIds)
+        } else if ((data.ticketStats as any)?.ticketIdsJson) {
+          try {
+            const ids = JSON.parse((data.ticketStats as any).ticketIdsJson)
+            if (Array.isArray(ids) && ids.length > 0) {
+              setAvailableTicketIds(ids)
+            }
+          } catch {
+            // ignore
+          }
+        }
+        if (data.tickets && data.tickets.length > 0) {
+          setAvailableTicketIds((prev) => {
+            const set = new Set(prev)
+            data.tickets.forEach((t) => {
+              if (t.ticketId) set.add(String(t.ticketId).replace(/^#/, ''))
+            })
+            return Array.from(set).sort((a, b) => {
+              const numA = parseInt(a, 10)
+              const numB = parseInt(b, 10)
+              if (!isNaN(numA) && !isNaN(numB)) return numB - numA
+              return b.localeCompare(a)
+            })
+          })
+        }
+        const allDiscoveredVersions = Array.from(
+          new Set([
+            ...(data.versions || []),
+            ...(data.tickets || []).map((t) => t.version).filter(Boolean) as string[],
+          ])
+        )
+        setAvailableVersions(allDiscoveredVersions)
 
         // 1. Process Expense Workspaces for sidebar dropdown
         const serverExpenseProjects = (data.expenseProjects || []).filter(
@@ -729,6 +798,10 @@ export default function Home() {
       selectedStatuses,
       selectedPriorities,
       selectedCategories,
+      selectedVersions,
+      fromDate,
+      toDate,
+      ticketIdFilter,
       showOnlyBookmarked,
     ]
   )
@@ -879,6 +952,20 @@ export default function Home() {
         offset: 0,
       })
       setBoardTickets(data.tickets || [])
+      if (data.tickets && data.tickets.length > 0) {
+        setAvailableTicketIds((prev) => {
+          const set = new Set(prev)
+          data.tickets.forEach((t) => {
+            if (t.ticketId) set.add(String(t.ticketId).replace(/^#/, ''))
+          })
+          return Array.from(set).sort((a, b) => {
+            const numA = parseInt(a, 10)
+            const numB = parseInt(b, 10)
+            if (!isNaN(numA) && !isNaN(numB)) return numB - numA
+            return b.localeCompare(a)
+          })
+        })
+      }
     } catch (err) {
       console.error('Error loading board data:', err)
     }
@@ -920,7 +1007,23 @@ export default function Home() {
         projectName: selectedProject !== 'ALL' ? selectedProject : null,
         userEmail: user.email,
       })
-      if (data.tickets) setBoardTickets(data.tickets)
+      if (data.tickets) {
+        setBoardTickets(data.tickets)
+        if (data.tickets.length > 0) {
+          setAvailableTicketIds((prev) => {
+            const set = new Set(prev)
+            data.tickets.forEach((t) => {
+              if (t.ticketId) set.add(String(t.ticketId).replace(/^#/, ''))
+            })
+            return Array.from(set).sort((a, b) => {
+              const numA = parseInt(a, 10)
+              const numB = parseInt(b, 10)
+              if (!isNaN(numA) && !isNaN(numB)) return numB - numA
+              return b.localeCompare(a)
+            })
+          })
+        }
+      }
       if (data.dailyNotes) setDailyNotes(data.dailyNotes)
     } catch (err) {
       console.error('Error loading dashboard data:', err)
@@ -1120,92 +1223,117 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // 2. Filtered Tickets based on Facets + Date Range (From - To) + Bookmarks
+  // 2. Filtered Tickets based on Facets + Date Range (From - To) + Bookmarks + Search
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
+      // 1. Bookmark Filter
       if (showOnlyBookmarked && !t.isBookmarked) {
         return false
       }
+      // 2. Status Filter (Multi-select)
       if (selectedStatuses.length > 0 && !selectedStatuses.includes(t.status)) {
         return false
       }
+      // 3. Priority Filter (Multi-select)
       if (selectedPriorities.length > 0 && !selectedPriorities.includes(t.priority)) {
         return false
       }
+      // 4. Category Filter (Multi-select)
       if (
         selectedCategories.length > 0 &&
         !selectedCategories.some(
-          (c) => c.toUpperCase() === (t.category || 'DEV').toUpperCase()
+          (c) => c.trim().toUpperCase() === (t.category || 'DEV').trim().toUpperCase()
         )
       ) {
         return false
       }
-      // Version Filter
+      // 5. Version Filter (Multi-select)
       if (selectedVersions.length > 0) {
-        if (!t.version || !selectedVersions.includes(t.version)) {
+        if (
+          !t.version ||
+          !selectedVersions.some(
+            (v) => v.trim().toLowerCase() === t.version?.trim().toLowerCase()
+          )
+        ) {
           return false
         }
       }
-      // Date Range Filter
+      // 6. Date Range Filter (From Date - To Date)
       if (fromDate) {
-        const ticketDate = t.createdAt.split('T')[0]
-        if (ticketDate < fromDate) return false
+        const ticketDate = t.createdAt ? t.createdAt.split('T')[0].split(' ')[0] : ''
+        if (!ticketDate || ticketDate < fromDate) return false
       }
       if (toDate) {
-        const ticketDate = t.createdAt.split('T')[0]
-        if (ticketDate > toDate) return false
+        const ticketDate = t.createdAt ? t.createdAt.split('T')[0].split(' ')[0] : ''
+        if (!ticketDate || ticketDate > toDate) return false
       }
-      // Ticket ID Filter
+      // 7. Ticket ID Filter (Strict exact match only)
       if (ticketIdFilter.trim()) {
         const cleanFilter = ticketIdFilter.trim().replace(/^#/, '').toLowerCase()
         const tId = (t.ticketId || '').toLowerCase()
-        const idPrefix = (t.id || '').toLowerCase()
-        const matches =
-          tId === cleanFilter ||
-          tId.includes(cleanFilter) ||
-          idPrefix.startsWith(cleanFilter) ||
-          idPrefix.includes(cleanFilter)
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanFilter)
+        const matches = tId === cleanFilter || (isUUID && t.id?.toLowerCase() === cleanFilter)
         if (!matches) return false
+      }
+      // 8. Search Term (Strictly title and ticket_id only as requested)
+      if (searchTerm.trim()) {
+        const cleanQ = searchTerm.trim().toLowerCase().replace(/^#/, '')
+        const fullQ = searchTerm.trim().toLowerCase()
+        const titleMatch = (t.title || '').toLowerCase().includes(fullQ)
+        const idMatch = (t.ticketId || '').toLowerCase().includes(cleanQ)
+        if (!titleMatch && !idMatch) {
+          return false
+        }
       }
       return true
     })
-  }, [tickets, showOnlyBookmarked, selectedStatuses, selectedPriorities, selectedCategories, selectedVersions, fromDate, toDate, ticketIdFilter])
+  }, [
+    tickets,
+    showOnlyBookmarked,
+    selectedStatuses,
+    selectedPriorities,
+    selectedCategories,
+    selectedVersions,
+    fromDate,
+    toDate,
+    ticketIdFilter,
+    searchTerm,
+  ])
 
   // Count total bookmarked tickets
   const bookmarkedCount = useMemo(() => {
-    return ticketStats.bookmarked || tickets.filter((t) => t.isBookmarked).length
-  }, [ticketStats.bookmarked, tickets])
+    return ticketStats.bookmarked || 0
+  }, [ticketStats.bookmarked])
 
   // 3. Facet Counts
   const ticketCounts = useMemo(() => {
-    const total = ticketStats.total || tickets.length
-    const todo = ticketStats.todo
-    const inProgress = ticketStats.inProgress
-    const done = ticketStats.done
-    const blocked = ticketStats.blocked
+    const total = ticketStats.total || 0
+    const todo = ticketStats.todo || 0
+    const inProgress = ticketStats.inProgress || 0
+    const done = ticketStats.done || 0
+    const blocked = ticketStats.blocked || 0
     const notesCount = dailyNotes.length
 
-    // Category counts
-    const categoryCounts: Record<string, number> = {
-      ALL: total,
-    }
-    tickets.forEach((t) => {
-      const cat = (t.category || 'DEV').toUpperCase()
-      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1
-    })
-
-    // Version counts
-    const versionCounts: Record<string, number> = {
-      ALL: total,
-    }
-    tickets.forEach((t) => {
-      if (t.version) {
-        versionCounts[t.version] = (versionCounts[t.version] || 0) + 1
+    let categoryCounts: Record<string, number> = { ALL: total }
+    if ((ticketStats as any)?.categoryCountsJson) {
+      try {
+        categoryCounts = JSON.parse((ticketStats as any).categoryCountsJson)
+      } catch {
+        // ignore
       }
-    })
+    }
+
+    let versionCounts: Record<string, number> = { ALL: total }
+    if ((ticketStats as any)?.versionCountsJson) {
+      try {
+        versionCounts = JSON.parse((ticketStats as any).versionCountsJson)
+      } catch {
+        // ignore
+      }
+    }
 
     return { total, todo, inProgress, done, blocked, notesCount, categoryCounts, versionCounts }
-  }, [ticketStats, tickets, dailyNotes])
+  }, [ticketStats, dailyNotes])
 
   // Expense available months
   const availableExpenseMonths = useMemo(() => {
@@ -1351,7 +1479,7 @@ export default function Home() {
           }
         }
       `
-      await fetchGraphQL(mutation, {
+      const createRes = await fetchGraphQL<{ createTicket: Ticket }>(mutation, {
         input: {
           title: ticketData.title,
           description: ticketData.description,
@@ -1364,6 +1492,18 @@ export default function Home() {
           createdBy: currentUserName,
         },
       })
+      if (createRes?.createTicket?.ticketId) {
+        const newId = String(createRes.createTicket.ticketId).replace(/^#/, '')
+        setAvailableTicketIds((prev) => {
+          if (prev.includes(newId)) return prev
+          return [newId, ...prev].sort((a, b) => {
+            const numA = parseInt(a, 10)
+            const numB = parseInt(b, 10)
+            if (!isNaN(numA) && !isNaN(numB)) return numB - numA
+            return b.localeCompare(a)
+          })
+        })
+      }
       setToast({
         isOpen: true,
         title: 'Ticket Created Successfully',
@@ -1378,6 +1518,7 @@ export default function Home() {
   const handleConfirmDeleteTicket = async () => {
     if (!ticketToDelete) return
     const deletedTitle = ticketToDelete.title
+    const deletedTicketId = ticketToDelete.ticketId ? String(ticketToDelete.ticketId).replace(/^#/, '') : ''
     setIsDeleting(true)
     try {
       const mutation = /* GraphQL */ `
@@ -1389,6 +1530,12 @@ export default function Home() {
       setTickets((prev) => prev.filter((t) => t.id !== ticketToDelete.id))
       setBoardTickets((prev) => prev.filter((t) => t.id !== ticketToDelete.id))
       setInboxTotalCount((c) => Math.max(0, c - 1))
+      if (deletedTicketId) {
+        setAvailableTicketIds((prev) => prev.filter((id) => id !== deletedTicketId))
+        if (ticketIdFilter === deletedTicketId) {
+          setTicketIdFilter('')
+        }
+      }
       setTicketToDelete(null)
       setToast({
         isOpen: true,
@@ -1976,6 +2123,7 @@ export default function Home() {
         onSelectToDate={handleSelectToDate}
         onClearDateRange={handleClearDateRange}
         ticketIdFilter={ticketIdFilter}
+        availableTicketIds={availableTicketIds}
         onSelectTicketIdFilter={handleSelectTicketIdFilter}
         onClearTicketIdFilter={handleClearTicketIdFilter}
         theme={theme}
@@ -2069,7 +2217,7 @@ export default function Home() {
                 <input
                   type="text"
                   autoFocus
-                  placeholder={activeTab === 'expenses' ? 'Search expenses...' : 'Search tickets...'}
+                  placeholder={activeTab === 'expenses' ? 'Search expenses...' : 'Search by title or ticket ID...'}
                   value={activeTab === 'expenses' ? expenseSearchQuery : searchTerm}
                   onChange={(e) => {
                     if (activeTab === 'expenses') {
@@ -2166,7 +2314,7 @@ export default function Home() {
                         ? 'Search expenses...'
                         : activeTab === 'notes'
                         ? 'Search daily notes...'
-                        : 'Search tickets...'
+                        : 'Search by title or ticket ID...'
                     }
                     value={
                       activeTab === 'expenses'
@@ -2398,6 +2546,11 @@ export default function Home() {
                   ticketIdFilter={ticketIdFilter}
                   onSelectTicketIdFilter={handleSelectTicketIdFilter}
                   onClearTicketIdFilter={handleClearTicketIdFilter}
+                  fromDate={fromDate}
+                  toDate={toDate}
+                  onClearDateRange={handleClearDateRange}
+                  onRemoveFromDate={() => setFromDate('')}
+                  onRemoveToDate={() => setToDate('')}
                   onToggleBookmark={handleToggleBookmark}
                   showOnlyBookmarked={showOnlyBookmarked}
                   onToggleBookmarkedFilter={() => setShowOnlyBookmarked((prev) => !prev)}
@@ -2409,6 +2562,7 @@ export default function Home() {
                     setSelectedVersions([])
                     setShowOnlyBookmarked(false)
                     setTicketIdFilter('')
+                    handleClearDateRange()
                   }}
                   theme={theme}
                 />

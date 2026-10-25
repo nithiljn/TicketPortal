@@ -122,14 +122,25 @@ const typeDefs = /* GraphQL */ `
     done: Int!
     blocked: Int!
     bookmarked: Int
+    categoryCountsJson: String
+    versionCountsJson: String
+    ticketIdsJson: String
   }
 
   # QUERIES
   type Query {
     tickets(
       status: TicketStatus
+      statuses: [TicketStatus!]
       priority: TicketPriority
+      priorities: [TicketPriority!]
       category: String
+      categories: [String!]
+      version: String
+      versions: [String!]
+      fromDate: String
+      toDate: String
+      ticketId: String
       projectName: String
       search: String
       userEmail: String
@@ -139,8 +150,16 @@ const typeDefs = /* GraphQL */ `
     ): [Ticket!]!
     ticketsCount(
       status: TicketStatus
+      statuses: [TicketStatus!]
       priority: TicketPriority
+      priorities: [TicketPriority!]
       category: String
+      categories: [String!]
+      version: String
+      versions: [String!]
+      fromDate: String
+      toDate: String
+      ticketId: String
       projectName: String
       search: String
       userEmail: String
@@ -151,6 +170,7 @@ const typeDefs = /* GraphQL */ `
       userEmail: String
     ): TicketCounts!
     ticket(id: ID, ticketId: String): Ticket
+    allTicketIds(projectName: String, userEmail: String): [String!]!
     projects(userEmail: String, type: String): [String!]!
     versions(userEmail: String): [String!]!
     dailyNotes(date: String, userEmail: String, limit: Int, offset: Int): [DailyNote!]!
@@ -468,66 +488,146 @@ function resolveTargetEmail(
   return null
 }
 
+interface TicketFilterArgs {
+  status?: string
+  statuses?: string[]
+  priority?: string
+  priorities?: string[]
+  category?: string
+  categories?: string[]
+  version?: string
+  versions?: string[]
+  fromDate?: string
+  toDate?: string
+  ticketId?: string
+  projectName?: string
+  search?: string
+  userEmail?: string
+  isBookmarked?: boolean
+  limit?: number
+  offset?: number
+}
+
+function applyTicketFilters(query: any, args: TicketFilterArgs, userEmail: string) {
+  const prefix = userEmail.split('@')[0]
+
+  if (userEmail === 'admin@ticketflow.io') {
+    query = query.or(
+      'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+    )
+  } else {
+    query = query.or(
+      `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+    )
+  }
+
+  if (args.projectName && args.projectName !== 'ALL') {
+    query = query.eq('project_name', args.projectName)
+  }
+
+  // 1. Status Filter (Multiple or Single)
+  if (args.statuses && args.statuses.length > 0) {
+    query = query.in('status', args.statuses)
+  } else if (args.status && args.status !== 'ALL') {
+    query = query.eq('status', args.status)
+  }
+
+  // 2. Priority Filter (Multiple or Single)
+  if (args.priorities && args.priorities.length > 0) {
+    query = query.in('priority', args.priorities)
+  } else if (args.priority && args.priority !== 'ALL') {
+    query = query.eq('priority', args.priority)
+  }
+
+  // 3. Category Filter (Multiple or Single)
+  if (args.categories && args.categories.length > 0) {
+    const orClauses = args.categories.map((c) => `category.ilike.%${c}%`).join(',')
+    query = query.or(orClauses)
+  } else if (args.category && args.category !== 'ALL') {
+    query = query.ilike('category', args.category)
+  }
+
+  // 4. Version Filter (Multiple or Single)
+  if (args.versions && args.versions.length > 0) {
+    const verClauses: string[] = []
+    args.versions.forEach((v) => {
+      const cleanVer = v.trim()
+      verClauses.push(`version.eq.${cleanVer}`)
+      verClauses.push(`description.ilike.%<!-- TICKET_VERSION:${cleanVer} -->%`)
+    })
+    query = query.or(verClauses.join(','))
+  } else if (args.version && args.version !== 'ALL') {
+    const cleanVer = args.version.trim()
+    query = query.or(
+      `version.eq.${cleanVer},description.ilike.%<!-- TICKET_VERSION:${cleanVer} -->%`
+    )
+  }
+
+  // 5. Date Range Filter (From Date - To Date)
+  if (args.fromDate) {
+    query = query.gte('created_at', `${args.fromDate}T00:00:00.000Z`)
+  }
+  if (args.toDate) {
+    query = query.lte('created_at', `${args.toDate}T23:59:59.999Z`)
+  }
+
+  // 6. Ticket ID Filter (Strict exact match only)
+  if (args.ticketId) {
+    const cleanId = args.ticketId.trim().replace(/^#/, '').trim()
+    if (cleanId) {
+      const safeId = cleanId.replace(/[,"'()]/g, '')
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(safeId)
+      const clauses = [
+        `ticket_id.eq.${safeId}`,
+        `ticket_id.eq.#${safeId}`,
+        `description.ilike.%<!-- TICKET_REF_ID:${safeId} -->%`,
+        `description.ilike.%<!-- TICKET_REF_ID:#${safeId} -->%`,
+      ]
+      if (isUUID) {
+        clauses.push(`id.eq.${safeId}`)
+      }
+      query = query.or(clauses.join(','))
+    }
+  }
+
+  // 7. Search Filter (Strictly title and ticket_id only as requested)
+  if (args.search) {
+    const cleanSearch = args.search.trim().replace(/^#/, '').trim()
+    if (cleanSearch) {
+      const safeSearch = cleanSearch.replace(/[,"'()]/g, '')
+      query = query.or(
+        `title.ilike.%${safeSearch}%,ticket_id.ilike.%${safeSearch}%`
+      )
+    }
+  }
+
+  // 8. Bookmarked Filter
+  if (args.isBookmarked) {
+    query = query.or('is_bookmarked.eq.true,description.ilike.%<!-- TICKET_BOOKMARKED -->%')
+  }
+
+  return query
+}
+
 // 2. Resolvers: Connect to Supabase PostgreSQL Database!
 const resolvers = {
   Query: {
     tickets: async (
       _: unknown,
-      args: {
-        status?: string
-        priority?: string
-        category?: string
-        projectName?: string
-        search?: string
-        userEmail?: string
-        limit?: number
-        offset?: number
-        isBookmarked?: boolean
-      },
+      args: TicketFilterArgs,
       context?: GraphQLContext
     ) => {
-      // Security: Prioritize cryptographically verified token email over client-provided argument
       const userEmail = resolveTargetEmail(args.userEmail, context)
       if (!userEmail) {
         return []
       }
-      const prefix = userEmail.split('@')[0]
 
       let query = supabase
         .from('tickets')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (userEmail === 'admin@ticketflow.io') {
-        query = query.or(
-          'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
-        )
-      } else {
-        query = query.or(
-          `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
-        )
-      }
-
-      if (args.projectName && args.projectName !== 'ALL') {
-        query = query.eq('project_name', args.projectName)
-      }
-      if (args.status) {
-        query = query.eq('status', args.status)
-      }
-      if (args.priority) {
-        query = query.eq('priority', args.priority)
-      }
-      if (args.category && args.category !== 'ALL') {
-        query = query.ilike('category', args.category)
-      }
-      if (args.search) {
-        query = query.or(
-          `title.ilike.%${args.search}%,description.ilike.%${args.search}%`
-        )
-      }
-      if (args.isBookmarked) {
-        query = query.or('is_bookmarked.eq.true,description.ilike.%<!-- TICKET_BOOKMARKED -->%')
-      }
+      query = applyTicketFilters(query, args, userEmail)
 
       // Server-side Pagination Range
       if (typeof args.limit === 'number' && args.limit > 0) {
@@ -541,7 +641,6 @@ const resolvers = {
         throw new Error(error.message)
       }
       const rawRows = (data as TicketRow[]) || []
-      // Build chronological index map so existing tickets get sequential fallback 1001, 1002, etc.
       const chronological = [...rawRows].sort((a, b) => {
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       })
@@ -555,55 +654,17 @@ const resolvers = {
 
     ticketsCount: async (
       _: unknown,
-      args: {
-        status?: string
-        priority?: string
-        category?: string
-        projectName?: string
-        search?: string
-        userEmail?: string
-        isBookmarked?: boolean
-      },
+      args: TicketFilterArgs,
       context?: GraphQLContext
     ) => {
       const userEmail = resolveTargetEmail(args.userEmail, context)
       if (!userEmail) return 0
-      const prefix = userEmail.split('@')[0]
 
       let query = supabase
         .from('tickets')
         .select('id', { count: 'exact', head: true })
 
-      if (userEmail === 'admin@ticketflow.io') {
-        query = query.or(
-          'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
-        )
-      } else {
-        query = query.or(
-          `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
-        )
-      }
-
-      if (args.projectName && args.projectName !== 'ALL') {
-        query = query.eq('project_name', args.projectName)
-      }
-      if (args.status) {
-        query = query.eq('status', args.status)
-      }
-      if (args.priority) {
-        query = query.eq('priority', args.priority)
-      }
-      if (args.category && args.category !== 'ALL') {
-        query = query.ilike('category', args.category)
-      }
-      if (args.search) {
-        query = query.or(
-          `title.ilike.%${args.search}%,description.ilike.%${args.search}%`
-        )
-      }
-      if (args.isBookmarked) {
-        query = query.or('is_bookmarked.eq.true,description.ilike.%<!-- TICKET_BOOKMARKED -->%')
-      }
+      query = applyTicketFilters(query, args, userEmail)
 
       const { count, error } = await query
       if (error) {
@@ -629,7 +690,135 @@ const resolvers = {
 
       let query = supabase
         .from('tickets')
-        .select('status, is_bookmarked, description')
+        .select('id, ticket_id, status, is_bookmarked, description, category, version, created_at')
+        .order('created_at', { ascending: true })
+
+      if (userEmail === 'admin@ticketflow.io') {
+        query = query.or(
+          'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+        )
+      } else {
+        query = query.or(
+          `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+        )
+      }
+
+      if (args.projectName && args.projectName !== 'ALL') {
+        query = query.eq('project_name', args.projectName)
+      }
+
+      let rawRows: any[] | null = null
+      let { data, error } = await query
+
+      if (error && (error.code === 'PGRST204' || error.message?.includes('ticket_id'))) {
+        let fallbackQuery = supabase
+          .from('tickets')
+          .select('id, status, is_bookmarked, description, category, version, created_at')
+          .order('created_at', { ascending: true })
+
+        if (userEmail === 'admin@ticketflow.io') {
+          fallbackQuery = fallbackQuery.or(
+            'created_by.eq.admin@ticketflow.io,created_by.eq.James Nithil,created_by.eq.Nithil'
+          )
+        } else {
+          fallbackQuery = fallbackQuery.or(
+            `created_by.eq.${userEmail},created_by.eq.@${prefix},created_by.eq.${prefix}`
+          )
+        }
+        if (args.projectName && args.projectName !== 'ALL') {
+          fallbackQuery = fallbackQuery.eq('project_name', args.projectName)
+        }
+        const fbRes = await fallbackQuery
+        rawRows = fbRes.data as any[]
+        error = fbRes.error
+      } else {
+        rawRows = data as any[]
+      }
+
+      if (error || !rawRows) {
+        return { total: 0, todo: 0, inProgress: 0, done: 0, blocked: 0, bookmarked: 0 }
+      }
+
+      let todo = 0
+      let inProgress = 0
+      let done = 0
+      let blocked = 0
+      let bookmarked = 0
+      const categoryCounts: Record<string, number> = { ALL: rawRows.length }
+      const versionCounts: Record<string, number> = { ALL: rawRows.length }
+      const ticketIdList: string[] = []
+
+      rawRows.forEach((row, idx) => {
+        const s = (row.status || '').toUpperCase()
+        if (s === 'TODO') todo++
+        else if (s === 'IN_PROGRESS') inProgress++
+        else if (s === 'DONE') done++
+        else if (s === 'BLOCKED') blocked++
+
+        const isBm =
+          row.is_bookmarked ||
+          (row.description && row.description.includes('<!-- TICKET_BOOKMARKED -->'))
+        if (isBm) bookmarked++
+
+        const cat = (row.category || 'DEV').toUpperCase()
+        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1
+
+        const { version: embeddedVer } = extractVersion(row.description)
+        const ver = row.version || embeddedVer
+        if (ver) {
+          versionCounts[ver] = (versionCounts[ver] || 0) + 1
+        }
+
+        let resolvedTid = ''
+        if (row.ticket_id !== undefined && row.ticket_id !== null && String(row.ticket_id).trim() !== '') {
+          resolvedTid = String(row.ticket_id).trim().replace(/^#/, '')
+        } else {
+          const embedded = extractTicketRefId(row.description)
+          if (embedded) {
+            resolvedTid = embedded.replace(/^#/, '')
+          } else {
+            resolvedTid = String(1000 + idx + 1)
+          }
+        }
+        if (resolvedTid && !ticketIdList.includes(resolvedTid)) {
+          ticketIdList.push(resolvedTid)
+        }
+      })
+
+      // Sort ticket IDs descending numerically (so newest e.g. 1039, 1038 are first)
+      ticketIdList.sort((a, b) => {
+        const numA = parseInt(a, 10)
+        const numB = parseInt(b, 10)
+        if (!isNaN(numA) && !isNaN(numB)) return numB - numA
+        return b.localeCompare(a)
+      })
+
+      return {
+        total: rawRows.length,
+        todo,
+        inProgress,
+        done,
+        blocked,
+        bookmarked,
+        categoryCountsJson: JSON.stringify(categoryCounts),
+        versionCountsJson: JSON.stringify(versionCounts),
+        ticketIdsJson: JSON.stringify(ticketIdList),
+      }
+    },
+
+    allTicketIds: async (
+      _: unknown,
+      args: { projectName?: string; userEmail?: string },
+      context?: GraphQLContext
+    ) => {
+      const userEmail = resolveTargetEmail(args.userEmail, context)
+      if (!userEmail) return []
+      const prefix = userEmail.split('@')[0]
+
+      let query = supabase
+        .from('tickets')
+        .select('ticket_id, description, created_at')
+        .order('created_at', { ascending: false })
 
       if (userEmail === 'admin@ticketflow.io') {
         query = query.or(
@@ -646,37 +835,29 @@ const resolvers = {
       }
 
       const { data, error } = await query
-      if (error || !data) {
-        return { total: 0, todo: 0, inProgress: 0, done: 0, blocked: 0, bookmarked: 0 }
-      }
+      if (error || !data) return []
 
-      let todo = 0
-      let inProgress = 0
-      let done = 0
-      let blocked = 0
-      let bookmarked = 0
+      const idSet = new Set<string>()
+      data.forEach((r: any, idx: number) => {
+        let tid = ''
+        if (r.ticket_id && String(r.ticket_id).trim()) {
+          tid = String(r.ticket_id).trim().replace(/^#/, '')
+        } else {
+          const embedded = extractTicketRefId(r.description)
+          if (embedded) tid = embedded.replace(/^#/, '')
+          else tid = String(1000 + idx + 1)
+        }
+        if (tid) idSet.add(tid)
+      })
 
-      for (const row of data) {
-        const s = (row.status || '').toUpperCase()
-        if (s === 'TODO') todo++
-        else if (s === 'IN_PROGRESS') inProgress++
-        else if (s === 'DONE') done++
-        else if (s === 'BLOCKED') blocked++
-
-        const isBm =
-          row.is_bookmarked ||
-          (row.description && row.description.includes('<!-- TICKET_BOOKMARKED -->'))
-        if (isBm) bookmarked++
-      }
-
-      return {
-        total: data.length,
-        todo,
-        inProgress,
-        done,
-        blocked,
-        bookmarked,
-      }
+      const ids = Array.from(idSet)
+      ids.sort((a, b) => {
+        const numA = parseInt(a, 10)
+        const numB = parseInt(b, 10)
+        if (!isNaN(numA) && !isNaN(numB)) return numB - numA
+        return b.localeCompare(a)
+      })
+      return ids
     },
 
     projects: async (
@@ -1381,7 +1562,7 @@ const resolvers = {
           const { data: matched } = await supabase
             .from('tickets')
             .select('id')
-            .or(`ticket_id.eq.${id},id.ilike.${id}%`)
+            .eq('ticket_id', id)
             .limit(1)
           if (matched && matched[0]) {
             targetId = matched[0].id

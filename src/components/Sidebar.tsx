@@ -141,6 +141,7 @@ interface SidebarProps {
 
   // Ticket ID Filter
   ticketIdFilter?: string
+  availableTicketIds?: string[]
   onSelectTicketIdFilter?: (id: string) => void
   onClearTicketIdFilter?: () => void
 
@@ -237,6 +238,7 @@ export function Sidebar({
   onSelectToDate,
   onClearDateRange,
   ticketIdFilter = '',
+  availableTicketIds = [],
   onSelectTicketIdFilter,
   onClearTicketIdFilter,
   theme,
@@ -291,6 +293,38 @@ export function Sidebar({
   const isTicketTab = activeTab === 'inbox' || activeTab === 'dashboard' || activeTab === 'board'
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
+  const ticketIdInputRef = useRef<HTMLInputElement>(null)
+  const ticketIdContainerRef = useRef<HTMLDivElement>(null)
+
+  const [typedTicketId, setTypedTicketId] = useState(ticketIdFilter || '')
+  const [isTicketListOpen, setIsTicketListOpen] = useState(false)
+
+  useEffect(() => {
+    setTypedTicketId(ticketIdFilter || '')
+  }, [ticketIdFilter])
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        ticketIdContainerRef.current &&
+        !ticketIdContainerRef.current.contains(event.target as Node)
+      ) {
+        setIsTicketListOpen(false)
+      }
+    }
+    if (isTicketListOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isTicketListOpen])
+
+  const filteredSidebarTicketIds = useMemo(() => {
+    const clean = typedTicketId.trim().replace(/^#/, '').toLowerCase()
+    if (!clean) return availableTicketIds
+    return availableTicketIds.filter((id) => id.toLowerCase().includes(clean))
+  }, [availableTicketIds, typedTicketId])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1182,12 +1216,16 @@ export function Sidebar({
               /* Ticket Specific Filters (Inbox, Dashboard, Board) */
               <>
                 {/* Ticket ID Filter */}
-                <div>
+                <div ref={ticketIdContainerRef} className="relative">
                   <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Ticket ID Filter</span>
                     {ticketIdFilter && onClearTicketIdFilter && (
                       <button
-                        onClick={onClearTicketIdFilter}
+                        onClick={() => {
+                          setTypedTicketId('')
+                          setIsTicketListOpen(false)
+                          onClearTicketIdFilter()
+                        }}
                         className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
                       >
                         Reset
@@ -1197,21 +1235,46 @@ export function Sidebar({
                   <div className="relative">
                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#86868b] font-semibold select-none pointer-events-none">#</span>
                     <input
+                      ref={ticketIdInputRef}
                       type="text"
-                      placeholder="Filter by ID (e.g. 1035)"
-                      value={ticketIdFilter}
-                      onChange={(e) => onSelectTicketIdFilter?.(e.target.value)}
+                      placeholder="Filter by ID (e.g. 101)"
+                      value={typedTicketId}
+                      onFocus={() => setIsTicketListOpen(true)}
+                      onClick={() => setIsTicketListOpen(true)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/^#/, '')
+                        setTypedTicketId(val)
+                        setIsTicketListOpen(true)
+                      }}
                       onKeyDown={(e) => {
-                        if (e.key === 'Escape') {
-                          onClearTicketIdFilter?.()
+                        if (e.key === 'Enter') {
+                          const clean = typedTicketId.trim().replace(/^#/, '')
+                          if (clean) {
+                            const exactMatch = availableTicketIds.find((id) => id.toLowerCase() === clean.toLowerCase())
+                            const targetId = exactMatch || filteredSidebarTicketIds[0] || clean
+                            onSelectTicketIdFilter?.(targetId)
+                            setTypedTicketId(targetId)
+                            setIsTicketListOpen(false)
+                          }
+                        } else if (e.key === 'Escape') {
+                          setIsTicketListOpen(false)
+                          if (ticketIdFilter) {
+                            onClearTicketIdFilter?.()
+                            setTypedTicketId('')
+                          }
                         }
                       }}
-                      className={`w-full h-9 pl-6 pr-6 py-1.5 rounded-[10px] text-xs font-mono border outline-none transition-all duration-150 ${inputBg}`}
+                      className={`w-full h-9 pl-6 pr-7 py-1.5 rounded-[10px] text-xs font-mono border outline-none transition-all duration-150 ${inputBg}`}
+                      autoComplete="off"
                     />
-                    {ticketIdFilter && onClearTicketIdFilter && (
+                    {typedTicketId || ticketIdFilter ? (
                       <button
                         type="button"
-                        onClick={onClearTicketIdFilter}
+                        onClick={() => {
+                          setTypedTicketId('')
+                          setIsTicketListOpen(false)
+                          onClearTicketIdFilter?.()
+                        }}
                         className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white transition cursor-pointer"
                         title="Clear ID filter"
                       >
@@ -1220,8 +1283,71 @@ export function Sidebar({
                           <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
                       </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsTicketListOpen((prev) => !prev)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white transition cursor-pointer"
+                        title="Show available ticket IDs"
+                      >
+                        <svg className={`w-3.5 h-3.5 opacity-60 transition-transform duration-150 ${isTicketListOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
                     )}
                   </div>
+
+                  {/* Matching IDs Dropdown List in Sidebar */}
+                  {isTicketListOpen && (
+                    <div className={`mt-1.5 max-h-48 overflow-y-auto rounded-[10px] p-1 border shadow-md space-y-0.5 custom-scrollbar ${
+                      isDark ? 'bg-[#18181b] border-white/[0.08]' : 'bg-white border-[#e5e5ea]'
+                    }`}>
+                      <div className="px-2 py-1 text-[10px] font-semibold text-[#86868b] uppercase tracking-wider flex items-center justify-between">
+                        <span>Matching IDs ({filteredSidebarTicketIds.length})</span>
+                        {ticketIdFilter && (
+                          <span className="text-[10px] text-[#0071e3] dark:text-[#2997ff]">
+                            Active: #{ticketIdFilter}
+                          </span>
+                        )}
+                      </div>
+                      {filteredSidebarTicketIds.length === 0 ? (
+                        <div className="px-2.5 py-3 text-center text-xs text-[#86868b]">
+                          No ticket ID matching &quot;{typedTicketId}&quot;
+                        </div>
+                      ) : (
+                        filteredSidebarTicketIds.map((id) => {
+                          const isSelected = ticketIdFilter === id
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => {
+                                onSelectTicketIdFilter?.(id)
+                                setTypedTicketId(id)
+                                setIsTicketListOpen(false)
+                              }}
+                              className={`w-full px-2.5 py-1.5 rounded-[8px] flex items-center justify-between text-xs font-mono transition cursor-pointer active:scale-[0.99] ${
+                                isSelected ? itemActive : itemHover
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span className="opacity-50">#</span>
+                                <span className={isSelected ? 'font-semibold' : ''}>{id}</span>
+                              </div>
+                              {isSelected && (
+                                <span className="text-[11px] text-[#0071e3] dark:text-[#2997ff] font-sans font-medium flex items-center gap-1">
+                                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                  <span>Active</span>
+                                </span>
+                              )}
+                            </button>
+                          )
+                        })
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Version Filter — Only on ticket tabs */}
@@ -1286,9 +1412,14 @@ export function Sidebar({
                                 isSelected ? itemActive : itemHover
                               }`}
                             >
-                              <span className={`font-mono text-xs ${isSelected ? 'font-semibold' : ''}`}>
-                                {ver}
-                              </span>
+                              <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1">
+                                {isSelected && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                                )}
+                                <span className={`font-mono text-xs truncate ${isSelected ? 'font-semibold' : ''}`}>
+                                  {ver}
+                                </span>
+                              </div>
                               <span className={countBadge(isSelected)}>
                                 {count}
                               </span>
@@ -1333,9 +1464,14 @@ export function Sidebar({
                             isSelected ? itemActive : itemHover
                           }`}
                         >
-                          <span className={isSelected ? 'font-semibold' : ''}>
-                            {item.label}
-                          </span>
+                          <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1">
+                            {isSelected && item.id !== 'ALL' && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                            )}
+                            <span className={isSelected ? 'font-semibold' : ''}>
+                              {item.label}
+                            </span>
+                          </div>
                           <span className={countBadge(isSelected)}>
                             {item.count}
                           </span>
@@ -1375,7 +1511,7 @@ export function Sidebar({
                           onClick={() => {
                             onSelectPriority(item.id as TicketPriority | 'ALL')
                           }}
-                          className={`px-2.5 py-1.5 rounded-[10px] text-xs font-medium transition cursor-pointer flex items-center justify-center border active:scale-[0.98] ${
+                          className={`px-2.5 py-1.5 rounded-[10px] text-xs font-medium transition cursor-pointer flex items-center justify-center gap-1.5 border active:scale-[0.98] ${
                             item.fullWidth ? 'col-span-2' : ''
                           } ${
                             isSelected
@@ -1385,6 +1521,9 @@ export function Sidebar({
                               : 'bg-white border-[#e5e5ea] text-[#515154] hover:text-[#1d1d1f] hover:bg-[#fafafc] shadow-2xs'
                           }`}
                         >
+                          {isSelected && item.id !== 'ALL' && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                          )}
                           <span>{item.label}</span>
                         </button>
                       )
@@ -1428,7 +1567,12 @@ export function Sidebar({
                               : 'bg-white border-[#e5e5ea] text-[#515154] hover:text-[#1d1d1f] hover:bg-[#fafafc] shadow-2xs'
                           }`}
                         >
-                          <span className="truncate">{isAll ? 'All Categories' : item.label}</span>
+                          <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1">
+                            {isSelected && !isAll && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                            )}
+                            <span className="truncate">{isAll ? 'All Categories' : item.label}</span>
+                          </div>
                           {typeof count === 'number' && (
                             <span className={countBadge(isSelected)}>
                               {count}
@@ -1455,7 +1599,18 @@ export function Sidebar({
                   </div>
                   <div className="space-y-1.5">
                     <div>
-                      <span className="block text-[11px] font-medium text-[#86868b] mb-1">From Date</span>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] font-medium text-[#86868b]">From Date</span>
+                        {fromDate && (
+                          <button
+                            type="button"
+                            onClick={() => onSelectFromDate('')}
+                            className="text-[10px] text-[#86868b] hover:text-[#ff453a] cursor-pointer"
+                          >
+                            Reset
+                          </button>
+                        )}
+                      </div>
                       <input
                         type="date"
                         value={fromDate}
@@ -1464,7 +1619,18 @@ export function Sidebar({
                       />
                     </div>
                     <div>
-                      <span className="block text-[11px] font-medium text-[#86868b] mb-1">To Date</span>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] font-medium text-[#86868b]">To Date</span>
+                        {toDate && (
+                          <button
+                            type="button"
+                            onClick={() => onSelectToDate('')}
+                            className="text-[10px] text-[#86868b] hover:text-[#ff453a] cursor-pointer"
+                          >
+                            Reset
+                          </button>
+                        )}
+                      </div>
                       <input
                         type="date"
                         value={toDate}

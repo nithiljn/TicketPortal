@@ -52,6 +52,7 @@ export function ExpenseModal({
   const isDark = theme === 'dark'
   const todayStr = new Date().toISOString().split('T')[0]
   const prevExpenseIdRef = React.useRef<string | null>(null)
+  const prevOpenRef = React.useRef(false)
 
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
@@ -166,24 +167,34 @@ export function ExpenseModal({
   }
 
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
+      prevOpenRef.current = false
+      prevExpenseIdRef.current = null
+      return
+    }
+
+    const wasClosed = !prevOpenRef.current
+    prevOpenRef.current = true
+
+    if (wasClosed) {
+      // Modal just opened: initialize form fields once
       setShowCalculator(false)
       setCalcExpression('')
       setCalcResult(null)
+      setErrorMessage('')
+      setIsAddingCategory(false)
+      setNewCatName('')
+
       if (expense) {
-        if (expense.id !== prevExpenseIdRef.current) {
-          prevExpenseIdRef.current = expense.id
-          setTitle(expense.title)
-          setAmount(String(expense.amount))
-          setCurrency(expense.currency || 'INR')
-          setCategory(expense.category)
-          setDate(expense.date || todayStr)
-          setPaymentMethod((expense.paymentMethod as PaymentMethod) || 'UPI')
-          setProjectName(expense.projectName || 'General')
-          setNotes(expense.notes || '')
-        } else if (expense.notes && !notes) {
-          setNotes(expense.notes)
-        }
+        prevExpenseIdRef.current = expense.id
+        setTitle(expense.title || '')
+        setAmount(expense.amount !== undefined && expense.amount !== null ? String(expense.amount) : '')
+        setCurrency(expense.currency || 'INR')
+        setCategory(expense.category || categories[0] || 'Food & Dining')
+        setDate(expense.date || todayStr)
+        setPaymentMethod((expense.paymentMethod as PaymentMethod) || 'UPI')
+        setProjectName(expense.projectName || 'General')
+        setNotes(expense.notes || '')
       } else {
         prevExpenseIdRef.current = null
         setTitle('')
@@ -199,13 +210,26 @@ export function ExpenseModal({
         setProjectName(initialWs)
         setNotes('')
       }
-      setErrorMessage('')
-      setIsAddingCategory(false)
-      setNewCatName('')
     } else {
-      prevExpenseIdRef.current = null
+      // Modal is already open: only react if expense prop changes
+      if (expense) {
+        if (expense.id !== prevExpenseIdRef.current) {
+          prevExpenseIdRef.current = expense.id
+          setTitle(expense.title || '')
+          setAmount(expense.amount !== undefined && expense.amount !== null ? String(expense.amount) : '')
+          setCurrency(expense.currency || 'INR')
+          setCategory(expense.category || categories[0] || 'Food & Dining')
+          setDate(expense.date || todayStr)
+          setPaymentMethod((expense.paymentMethod as PaymentMethod) || 'UPI')
+          setProjectName(expense.projectName || 'General')
+          setNotes(expense.notes || '')
+        } else if (expense.notes !== undefined && expense.notes !== null) {
+          // If notes arrived asynchronously for the same expense being edited
+          setNotes((currentNotes) => (currentNotes ? currentNotes : (expense.notes || '')))
+        }
+      }
     }
-  }, [isOpen, expense, categories, availableProjects, currentWorkspace, todayStr, notes])
+  }, [isOpen, expense, categories, availableProjects, currentWorkspace, todayStr])
 
   if (!isOpen) return null
 

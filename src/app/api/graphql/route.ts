@@ -1,5 +1,12 @@
 import { createSchema, createYoga } from 'graphql-yoga'
 import { supabase } from '@/lib/supabase'
+import { redis } from '@/lib/redis'
+import { createHash } from 'crypto'
+
+function getAuthCacheKey(token: string): string {
+  const hash = createHash('sha256').update(token).digest('hex').substring(0, 32)
+  return `auth:${hash}`
+}
 
 // 1. GraphQL Type Definitions (Schema)
 const typeDefs = /* GraphQL */ `
@@ -2189,24 +2196,67 @@ const { handleRequest } = createYoga<GraphQLContext>({
   fetchAPI: { Response },
   graphiql: process.env.NODE_ENV === 'development',
   maskedErrors: false,
-  context: async ({ request }) => {
+  plugins: [
+    {
+      onResponse({ response, serverContext }) {
+        if ((serverContext as any)?.authCacheStatus) {
+          response.headers.set('X-Auth-Cache', (serverContext as any).authCacheStatus)
+        }
+      },
+    },
+  ],
+  context: async (ctx: any) => {
+    const request = ctx.request as Request
     const authHeader = request.headers.get('authorization')
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7).trim()
+      const cacheKey = getAuthCacheKey(token)
+
+      // 1. Check verified user session in Upstash Redis (< 15ms)
+      if (redis) {
+        try {
+          const t0 = Date.now()
+          const cachedUser = await redis.get<{ id: string; email: string }>(cacheKey)
+          if (cachedUser && cachedUser.id && cachedUser.email) {
+            const duration = Date.now() - t0
+            ctx.authCacheStatus = `HIT (${duration}ms)`
+            console.log(`⚡ [REDIS AUTH HIT] User verified from Redis in ${duration}ms:`, cachedUser.email)
+            return {
+              currentUser: cachedUser,
+            }
+          }
+        } catch (cacheErr) {
+          console.warn('Redis auth cache lookup error (fallback to Supabase):', cacheErr)
+        }
+      }
+
+      // 2. Cache miss: verify against Supabase Auth (150-300ms)
       try {
+        const t0 = Date.now()
         const { data, error } = await supabase.auth.getUser(token)
         if (!error && data?.user?.email) {
-          return {
-            currentUser: {
-              id: data.user.id,
-              email: data.user.email.toLowerCase(),
-            },
+          const duration = Date.now() - t0
+          ctx.authCacheStatus = `MISS (${duration}ms)`
+          console.log(`🐢 [SUPABASE AUTH MISS] User verified from Supabase in ${duration}ms:`, data.user.email)
+          const currentUser = {
+            id: data.user.id,
+            email: data.user.email.toLowerCase(),
           }
+
+          // 3. Cache valid session in Redis for 15 minutes (900 seconds)
+          if (redis) {
+            redis.set(cacheKey, currentUser, { ex: 900 }).catch((setErr) => {
+              console.warn('Failed to cache auth user in Redis:', setErr)
+            })
+          }
+
+          return { currentUser }
         }
       } catch (err) {
         console.warn('Supabase token verification error:', err)
       }
     }
+    ctx.authCacheStatus = 'ANONYMOUS'
     return { currentUser: null }
   },
 })

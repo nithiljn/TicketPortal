@@ -616,6 +616,60 @@ function applyTicketFilters(query: any, args: TicketFilterArgs, userEmail: strin
   return query
 }
 
+function getArgsHash(args: Record<string, any>): string {
+  const sortedKeys = Object.keys(args).sort()
+  const parts: string[] = []
+  for (const k of sortedKeys) {
+    const val = args[k]
+    if (val === undefined || val === null || val === '') continue
+    if (Array.isArray(val)) {
+      if (val.length === 0) continue
+      parts.push(`${k}=[${[...val].sort().join(',')}]`)
+    } else {
+      parts.push(`${k}=${String(val)}`)
+    }
+  }
+  return parts.length > 0 ? parts.join('&') : 'all'
+}
+
+function getTicketInboxCacheKey(userEmail: string, args: TicketFilterArgs): string {
+  const cleanEmail = userEmail.toLowerCase().trim()
+  const argsHash = getArgsHash(args as Record<string, any>)
+  return `tickets:${cleanEmail}:${argsHash}`
+}
+
+async function bustUserTicketCache(userEmail?: string | null) {
+  if (!redis || !userEmail) return
+  const cleanEmail = userEmail.toLowerCase().trim()
+  const emailsToClear = [cleanEmail]
+  if (
+    cleanEmail === 'admin@ticketflow.io' ||
+    cleanEmail === 'james nithil' ||
+    cleanEmail === 'nithil'
+  ) {
+    emailsToClear.push('admin@ticketflow.io', 'james nithil', 'nithil')
+  }
+
+  const uniqueEmails = Array.from(new Set(emailsToClear))
+  for (const email of uniqueEmails) {
+    try {
+      const patterns = [
+        `tickets:${email}:*`,
+        `ticket_count:${email}:*`,
+        `ticket_ids:${email}:*`,
+      ]
+      for (const pattern of patterns) {
+        const keys = await redis.keys(pattern)
+        if (keys && keys.length > 0) {
+          await redis.del(...keys)
+        }
+      }
+    } catch (err) {
+      console.warn(`Redis ticket cache bust error for ${email}:`, err)
+    }
+  }
+}
+
 // 2. Resolvers: Connect to Supabase PostgreSQL Database!
 const resolvers = {
   Query: {
@@ -629,6 +683,28 @@ const resolvers = {
         return []
       }
 
+      const cacheKey = getTicketInboxCacheKey(userEmail, args)
+
+      // 1. Try reading tickets from Upstash Redis (< 20ms)
+      if (redis) {
+        try {
+          const t0 = Date.now()
+          const cached = await redis.get<any[]>(cacheKey)
+          if (cached && Array.isArray(cached)) {
+            const duration = Date.now() - t0
+            console.log(`⚡ [REDIS TICKETS HIT] ${cached.length} tickets from Redis in ${duration}ms for ${userEmail}`)
+            if (context) {
+              ;(context as any).ticketsCacheStatus = `HIT (${duration}ms)`
+            }
+            return cached
+          }
+        } catch (err) {
+          console.warn('Redis tickets cache lookup error (fallback to Supabase):', err)
+        }
+      }
+
+      // 2. Cache miss: Fetch from Supabase
+      const t0 = Date.now()
       let query = supabase
         .from('tickets')
         .select('*')
@@ -656,7 +732,21 @@ const resolvers = {
         seqMap.set(r.id, idx + 1)
       })
 
-      return rawRows.map((r) => formatTicket(r, seqMap.get(r.id)))
+      const formatted = rawRows.map((r) => formatTicket(r, seqMap.get(r.id)))
+      const duration = Date.now() - t0
+      console.log(`🐢 [SUPABASE TICKETS MISS] ${formatted.length} tickets from Supabase in ${duration}ms for ${userEmail}`)
+      if (context) {
+        ;(context as any).ticketsCacheStatus = `MISS (${duration}ms)`
+      }
+
+      // 3. Cache in Redis for 1 day (86400s)
+      if (redis) {
+        redis.set(cacheKey, formatted, { ex: 86400 }).catch((setErr) => {
+          console.warn('Failed to cache tickets in Redis:', setErr)
+        })
+      }
+
+      return formatted
     },
 
     ticketsCount: async (
@@ -667,6 +757,21 @@ const resolvers = {
       const userEmail = resolveTargetEmail(args.userEmail, context)
       if (!userEmail) return 0
 
+      const cacheKey = `ticket_count:${userEmail.toLowerCase().trim()}:${getArgsHash(args as Record<string, any>)}`
+
+      // 1. Try reading count from Redis
+      if (redis) {
+        try {
+          const cached = await redis.get<number>(cacheKey)
+          if (cached !== null && typeof cached === 'number') {
+            return cached
+          }
+        } catch (err) {
+          console.warn('Redis ticketsCount cache lookup error:', err)
+        }
+      }
+
+      // 2. Fetch count from Supabase
       let query = supabase
         .from('tickets')
         .select('id', { count: 'exact', head: true })
@@ -678,7 +783,16 @@ const resolvers = {
         console.error('Supabase ticketsCount error:', error)
         return 0
       }
-      return count || 0
+      const finalCount = count || 0
+
+      // 3. Cache count in Redis for 1 day
+      if (redis) {
+        redis.set(cacheKey, finalCount, { ex: 86400 }).catch((setErr) => {
+          console.warn('Failed to cache ticket count in Redis:', setErr)
+        })
+      }
+
+      return finalCount
     },
 
     ticketStats: async (
@@ -820,6 +934,19 @@ const resolvers = {
     ) => {
       const userEmail = resolveTargetEmail(args.userEmail, context)
       if (!userEmail) return []
+
+      const cacheKey = `ticket_ids:${userEmail.toLowerCase().trim()}:${args.projectName || 'ALL'}`
+      if (redis) {
+        try {
+          const cached = await redis.get<string[]>(cacheKey)
+          if (cached && Array.isArray(cached)) {
+            return cached
+          }
+        } catch (err) {
+          console.warn('Redis allTicketIds lookup error:', err)
+        }
+      }
+
       const prefix = userEmail.split('@')[0]
 
       let query = supabase
@@ -864,6 +991,13 @@ const resolvers = {
         if (!isNaN(numA) && !isNaN(numB)) return numB - numA
         return b.localeCompare(a)
       })
+
+      if (redis) {
+        redis.set(cacheKey, ids, { ex: 86400 }).catch((setErr) => {
+          console.warn('Failed to cache allTicketIds in Redis:', setErr)
+        })
+      }
+
       return ids
     },
 
@@ -1534,8 +1668,10 @@ const resolvers = {
           console.error('Supabase createTicket fallback error:', fbError)
           throw new Error(fbError.message)
         }
+        await bustUserTicketCache(basePayload.created_by as string)
         return formatTicket(fbData as TicketRow)
       }
+      await bustUserTicketCache(basePayload.created_by as string)
       return formatTicket(data as TicketRow)
     },
 
@@ -1643,12 +1779,14 @@ const resolvers = {
           .single()
 
         if (!fbError && fbData) {
+          await bustUserTicketCache(input.updatedBy || null)
           return formatTicket(fbData as TicketRow)
         }
 
         console.error('Supabase updateTicket fallback error:', fbError || error)
         throw new Error(fbError?.message || error.message)
       }
+      await bustUserTicketCache(input.updatedBy || null)
       return formatTicket(data as TicketRow)
     },
 
@@ -1683,6 +1821,7 @@ const resolvers = {
         .single()
 
       if (!error && data) {
+        await bustUserTicketCache(currentRow.created_by)
         return formatTicket(data as TicketRow)
       }
 
@@ -1699,6 +1838,7 @@ const resolvers = {
         throw new Error(fbError?.message || 'Failed to update bookmark')
       }
 
+      await bustUserTicketCache(currentRow.created_by)
       return formatTicket(fbData as TicketRow)
     },
 
@@ -1728,6 +1868,7 @@ const resolvers = {
         console.error('Supabase deleteTicket error:', error)
         throw new Error(error.message)
       }
+      await bustUserTicketCache(email)
       return true
     },
 
@@ -2201,6 +2342,9 @@ const { handleRequest } = createYoga<GraphQLContext>({
       onResponse({ response, serverContext }) {
         if ((serverContext as any)?.authCacheStatus) {
           response.headers.set('X-Auth-Cache', (serverContext as any).authCacheStatus)
+        }
+        if ((serverContext as any)?.ticketsCacheStatus) {
+          response.headers.set('X-Tickets-Cache', (serverContext as any).ticketsCacheStatus)
         }
       },
     },

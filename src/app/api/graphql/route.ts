@@ -670,6 +670,44 @@ async function bustUserTicketCache(userEmail?: string | null) {
   }
 }
 
+function getExpenseListCacheKey(userEmail: string, args: Record<string, any>): string {
+  const cleanEmail = userEmail.toLowerCase().trim()
+  const argsHash = getArgsHash(args)
+  return `expenses:${cleanEmail}:${argsHash}`
+}
+
+async function bustUserExpenseCache(userEmail?: string | null) {
+  if (!redis || !userEmail) return
+  const cleanEmail = userEmail.toLowerCase().trim()
+  const emailsToClear = [cleanEmail]
+  if (
+    cleanEmail === 'admin@ticketflow.io' ||
+    cleanEmail === 'james nithil' ||
+    cleanEmail === 'nithil'
+  ) {
+    emailsToClear.push('admin@ticketflow.io', 'james nithil', 'nithil')
+  }
+
+  const uniqueEmails = Array.from(new Set(emailsToClear))
+  for (const email of uniqueEmails) {
+    try {
+      const patterns = [
+        `expenses:${email}:*`,
+        `expense_cats:${email}*`,
+        `expense_months:${email}:*`,
+      ]
+      for (const pattern of patterns) {
+        const keys = await redis.keys(pattern)
+        if (keys && keys.length > 0) {
+          await redis.del(...keys)
+        }
+      }
+    } catch (err) {
+      console.warn(`Redis expense cache bust error for ${email}:`, err)
+    }
+  }
+}
+
 // 2. Resolvers: Connect to Supabase PostgreSQL Database!
 const resolvers = {
   Query: {
@@ -1340,6 +1378,36 @@ const resolvers = {
       if (!email) {
         return []
       }
+
+      const cacheKey = getExpenseListCacheKey(email, {
+        projectName,
+        category,
+        paymentMethod,
+        month,
+        search,
+        limit,
+        offset,
+      })
+
+      // 1. Try reading expenses from Upstash Redis (< 20ms)
+      if (redis) {
+        try {
+          const t0 = Date.now()
+          const cached = await redis.get<any[]>(cacheKey)
+          if (cached && Array.isArray(cached)) {
+            const duration = Date.now() - t0
+            console.log(`⚡ [REDIS EXPENSES HIT] ${cached.length} expenses from Redis in ${duration}ms for ${email}`)
+            if (context) {
+              ;(context as any).expensesCacheStatus = `HIT (${duration}ms)`
+            }
+            return cached
+          }
+        } catch (err) {
+          console.warn('Redis expenses cache lookup error (fallback to Supabase):', err)
+        }
+      }
+
+      const t0 = Date.now()
       const prefix = email.split('@')[0]
 
       try {
@@ -1428,6 +1496,19 @@ const resolvers = {
           )
         }
 
+        const duration = Date.now() - t0
+        console.log(`🐢 [SUPABASE EXPENSES MISS] ${results.length} expenses from Supabase in ${duration}ms for ${email}`)
+        if (context) {
+          ;(context as any).expensesCacheStatus = `MISS (${duration}ms)`
+        }
+
+        // Cache in Redis for 1 day (86400s)
+        if (redis) {
+          redis.set(cacheKey, results, { ex: 86400 }).catch((setErr) => {
+            console.warn('Failed to cache expenses in Redis:', setErr)
+          })
+        }
+
         return results
       } catch (err) {
         console.warn('Expenses query error:', err)
@@ -1440,13 +1521,24 @@ const resolvers = {
       { userEmail }: { userEmail?: string },
       context?: GraphQLContext
     ) => {
-      const categorySet = new Set<string>(DEFAULT_EXPENSE_CATEGORIES)
       const email = resolveTargetEmail(userEmail, context)
-
       if (!email) {
-        return Array.from(categorySet)
+        return DEFAULT_EXPENSE_CATEGORIES
       }
 
+      const cacheKey = `expense_cats:${email.toLowerCase().trim()}`
+      if (redis) {
+        try {
+          const cached = await redis.get<string[]>(cacheKey)
+          if (cached && Array.isArray(cached)) {
+            return cached
+          }
+        } catch (err) {
+          console.warn('Redis expenseCategories lookup error:', err)
+        }
+      }
+
+      const categorySet = new Set<string>(DEFAULT_EXPENSE_CATEGORIES)
       const prefix = email.split('@')[0]
 
       // 1. Fetch custom categories from expense_categories table
@@ -1494,7 +1586,15 @@ const resolvers = {
       }
 
       fallbackCategories.forEach((c) => categorySet.add(c))
-      return Array.from(categorySet)
+      const result = Array.from(categorySet)
+
+      if (redis) {
+        redis.set(cacheKey, result, { ex: 86400 }).catch((setErr) => {
+          console.warn('Failed to cache expenseCategories in Redis:', setErr)
+        })
+      }
+
+      return result
     },
 
     expenseMonths: async (
@@ -1508,14 +1608,27 @@ const resolvers = {
       },
       context?: GraphQLContext
     ) => {
+      const email = resolveTargetEmail(userEmail, context)
+      if (!email) {
+        const now = new Date()
+        return [`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`]
+      }
+
+      const cacheKey = `expense_months:${email.toLowerCase().trim()}:${projectName || 'ALL'}`
+      if (redis) {
+        try {
+          const cached = await redis.get<string[]>(cacheKey)
+          if (cached && Array.isArray(cached)) {
+            return cached
+          }
+        } catch (err) {
+          console.warn('Redis expenseMonths lookup error:', err)
+        }
+      }
+
       const monthSet = new Set<string>()
       const now = new Date()
       monthSet.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
-
-      const email = resolveTargetEmail(userEmail, context)
-      if (!email) {
-        return Array.from(monthSet).sort().reverse()
-      }
 
       const prefix = email.split('@')[0]
       try {
@@ -1554,7 +1667,15 @@ const resolvers = {
         }
       })
 
-      return Array.from(monthSet).sort().reverse()
+      const result = Array.from(monthSet).sort().reverse()
+
+      if (redis) {
+        redis.set(cacheKey, result, { ex: 86400 }).catch((setErr) => {
+          console.warn('Failed to cache expenseMonths in Redis:', setErr)
+        })
+      }
+
+      return result
     },
   },
 
@@ -2074,6 +2195,12 @@ const resolvers = {
       } catch (err) {
         console.warn('Workspaces table delete notice:', err)
       }
+
+      if (email) {
+        await bustUserTicketCache(email)
+        await bustUserExpenseCache(email)
+      }
+
       return true
     },
 
@@ -2134,9 +2261,11 @@ const resolvers = {
             updatedAt: new Date().toISOString(),
           }
           fallbackExpenses.unshift(fallback)
+          await bustUserExpenseCache(author)
           return fallback
         }
 
+        await bustUserExpenseCache(author)
         return formatExpense(data as ExpenseRow)
       } catch (err) {
         console.warn('createExpense exception fallback:', err)
@@ -2155,6 +2284,7 @@ const resolvers = {
           updatedAt: new Date().toISOString(),
         }
         fallbackExpenses.unshift(fallback)
+        await bustUserExpenseCache(author)
         return fallback
       }
     },
@@ -2222,10 +2352,12 @@ const resolvers = {
               ...input,
               updatedAt: new Date().toISOString(),
             }
+            await bustUserExpenseCache(email)
             return fallbackExpenses[idx]
           }
           throw new Error(error.message)
         }
+        await bustUserExpenseCache(email)
         return formatExpense(data as ExpenseRow)
       } catch (err) {
         console.warn('updateExpense exception fallback:', err)
@@ -2236,6 +2368,7 @@ const resolvers = {
             ...input,
             updatedAt: new Date().toISOString(),
           }
+          await bustUserExpenseCache(email)
           return fallbackExpenses[idx]
         }
         throw new Error('Failed to update expense')
@@ -2269,10 +2402,12 @@ const resolvers = {
           console.warn('deleteExpense fallback:', error.message)
         }
         fallbackExpenses = fallbackExpenses.filter((e) => e.id !== id)
+        await bustUserExpenseCache(email)
         return true
       } catch (err) {
         console.warn('deleteExpense exception fallback:', err)
         fallbackExpenses = fallbackExpenses.filter((e) => e.id !== id)
+        await bustUserExpenseCache(email)
         return true
       }
     },
@@ -2294,6 +2429,7 @@ const resolvers = {
         console.warn('createExpenseCategory notice:', err)
       }
       fallbackCategories.add(trimmed)
+      await bustUserExpenseCache(email)
       return trimmed
     },
 
@@ -2322,6 +2458,7 @@ const resolvers = {
         console.warn('deleteExpenseCategory notice:', err)
       }
       fallbackCategories.delete(name)
+      await bustUserExpenseCache(email)
       return true
     },
   },
@@ -2345,6 +2482,9 @@ const { handleRequest } = createYoga<GraphQLContext>({
         }
         if ((serverContext as any)?.ticketsCacheStatus) {
           response.headers.set('X-Tickets-Cache', (serverContext as any).ticketsCacheStatus)
+        }
+        if ((serverContext as any)?.expensesCacheStatus) {
+          response.headers.set('X-Expenses-Cache', (serverContext as any).expensesCacheStatus)
         }
       },
     },

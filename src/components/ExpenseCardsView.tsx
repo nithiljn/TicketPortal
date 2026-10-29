@@ -146,18 +146,6 @@ export function ExpenseCardsView({
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           </div>
-
-          <button
-            type="button"
-            onClick={onOpenCreateCard}
-            className="h-8.5 px-3.5 rounded-full text-xs font-semibold text-white bg-[#0071e3] hover:bg-[#0077ed] active:scale-95 transition shadow-sm cursor-pointer inline-flex items-center gap-1.5 shrink-0"
-          >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            <span>Create Card</span>
-          </button>
         </div>
       </div>
 
@@ -339,7 +327,7 @@ export function ExpenseCardsView({
                       </div>
                       <div className="text-right">
                         <span className="text-[10px] text-[#86868b] uppercase tracking-wider block">Remaining</span>
-                        <span className="font-semibold text-rose-500 font-mono text-sm">
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-100 font-mono text-sm">
                           {remainingMonths} {remainingMonths === 1 ? 'Month' : 'Months'}
                         </span>
                         <span className="text-[10px] text-[#86868b] block">

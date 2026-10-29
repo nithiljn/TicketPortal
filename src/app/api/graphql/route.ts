@@ -601,8 +601,12 @@ function computeEndDate(startDateStr: string, totalEmis: number): string {
   try {
     const [y, m, d] = startDateStr.split('-').map(Number)
     if (!y || !m || !d) return startDateStr
-    const dt = new Date(y, m - 1 + (Math.max(1, totalEmis) - 1), d)
-    return dt.toISOString().split('T')[0]
+    const totalM = (m - 1) + (Math.max(1, totalEmis) - 1)
+    const targetY = y + Math.floor(totalM / 12)
+    const targetM = (totalM % 12) + 1
+    const daysInMonth = new Date(targetY, targetM, 0).getDate()
+    const targetD = Math.min(d, daysInMonth)
+    return `${targetY}-${String(targetM).padStart(2, '0')}-${String(targetD).padStart(2, '0')}`
   } catch {
     return startDateStr
   }

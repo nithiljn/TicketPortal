@@ -2270,9 +2270,6 @@ export default function Home() {
   }
 
   const handleDeleteCard = async (card: Card) => {
-    if (!confirm(`Are you sure you want to delete card "${card.cardName}"? All recorded EMI payments will also be deleted.`)) {
-      return
-    }
     try {
       const mutation = /* GraphQL */ `
         mutation DeleteCard($id: ID!, $userEmail: String!) {

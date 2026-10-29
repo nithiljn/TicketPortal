@@ -139,8 +139,12 @@ function calculateEndDate(startDateStr: string, totalMonths: number): string {
   try {
     const [y, m, d] = startDateStr.split('-').map(Number)
     if (!y || !m || !d) return startDateStr
-    const dt = new Date(y, m - 1 + (Math.max(1, totalMonths) - 1), d)
-    return dt.toISOString().split('T')[0]
+    const totalM = (m - 1) + (Math.max(1, totalMonths) - 1)
+    const targetY = y + Math.floor(totalM / 12)
+    const targetM = (totalM % 12) + 1
+    const daysInMonth = new Date(targetY, targetM, 0).getDate()
+    const targetD = Math.min(d, daysInMonth)
+    return `${targetY}-${String(targetM).padStart(2, '0')}-${String(targetD).padStart(2, '0')}`
   } catch {
     return startDateStr
   }
@@ -227,6 +231,8 @@ export function CreateCardModal({
   const balanceValue = Math.max(0, totalLoanValue - totalPaidValue)
   const remainingMonthsCount = Math.max(0, (Number(totalEmis) || 0) - (Number(paidEmis) || 0))
   const computedBlockedLimit = Math.max(0, (Number(monthlyEmi) || 0) * remainingMonthsCount)
+  const totalCardLimitNum = Number(cardLimit) || 0
+  const computedAvailableLimit = Math.max(0, totalCardLimitNum - computedBlockedLimit)
 
   const handleBankChange = (newBank: string) => {
     setBankName(newBank)
@@ -557,7 +563,7 @@ export function CreateCardModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
-                Bank / Card Company *
+                Bank / Card Company <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <select
@@ -582,7 +588,7 @@ export function CreateCardModal({
             {bankName === 'Custom' ? (
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
-                  Custom Bank Name *
+                  Custom Bank Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -596,7 +602,7 @@ export function CreateCardModal({
             ) : (
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
-                  Card Name / Purpose *
+                  Card Name / Purpose <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -613,7 +619,7 @@ export function CreateCardModal({
           {bankName === 'Custom' && (
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
-                Card Name / Purpose *
+                Card Name / Purpose <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -673,7 +679,7 @@ export function CreateCardModal({
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
-                  Blocked by EMI (Auto)
+                  Available Card Limit (Auto)
                 </label>
                 <span className="text-[10px] font-medium text-emerald-500 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -683,17 +689,17 @@ export function CreateCardModal({
               <div
                 className={`w-full h-10 px-3.5 flex items-center justify-between rounded-xl border text-xs font-mono select-none ${inputBg} opacity-95`}
               >
-                <span className="font-semibold text-rose-500 dark:text-rose-400">
-                  ₹{computedBlockedLimit.toLocaleString()}
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">
+                  {totalCardLimitNum > 0 ? `₹${computedAvailableLimit.toLocaleString()}` : '—'}
                 </span>
-                <span className="text-[10px] text-[#86868b]">
-                  {Number(cardLimit) > 0
-                    ? `Avail: ₹${Math.max(0, Number(cardLimit) - computedBlockedLimit).toLocaleString()}`
-                    : `${remainingMonthsCount} mos remaining`}
+                <span className="text-[11px] text-[#86868b]">
+                  Blocked: ₹{computedBlockedLimit.toLocaleString()}
                 </span>
               </div>
               <p className="text-[10px] text-[#86868b] mt-1">
-                Active remaining liability auto-released as EMIs are paid.
+                {totalCardLimitNum > 0
+                  ? `Remaining limit to swipe (Total ₹${totalCardLimitNum.toLocaleString()} - EMI ₹${computedBlockedLimit.toLocaleString()})`
+                  : 'Enter total card limit to view available swiping balance.'}
               </p>
             </div>
           </div>
@@ -707,7 +713,7 @@ export function CreateCardModal({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
-                  Monthly EMI (₹) *
+                  Monthly EMI (₹) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -722,7 +728,7 @@ export function CreateCardModal({
 
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
-                  Total EMIs (Months) *
+                  Total EMIs (Months) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <select
@@ -762,7 +768,7 @@ export function CreateCardModal({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
-                  Start Date *
+                  Start Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -775,7 +781,7 @@ export function CreateCardModal({
 
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
-                  EMI Due Day (1-31) *
+                  EMI Due Day (1-31) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -815,7 +821,7 @@ export function CreateCardModal({
                 </div>
                 <div>
                   <span className="text-[#86868b]">Balance: </span>
-                  <span className="text-rose-500 font-mono font-medium">₹{balanceValue.toLocaleString()}</span>
+                  <span className="font-mono font-semibold text-zinc-900 dark:text-zinc-100">₹{balanceValue.toLocaleString()}</span>
                 </div>
               </div>
             )}

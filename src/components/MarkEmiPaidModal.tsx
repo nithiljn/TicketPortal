@@ -144,7 +144,7 @@ export function MarkEmiPaidModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
-                Amount Paid (₹) *
+                Amount Paid (₹) <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -157,7 +157,7 @@ export function MarkEmiPaidModal({
             </div>
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
-                Paid Date *
+                Paid Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"

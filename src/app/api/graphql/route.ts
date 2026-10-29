@@ -2921,11 +2921,14 @@ const resolvers = {
 
       const paidCount = count !== null && count !== undefined ? count : (Number(cardData.paid_emis) + 1)
       const isActive = paidCount < Number(cardData.total_emis)
+      const remainingMonths = Math.max(0, Number(cardData.total_emis) - paidCount)
+      const newLimitUsed = Math.max(0, Number(cardData.monthly_emi) * remainingMonths)
 
       await supabase
         .from('cards')
         .update({
           paid_emis: paidCount,
+          card_limit_used: newLimitUsed,
           is_active: isActive,
           updated_at: new Date().toISOString(),
         })
@@ -2978,11 +2981,23 @@ const resolvers = {
         .eq('card_id', cardId)
 
       const remainingPaidCount = count || 0
+
+      const { data: currentCard } = await supabase
+        .from('cards')
+        .select('*')
+        .eq('id', cardId)
+        .single()
+
+      const newLimitUsed = currentCard
+        ? Math.max(0, Number(currentCard.monthly_emi) * Math.max(0, Number(currentCard.total_emis) - remainingPaidCount))
+        : 0
+
       await supabase
         .from('cards')
         .update({
           paid_emis: remainingPaidCount,
-          is_active: true,
+          card_limit_used: newLimitUsed,
+          is_active: currentCard ? remainingPaidCount < Number(currentCard.total_emis) : true,
           updated_at: new Date().toISOString(),
         })
         .eq('id', cardId)

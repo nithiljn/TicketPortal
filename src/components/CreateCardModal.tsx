@@ -163,7 +163,6 @@ export function CreateCardModal({
   const [cardNumber, setCardNumber] = useState('')
   const [description, setDescription] = useState('')
   const [cardLimit, setCardLimit] = useState('')
-  const [cardLimitUsed, setCardLimitUsed] = useState('')
   const [cardColor, setCardColor] = useState('black')
   const [customColor, setCustomColor] = useState('#8b5cf6')
   const [monthlyEmi, setMonthlyEmi] = useState('')
@@ -189,7 +188,6 @@ export function CreateCardModal({
       setCardNumber(existingCard.cardNumber)
       setDescription(existingCard.description || '')
       setCardLimit(existingCard.cardLimit ? String(existingCard.cardLimit) : '')
-      setCardLimitUsed(existingCard.cardLimitUsed ? String(existingCard.cardLimitUsed) : '')
       const existingCol = existingCard.cardColor || 'black'
       setCardColor(existingCol)
       if (!CARD_COLORS[existingCol]) {
@@ -208,7 +206,6 @@ export function CreateCardModal({
       setCardNumber(generateRandomCardNumber('HDFC Bank'))
       setDescription('')
       setCardLimit('150000')
-      setCardLimitUsed('')
       setCardColor('black')
       setCustomColor('#8b5cf6')
       setMonthlyEmi('')
@@ -228,6 +225,8 @@ export function CreateCardModal({
   const totalLoanValue = (Number(monthlyEmi) || 0) * (Number(totalEmis) || 0)
   const totalPaidValue = (Number(monthlyEmi) || 0) * (Number(paidEmis) || 0)
   const balanceValue = Math.max(0, totalLoanValue - totalPaidValue)
+  const remainingMonthsCount = Math.max(0, (Number(totalEmis) || 0) - (Number(paidEmis) || 0))
+  const computedBlockedLimit = Math.max(0, (Number(monthlyEmi) || 0) * remainingMonthsCount)
 
   const handleBankChange = (newBank: string) => {
     setBankName(newBank)
@@ -280,7 +279,7 @@ export function CreateCardModal({
         cardNumber: cardNumber.trim() || generateRandomCardNumber(resolvedBankName),
         description: description.trim() || undefined,
         cardLimit: Number(cardLimit) || 0,
-        cardLimitUsed: Number(cardLimitUsed) || Number(monthlyEmi) || 0,
+        cardLimitUsed: computedBlockedLimit,
         cardColor,
         monthlyEmi: emiAmount,
         totalEmis: tenure,
@@ -411,9 +410,13 @@ export function CreateCardModal({
                 Card Color Theme
               </label>
               {isCustomColor && (
-                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
-                  {cardColor.toUpperCase()}
-                </span>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-black/5 dark:bg-white/[0.06] border border-black/10 dark:border-white/10 text-[11px] font-mono text-zinc-700 dark:text-zinc-200 shadow-2xs">
+                  <span
+                    className="w-2 h-2 rounded-full ring-1 ring-black/10 dark:ring-white/20 shrink-0"
+                    style={{ backgroundColor: cardColor }}
+                  />
+                  <span className="font-semibold tracking-wider">{cardColor.toUpperCase()}</span>
+                </div>
               )}
             </div>
 
@@ -556,17 +559,24 @@ export function CreateCardModal({
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
                 Bank / Card Company *
               </label>
-              <select
-                value={bankName}
-                onChange={(e) => handleBankChange(e.target.value)}
-                className={`w-full h-10 px-3 rounded-xl border text-xs font-medium outline-none cursor-pointer ${inputBg}`}
-              >
-                {POPULAR_BANKS.map((bank) => (
-                  <option key={bank} value={bank} className={isDark ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}>
-                    {bank}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={bankName}
+                  onChange={(e) => handleBankChange(e.target.value)}
+                  className={`w-full h-10 pl-3.5 pr-9 rounded-xl border text-xs font-medium outline-none cursor-pointer appearance-none ${inputBg}`}
+                >
+                  {POPULAR_BANKS.map((bank) => (
+                    <option key={bank} value={bank} className={isDark ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}>
+                      {bank}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-[#86868b]">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {bankName === 'Custom' ? (
@@ -643,11 +653,11 @@ export function CreateCardModal({
             </p>
           </div>
 
-          {/* Credit Limit & Used Limit */}
+          {/* Credit Limit & Auto-calculated Used Limit */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
-                Total Card Limit (₹)
+                Total Card Limit (₹) <span className="opacity-60 font-normal lowercase">(optional)</span>
               </label>
               <input
                 type="number"
@@ -656,18 +666,35 @@ export function CreateCardModal({
                 onChange={(e) => setCardLimit(e.target.value)}
                 className={`w-full h-10 px-3 text-xs rounded-xl border outline-none font-mono ${inputBg}`}
               />
+              <p className="text-[10px] text-[#86868b] mt-1">
+                Your bank-assigned total credit card limit.
+              </p>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
-                Card Limit Used / Blocked (₹)
-              </label>
-              <input
-                type="number"
-                placeholder="e.g. 45000"
-                value={cardLimitUsed}
-                onChange={(e) => setCardLimitUsed(e.target.value)}
-                className={`w-full h-10 px-3 text-xs rounded-xl border outline-none font-mono ${inputBg}`}
-              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
+                  Blocked by EMI (Auto)
+                </label>
+                <span className="text-[10px] font-medium text-emerald-500 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Auto-Calculated
+                </span>
+              </div>
+              <div
+                className={`w-full h-10 px-3.5 flex items-center justify-between rounded-xl border text-xs font-mono select-none ${inputBg} opacity-95`}
+              >
+                <span className="font-semibold text-rose-500 dark:text-rose-400">
+                  ₹{computedBlockedLimit.toLocaleString()}
+                </span>
+                <span className="text-[10px] text-[#86868b]">
+                  {Number(cardLimit) > 0
+                    ? `Avail: ₹${Math.max(0, Number(cardLimit) - computedBlockedLimit).toLocaleString()}`
+                    : `${remainingMonthsCount} mos remaining`}
+                </span>
+              </div>
+              <p className="text-[10px] text-[#86868b] mt-1">
+                Active remaining liability auto-released as EMIs are paid.
+              </p>
             </div>
           </div>
 
@@ -697,17 +724,24 @@ export function CreateCardModal({
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
                   Total EMIs (Months) *
                 </label>
-                <select
-                  value={totalEmis}
-                  onChange={(e) => setTotalEmis(e.target.value)}
-                  className={`w-full h-10 px-3 rounded-xl border text-xs font-medium outline-none cursor-pointer ${inputBg}`}
-                >
-                  {[3, 6, 9, 12, 18, 24, 36, 48, 60].map((m) => (
-                    <option key={m} value={m} className={isDark ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}>
-                      {m} Months
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={totalEmis}
+                    onChange={(e) => setTotalEmis(e.target.value)}
+                    className={`w-full h-10 pl-3.5 pr-9 rounded-xl border text-xs font-medium outline-none cursor-pointer appearance-none ${inputBg}`}
+                  >
+                    {[3, 6, 9, 12, 18, 24, 36, 48, 60].map((m) => (
+                      <option key={m} value={m} className={isDark ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}>
+                        {m} Months
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-[#86868b]">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -793,19 +827,26 @@ export function CreateCardModal({
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">
                 Workspace / Category Folder
               </label>
-              <select
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                className={`w-full h-10 px-3 rounded-xl border text-xs font-medium outline-none cursor-pointer ${inputBg}`}
-              >
-                {availableProjects
-                  .filter((p) => p !== 'ALL')
-                  .map((p) => (
-                    <option key={p} value={p} className={isDark ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}>
-                      {p}
-                    </option>
-                  ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  className={`w-full h-10 pl-3.5 pr-9 rounded-xl border text-xs font-medium outline-none cursor-pointer appearance-none ${inputBg}`}
+                >
+                  {availableProjects
+                    .filter((p) => p !== 'ALL')
+                    .map((p) => (
+                      <option key={p} value={p} className={isDark ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}>
+                        {p}
+                      </option>
+                    ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-[#86868b]">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             <div>

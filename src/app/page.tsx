@@ -2327,10 +2327,11 @@ export default function Home() {
           prev.map((c) => {
             if (c.id === input.cardId) {
               const newPaidCount = c.paidEmis + 1
+              const remainingCount = Math.max(0, c.totalEmis - newPaidCount)
               const updatedCard = {
                 ...c,
                 paidEmis: newPaidCount,
-                cardLimitUsed: Math.max(0, c.cardLimitUsed - input.amount),
+                cardLimitUsed: Math.max(0, c.monthlyEmi * remainingCount),
               }
               if (selectedCardForDetail?.id === c.id) {
                 setSelectedCardForDetail(updatedCard)
@@ -2373,9 +2374,12 @@ export default function Home() {
         setCards((prev) =>
           prev.map((c) => {
             if (c.id === selectedCardForDetail.id) {
+              const newPaidCount = Math.max(0, c.paidEmis - 1)
+              const remainingCount = Math.max(0, c.totalEmis - newPaidCount)
               const updated = {
                 ...c,
-                paidEmis: Math.max(0, c.paidEmis - 1),
+                paidEmis: newPaidCount,
+                cardLimitUsed: Math.max(0, c.monthlyEmi * remainingCount),
               }
               setSelectedCardForDetail(updated)
               return updated

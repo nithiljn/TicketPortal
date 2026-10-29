@@ -216,17 +216,24 @@ export function MarkEmiPaidModal({
                 <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868b] mb-1">
                   Expense Category
                 </label>
-                <select
-                  value={expenseCategory}
-                  onChange={(e) => setExpenseCategory(e.target.value)}
-                  className={`w-full h-8 px-2.5 rounded-lg border text-xs font-medium outline-none cursor-pointer ${inputBg}`}
-                >
-                  {expenseCategories.map((cat) => (
-                    <option key={cat} value={cat} className={isDark ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={expenseCategory}
+                    onChange={(e) => setExpenseCategory(e.target.value)}
+                    className={`w-full h-8 pl-2.5 pr-8 rounded-lg border text-xs font-medium outline-none cursor-pointer appearance-none ${inputBg}`}
+                  >
+                    {expenseCategories.map((cat) => (
+                      <option key={cat} value={cat} className={isDark ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-[#86868b]">
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             )}
           </div>

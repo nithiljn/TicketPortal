@@ -26,10 +26,16 @@ const POPULAR_BANKS = [
   'Custom',
 ]
 
-export const CARD_COLORS: Record<
-  string,
-  { label: string; gradient: string; border: string; accent: string; preview: string }
-> = {
+export interface CardColorConfig {
+  label: string
+  gradient: string
+  border: string
+  accent: string
+  preview: string
+  style?: React.CSSProperties
+}
+
+export const CARD_COLORS: Record<string, CardColorConfig> = {
   black: {
     label: 'Obsidian Titanium',
     gradient: 'from-[#141517] via-[#1a1c20] to-[#0a0a0b]',
@@ -72,6 +78,44 @@ export const CARD_COLORS: Record<
     accent: '#e5e7eb',
     preview: '#4b5563',
   },
+}
+
+export function adjustHex(hex: string, factor: number): string {
+  let c = hex.replace('#', '').trim()
+  if (c.length === 3) c = c.split('').map((x) => x + x).join('')
+  if (c.length !== 6) return hex
+  const num = parseInt(c, 16)
+  if (isNaN(num)) return hex
+  let r = Math.round(((num >> 16) & 255) * factor)
+  let g = Math.round(((num >> 8) & 255) * factor)
+  let b = Math.round((num & 255) * factor)
+  r = Math.min(255, Math.max(0, r))
+  g = Math.min(255, Math.max(0, g))
+  b = Math.min(255, Math.max(0, b))
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+}
+
+export function getCardColorConfig(colorKeyOrHex?: string): CardColorConfig {
+  if (!colorKeyOrHex) return CARD_COLORS.black
+  if (CARD_COLORS[colorKeyOrHex]) return CARD_COLORS[colorKeyOrHex]
+
+  const hex = colorKeyOrHex.startsWith('#') ? colorKeyOrHex : `#${colorKeyOrHex}`
+  const dark1 = adjustHex(hex, 0.45)
+  const dark2 = adjustHex(hex, 0.18)
+  const borderCol = adjustHex(hex, 1.25)
+
+  return {
+    label: `Custom (${hex})`,
+    gradient: '',
+    border: 'border-white/20',
+    accent: hex,
+    preview: hex,
+    style: {
+      background: `linear-gradient(135deg, ${dark1} 0%, ${hex} 50%, ${dark2} 100%)`,
+      borderColor: `${borderCol}55`,
+      boxShadow: `0 12px 32px -8px ${hex}55`,
+    },
+  }
 }
 
 function generateRandomCardNumber(bankName: string): string {
@@ -121,6 +165,7 @@ export function CreateCardModal({
   const [cardLimit, setCardLimit] = useState('')
   const [cardLimitUsed, setCardLimitUsed] = useState('')
   const [cardColor, setCardColor] = useState('black')
+  const [customColor, setCustomColor] = useState('#8b5cf6')
   const [monthlyEmi, setMonthlyEmi] = useState('')
   const [totalEmis, setTotalEmis] = useState('12')
   const [paidEmis, setPaidEmis] = useState('0')
@@ -145,7 +190,11 @@ export function CreateCardModal({
       setDescription(existingCard.description || '')
       setCardLimit(existingCard.cardLimit ? String(existingCard.cardLimit) : '')
       setCardLimitUsed(existingCard.cardLimitUsed ? String(existingCard.cardLimitUsed) : '')
-      setCardColor(existingCard.cardColor || 'black')
+      const existingCol = existingCard.cardColor || 'black'
+      setCardColor(existingCol)
+      if (!CARD_COLORS[existingCol]) {
+        setCustomColor(existingCol.startsWith('#') ? existingCol : `#${existingCol}`)
+      }
       setMonthlyEmi(String(existingCard.monthlyEmi))
       setTotalEmis(String(existingCard.totalEmis))
       setPaidEmis(String(existingCard.paidEmis || 0))
@@ -161,6 +210,7 @@ export function CreateCardModal({
       setCardLimit('150000')
       setCardLimitUsed('')
       setCardColor('black')
+      setCustomColor('#8b5cf6')
       setMonthlyEmi('')
       setTotalEmis('12')
       setPaidEmis('0')
@@ -249,7 +299,8 @@ export function CreateCardModal({
     }
   }
 
-  const colorConfig = CARD_COLORS[cardColor] || CARD_COLORS.black
+  const colorConfig = getCardColorConfig(cardColor)
+  const isCustomColor = !CARD_COLORS[cardColor]
   const cardBg = isDark ? 'bg-[#1c1c1e] text-white border-white/[0.08]' : 'bg-white text-zinc-900 border-black/[0.08]'
   const inputBg = isDark
     ? 'bg-white/[0.06] border-white/[0.1] text-white placeholder-zinc-500 focus:border-[#0071e3]'
@@ -301,7 +352,10 @@ export function CreateCardModal({
               Live Card Preview
             </span>
             <div
-              className={`w-full max-w-[360px] h-[200px] rounded-[18px] p-5 border text-white relative shadow-xl overflow-hidden bg-gradient-to-br ${colorConfig.gradient} ${colorConfig.border} flex flex-col justify-between`}
+              className={`w-full max-w-[360px] h-[200px] rounded-[18px] p-5 border text-white relative shadow-xl overflow-hidden ${
+                colorConfig.gradient ? `bg-gradient-to-br ${colorConfig.gradient}` : ''
+              } ${colorConfig.border} flex flex-col justify-between`}
+              style={colorConfig.style}
             >
               {/* Background ambient light */}
               <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
@@ -352,10 +406,18 @@ export function CreateCardModal({
 
           {/* Card Color Palette Chooser */}
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#86868b] mb-2">
-              Card Color Theme
-            </label>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
+                Card Color Theme
+              </label>
+              {isCustomColor && (
+                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                  {cardColor.toUpperCase()}
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
               {Object.entries(CARD_COLORS).map(([key, item]) => {
                 const isSelected = cardColor === key
                 return (
@@ -377,7 +439,115 @@ export function CreateCardModal({
                   </button>
                 )
               })}
+
+              {/* 7th Option: Custom Color Button */}
+              <button
+                type="button"
+                onClick={() => setCardColor(customColor)}
+                className={`p-2 rounded-xl border flex flex-col items-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                  isCustomColor
+                    ? 'border-[#0071e3] ring-2 ring-[#0071e3]/30 bg-blue-500/10'
+                    : 'border-black/[0.08] dark:border-white/[0.08] hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+              >
+                <div
+                  className="w-5 h-5 rounded-full shadow-sm border border-white/20 flex items-center justify-center overflow-hidden"
+                  style={{
+                    background: isCustomColor
+                      ? customColor
+                      : 'conic-gradient(from 0deg, #f43f5e, #fb923c, #facc15, #4ade80, #38bdf8, #818cf8, #c084fc, #f43f5e)',
+                  }}
+                />
+                <span className="text-[10px] font-medium truncate max-w-full">
+                  {isCustomColor ? 'Custom' : '+ Custom'}
+                </span>
+              </button>
             </div>
+
+            {/* Custom Color Bar Drawer */}
+            {isCustomColor && (
+              <div className="mt-2.5 p-3 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.03] space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    {/* Native Picker Trigger */}
+                    <label className="relative flex items-center gap-2 px-3 py-1.5 rounded-xl border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-zinc-800 shadow-xs cursor-pointer hover:border-black/20 dark:hover:border-white/20 transition active:scale-95">
+                      <span
+                        className="w-4 h-4 rounded-full border border-black/10 dark:border-white/20 shadow-xs shrink-0"
+                        style={{ backgroundColor: customColor }}
+                      />
+                      <span className="text-xs font-semibold">Pick Color</span>
+                      <input
+                        type="color"
+                        value={customColor.startsWith('#') && customColor.length === 7 ? customColor : '#8b5cf6'}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setCustomColor(val)
+                          setCardColor(val)
+                        }}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                      />
+                    </label>
+
+                    {/* Direct Hex Input */}
+                    <div className="flex items-center px-2.5 py-1.5 rounded-xl border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-zinc-900 text-xs font-mono">
+                      <span className="text-[#86868b] mr-1">#</span>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={customColor.replace('#', '')}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9A-Fa-f]/g, '')
+                          const newHex = `#${val}`
+                          setCustomColor(newHex)
+                          if (val.length === 3 || val.length === 6) {
+                            setCardColor(newHex)
+                          }
+                        }}
+                        placeholder="8B5CF6"
+                        className="w-16 bg-transparent outline-none uppercase font-semibold text-zinc-900 dark:text-zinc-100"
+                      />
+                    </div>
+                  </div>
+
+                  <span className="text-[11px] text-[#86868b]">
+                    Pick any shade or paste hex code
+                  </span>
+                </div>
+
+                {/* Popular Quick Curated Luxury Card Swatches */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-black/[0.04] dark:border-white/[0.06]">
+                  <span className="text-[10px] text-[#86868b] font-medium mr-1 shrink-0">Popular:</span>
+                  {[
+                    { hex: '#f59e0b', label: 'Gold Amber' },
+                    { hex: '#ea580c', label: 'Sunset Orange' },
+                    { hex: '#ec4899', label: 'Hot Pink' },
+                    { hex: '#8b5cf6', label: 'Neon Violet' },
+                    { hex: '#6366f1', label: 'Deep Indigo' },
+                    { hex: '#06b6d4', label: 'Electric Teal' },
+                    { hex: '#10b981', label: 'Mint Jade' },
+                    { hex: '#14b8a6', label: 'Persian Cyan' },
+                    { hex: '#854d0e', label: 'Bronze Mocha' },
+                    { hex: '#475569', label: 'Slate Grey' },
+                  ].map((swatch) => (
+                    <button
+                      key={swatch.hex}
+                      type="button"
+                      title={swatch.label}
+                      onClick={() => {
+                        setCustomColor(swatch.hex)
+                        setCardColor(swatch.hex)
+                      }}
+                      className={`w-6 h-6 rounded-full border transition active:scale-90 cursor-pointer ${
+                        cardColor.toLowerCase() === swatch.hex.toLowerCase()
+                          ? 'ring-2 ring-blue-500 scale-110 border-white'
+                          : 'border-black/10 dark:border-white/10 hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: swatch.hex }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Section 1: Bank & Card Details */}

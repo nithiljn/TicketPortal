@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react'
 import { Card, CardEmiPayment } from '@/types'
-import { CARD_COLORS } from '@/components/CreateCardModal'
+import { CARD_COLORS, getCardColorConfig } from '@/components/CreateCardModal'
 
 interface CardDetailStatementModalProps {
   isOpen: boolean
@@ -108,7 +108,7 @@ export function CardDetailStatementModal({
 
   if (!isOpen || !card) return null
 
-  const colorConfig = CARD_COLORS[card.cardColor] || CARD_COLORS.black
+  const colorConfig = getCardColorConfig(card.cardColor)
   const totalLoanValue = card.monthlyEmi * card.totalEmis
   const totalPaidValue = card.monthlyEmi * card.paidEmis
   const balanceValue = Math.max(0, totalLoanValue - totalPaidValue)

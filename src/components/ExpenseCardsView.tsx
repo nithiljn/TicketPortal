@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import { Card } from '@/types'
-import { CARD_COLORS } from '@/components/CreateCardModal'
+import { CARD_COLORS, getCardColorConfig } from '@/components/CreateCardModal'
 
 interface ExpenseCardsViewProps {
   cards: Card[]
@@ -118,10 +118,6 @@ export function ExpenseCardsView({
             <span className={isDark ? 'text-[#ebebf5]/40 text-[11px]' : 'text-[#1d1d1f]/40 text-[11px]'}>
               {filteredCards.length === 1 ? 'card' : 'cards'}
             </span>
-          </span>
-
-          <span className="text-[11px] text-[#86868b] hidden sm:inline">
-            (💡 Double-click any card to view full EMI statement & schedules)
           </span>
         </div>
 
@@ -246,7 +242,7 @@ export function ExpenseCardsView({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredCards.map((card) => {
-              const colorConfig = CARD_COLORS[card.cardColor] || CARD_COLORS.black
+              const colorConfig = getCardColorConfig(card.cardColor)
               const totalLoan = card.monthlyEmi * card.totalEmis
               const totalPaid = card.monthlyEmi * card.paidEmis
               const balance = Math.max(0, totalLoan - totalPaid)
@@ -263,7 +259,10 @@ export function ExpenseCardsView({
                   {/* Top: Realistic 3D Apple-style Credit Card Surface */}
                   <div className="p-4 sm:p-5">
                     <div
-                      className={`w-full h-[200px] rounded-[20px] p-5 text-white relative shadow-lg overflow-hidden bg-gradient-to-br transition-transform duration-300 group-hover:scale-[1.02] flex flex-col justify-between select-none cursor-pointer ${colorConfig.gradient} ${colorConfig.border} border`}
+                      className={`w-full h-[200px] rounded-[20px] p-5 text-white relative shadow-lg overflow-hidden transition-transform duration-300 group-hover:scale-[1.02] flex flex-col justify-between select-none cursor-pointer ${
+                        colorConfig.gradient ? `bg-gradient-to-br ${colorConfig.gradient}` : ''
+                      } ${colorConfig.border} border`}
+                      style={colorConfig.style}
                       title="Double-click to view complete EMI statement & payment schedule"
                     >
                       {/* Ambient light overlay */}

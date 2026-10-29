@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { Expense, PaymentMethod } from '@/types'
+import { Expense, PaymentMethod, ExpenseSubView } from '@/types'
 import { Button } from '@/components/Button'
 import { generateExpensePdf } from '@/lib/generateExpensePdf'
 import { HighlightText } from '@/components/HighlightText'
@@ -36,6 +36,7 @@ interface ExpenseTrackerProps {
   onClearAllFilters?: () => void
   onFetchExpenseDetails?: (id: string) => Promise<Expense | null>
   onFetchExpensesForPdf?: () => Promise<Expense[]>
+  expenseSubView?: ExpenseSubView
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -233,6 +234,7 @@ export function ExpenseTracker({
   onClearAllFilters,
   onFetchExpenseDetails,
   onFetchExpensesForPdf,
+  expenseSubView = 'inbox',
 }: ExpenseTrackerProps) {
   const isDark = theme === 'dark'
 
@@ -932,8 +934,11 @@ export function ExpenseTracker({
           </div>
         </div>
 
-        {/* 2. KPI Cards Grid (Apple Store Utility Cards Style) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {/* 2 & 3. KPI Cards & Analytics (Shown only on Expense Dashboard) */}
+        {expenseSubView === 'dashboard' && (
+          <>
+            {/* 2. KPI Cards Grid (Apple Store Utility Cards Style) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {/* Card 1: Total Spent */}
           <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
             <div className="flex items-center justify-between gap-2">
@@ -1206,8 +1211,11 @@ export function ExpenseTracker({
           )}
         </div>
       </div>
+          </>
+        )}
 
-      {/* 4. Grouped Expenses List (Apple Style Transactions Inbox) */}
+      {/* 4. Grouped Expenses List (Apple Style Transactions Inbox - Shown on Inbox) */}
+      {expenseSubView === 'inbox' && (
       <div className="space-y-4">
         {/* Section Header with Count & Sort */}
         <div className="flex items-center justify-between px-1">
@@ -1437,6 +1445,7 @@ export function ExpenseTracker({
           })
         )}
       </div>
+      )}
 
       {/* 5. Expense View Modal (Triggered by Double-Click or View Button) */}
       {viewingExpense && (

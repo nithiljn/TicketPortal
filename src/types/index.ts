@@ -112,3 +112,85 @@ export interface UpdateExpenseInput {
   notes?: string
 }
 
+export type ExpenseSubView = 'inbox' | 'dashboard' | 'cards'
+
+export interface Card {
+  id: string
+  userEmail: string
+  bankName: string
+  cardName: string
+  cardNumber: string
+  description?: string
+  cardLimit: number
+  cardLimitUsed: number
+  cardColor: string
+  monthlyEmi: number
+  totalEmis: number
+  paidEmis: number
+  startDate: string
+  endDate: string
+  emiDueDay: number
+  projectName: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CardEmiPayment {
+  id: string
+  cardId: string
+  userEmail: string
+  emiNumber: number
+  amount: number
+  paidDate: string
+  transactionId?: string
+  notes?: string
+  createdAt: string
+}
+
+export interface CreateCardInput {
+  bankName: string
+  cardName: string
+  cardNumber: string
+  description?: string
+  cardLimit?: number
+  cardLimitUsed?: number
+  cardColor?: string
+  monthlyEmi: number
+  totalEmis: number
+  paidEmis?: number
+  startDate: string
+  endDate?: string
+  emiDueDay: number
+  projectName?: string
+}
+
+export interface UpdateCardInput {
+  bankName?: string
+  cardName?: string
+  cardNumber?: string
+  description?: string
+  cardLimit?: number
+  cardLimitUsed?: number
+  cardColor?: string
+  monthlyEmi?: number
+  totalEmis?: number
+  paidEmis?: number
+  startDate?: string
+  endDate?: string
+  emiDueDay?: number
+  projectName?: string
+  isActive?: boolean
+}
+
+export interface RecordEmiPaymentInput {
+  cardId: string
+  emiNumber: number
+  amount: number
+  paidDate: string
+  transactionId?: string
+  notes?: string
+  recordAsExpense?: boolean
+  expenseCategory?: string
+}
+

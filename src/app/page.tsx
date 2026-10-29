@@ -1,7 +1,18 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Ticket, DailyNote, TicketStatus, TicketPriority, Expense } from '@/types'
+import {
+  Ticket,
+  DailyNote,
+  TicketStatus,
+  TicketPriority,
+  Expense,
+  Card,
+  CardEmiPayment,
+  CreateCardInput,
+  RecordEmiPaymentInput,
+  ExpenseSubView,
+} from '@/types'
 import { fetchGraphQL } from '@/lib/graphql-client'
 import { Sidebar } from '@/components/Sidebar'
 import { InboxTable } from '@/components/InboxTable'
@@ -9,6 +20,10 @@ import { DashboardView } from '@/components/DashboardView'
 import { KanbanBoard } from '@/components/KanbanBoard'
 import { DailyNotes } from '@/components/DailyNotes'
 import { ExpenseTracker } from '@/components/ExpenseTracker'
+import { ExpenseCardsView } from '@/components/ExpenseCardsView'
+import { CreateCardModal } from '@/components/CreateCardModal'
+import { CardDetailStatementModal } from '@/components/CardDetailStatementModal'
+import { MarkEmiPaidModal } from '@/components/MarkEmiPaidModal'
 import { ThemeSpinner } from '@/components/ThemeSpinner'
 import { TicketModal } from '@/components/TicketModal'
 import { ExpenseModal } from '@/components/ExpenseModal'
@@ -123,6 +138,20 @@ export default function Home() {
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null)
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+
+  // Expense Views: 'inbox' | 'dashboard' | 'cards'
+  const [expenseSubView, setExpenseSubView] = useState<ExpenseSubView>('inbox')
+
+  // Cards & EMI State
+  const [cards, setCards] = useState<Card[]>([])
+  const [isCardsLoading, setIsCardsLoading] = useState(false)
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false)
+  const [editingCard, setEditingCard] = useState<Card | null>(null)
+  const [selectedCardForDetail, setSelectedCardForDetail] = useState<Card | null>(null)
+  const [selectedCardPayments, setSelectedCardPayments] = useState<CardEmiPayment[]>([])
+  const [isPayEmiModalOpen, setIsPayEmiModalOpen] = useState(false)
+  const [payingCard, setPayingCard] = useState<Card | null>(null)
+  const [payingEmiNumber, setPayingEmiNumber] = useState<number | undefined>(undefined)
   const [availableProjects, setAvailableProjects] = useState<string[]>([])
   const [availableExpenseProjects, setAvailableExpenseProjects] = useState<string[]>([])
   const [availableVersions, setAvailableVersions] = useState<string[]>([])
@@ -868,6 +897,27 @@ export default function Home() {
           }
           expenseCategories(userEmail: $userEmail)
           expenseMonths(userEmail: $userEmail, projectName: $projectName)
+          cards(userEmail: $userEmail, projectName: $projectName) {
+            id
+            userEmail
+            bankName
+            cardName
+            cardNumber
+            description
+            cardLimit
+            cardLimitUsed
+            cardColor
+            monthlyEmi
+            totalEmis
+            paidEmis
+            startDate
+            endDate
+            emiDueDay
+            projectName
+            isActive
+            createdAt
+            updatedAt
+          }
         }
       `
       const data = await fetchGraphQL<{
@@ -875,6 +925,7 @@ export default function Home() {
         expenses: Expense[]
         expenseCategories: string[]
         expenseMonths?: string[]
+        cards?: Card[]
       }>(query, {
         userEmail: user.email,
         projectName: selectedExpenseProject !== 'ALL' ? selectedExpenseProject : null,
@@ -887,6 +938,9 @@ export default function Home() {
 
       setExpenses(data.expenses || [])
       setExpenseCategories(data.expenseCategories || [])
+      if (data.cards) {
+        setCards(data.cards)
+      }
       if (data.expenseMonths && data.expenseMonths.length > 0) {
         setServerExpenseMonths(data.expenseMonths)
       }
@@ -2068,6 +2122,283 @@ export default function Home() {
     })
   }
 
+  // Card Actions & EMI Handlers
+  const handleOpenCreateCard = () => {
+    setEditingCard(null)
+    setIsCardModalOpen(true)
+  }
+
+  const handleOpenEditCard = (card: Card) => {
+    setEditingCard(card)
+    setIsCardModalOpen(true)
+  }
+
+  const fetchCardPayments = async (cardId: string) => {
+    try {
+      const query = /* GraphQL */ `
+        query CardEmiPayments($cardId: ID!) {
+          cardEmiPayments(cardId: $cardId) {
+            id
+            cardId
+            userEmail
+            emiNumber
+            amount
+            paidDate
+            transactionId
+            notes
+            createdAt
+          }
+        }
+      `
+      const data = await fetchGraphQL<{ cardEmiPayments: CardEmiPayment[] }>(query, { cardId })
+      const list = data?.cardEmiPayments || []
+      setSelectedCardPayments(list)
+      return list
+    } catch (err) {
+      console.error('Error fetching card payments:', err)
+      setSelectedCardPayments([])
+      return []
+    }
+  }
+
+  const handleOpenCardDetail = async (card: Card) => {
+    setSelectedCardForDetail(card)
+    await fetchCardPayments(card.id)
+  }
+
+  const handleOpenPayEmi = (card: Card, emiNumber?: number) => {
+    setPayingCard(card)
+    setPayingEmiNumber(emiNumber)
+    setIsPayEmiModalOpen(true)
+  }
+
+  const handleSaveCard = async (cardData: CreateCardInput) => {
+    try {
+      if (editingCard) {
+        const mutation = /* GraphQL */ `
+          mutation UpdateCard($id: ID!, $input: UpdateCardInput!) {
+            updateCard(id: $id, input: $input) {
+              id
+              userEmail
+              bankName
+              cardName
+              cardNumber
+              description
+              cardLimit
+              cardLimitUsed
+              cardColor
+              monthlyEmi
+              totalEmis
+              paidEmis
+              startDate
+              endDate
+              emiDueDay
+              projectName
+              isActive
+              createdAt
+              updatedAt
+            }
+          }
+        `
+        const data = await fetchGraphQL<{ updateCard: Card }>(mutation, {
+          id: editingCard.id,
+          input: cardData,
+        })
+        if (data?.updateCard) {
+          setCards((prev) => prev.map((c) => (c.id === editingCard.id ? data.updateCard : c)))
+          if (selectedCardForDetail?.id === editingCard.id) {
+            setSelectedCardForDetail(data.updateCard)
+          }
+          setToast({
+            isOpen: true,
+            title: 'Card Updated',
+            message: `Changes saved for "${data.updateCard.cardName}"`,
+          })
+        }
+      } else {
+        const mutation = /* GraphQL */ `
+          mutation CreateCard($input: CreateCardInput!) {
+            createCard(input: $input) {
+              id
+              userEmail
+              bankName
+              cardName
+              cardNumber
+              description
+              cardLimit
+              cardLimitUsed
+              cardColor
+              monthlyEmi
+              totalEmis
+              paidEmis
+              startDate
+              endDate
+              emiDueDay
+              projectName
+              isActive
+              createdAt
+              updatedAt
+            }
+          }
+        `
+        const data = await fetchGraphQL<{ createCard: Card }>(mutation, {
+          input: {
+            ...cardData,
+            projectName: selectedExpenseProject !== 'ALL' ? selectedExpenseProject : 'Personal',
+          },
+        })
+        if (data?.createCard) {
+          setCards((prev) => [data.createCard, ...prev])
+          setToast({
+            isOpen: true,
+            title: 'Card Created',
+            message: `Card "${data.createCard.cardName}" created successfully!`,
+          })
+        }
+      }
+      setIsCardModalOpen(false)
+      setEditingCard(null)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to save card'
+      setToast({
+        isOpen: true,
+        title: 'Error',
+        message: msg,
+      })
+      throw err
+    }
+  }
+
+  const handleDeleteCard = async (card: Card) => {
+    if (!confirm(`Are you sure you want to delete card "${card.cardName}"? All recorded EMI payments will also be deleted.`)) {
+      return
+    }
+    try {
+      const mutation = /* GraphQL */ `
+        mutation DeleteCard($id: ID!, $userEmail: String!) {
+          deleteCard(id: $id, userEmail: $userEmail)
+        }
+      `
+      await fetchGraphQL(mutation, { id: card.id, userEmail: user?.email || '' })
+      setCards((prev) => prev.filter((c) => c.id !== card.id))
+      if (selectedCardForDetail?.id === card.id) {
+        setSelectedCardForDetail(null)
+      }
+      setToast({
+        isOpen: true,
+        title: 'Card Deleted',
+        message: `Card "${card.cardName}" deleted successfully`,
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete card'
+      setToast({
+        isOpen: true,
+        title: 'Error',
+        message: msg,
+      })
+    }
+  }
+
+  const handleRecordEmiPayment = async (input: RecordEmiPaymentInput) => {
+    try {
+      const mutation = /* GraphQL */ `
+        mutation RecordEmiPayment($input: RecordEmiPaymentInput!, $userEmail: String) {
+          recordEmiPayment(input: $input, userEmail: $userEmail) {
+            id
+            cardId
+            userEmail
+            emiNumber
+            amount
+            paidDate
+            transactionId
+            notes
+            createdAt
+          }
+        }
+      `
+      const data = await fetchGraphQL<{ recordEmiPayment: CardEmiPayment }>(mutation, {
+        input,
+        userEmail: user?.email,
+      })
+      if (data?.recordEmiPayment) {
+        const newPayment = data.recordEmiPayment
+        setSelectedCardPayments((prev) => [...prev, newPayment])
+        setCards((prev) =>
+          prev.map((c) => {
+            if (c.id === input.cardId) {
+              const newPaidCount = c.paidEmis + 1
+              const updatedCard = {
+                ...c,
+                paidEmis: newPaidCount,
+                cardLimitUsed: Math.max(0, c.cardLimitUsed - input.amount),
+              }
+              if (selectedCardForDetail?.id === c.id) {
+                setSelectedCardForDetail(updatedCard)
+              }
+              return updatedCard
+            }
+            return c
+          })
+        )
+        if (input.recordAsExpense) {
+          loadExpensesData()
+        }
+        setToast({
+          isOpen: true,
+          title: 'EMI Paid',
+          message: `EMI #${input.emiNumber} of ₹${input.amount.toLocaleString()} marked as paid!`,
+        })
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to record EMI payment'
+      setToast({
+        isOpen: true,
+        title: 'Error',
+        message: msg,
+      })
+      throw err
+    }
+  }
+
+  const handleDeleteEmiPayment = async (paymentId: string) => {
+    try {
+      const mutation = /* GraphQL */ `
+        mutation DeleteEmiPayment($id: ID!, $userEmail: String!) {
+          deleteEmiPayment(id: $id, userEmail: $userEmail)
+        }
+      `
+      await fetchGraphQL(mutation, { id: paymentId, userEmail: user?.email || '' })
+      setSelectedCardPayments((prev) => prev.filter((p) => p.id !== paymentId))
+      if (selectedCardForDetail) {
+        setCards((prev) =>
+          prev.map((c) => {
+            if (c.id === selectedCardForDetail.id) {
+              const updated = {
+                ...c,
+                paidEmis: Math.max(0, c.paidEmis - 1),
+              }
+              setSelectedCardForDetail(updated)
+              return updated
+            }
+            return c
+          })
+        )
+      }
+      setToast({
+        isOpen: true,
+        title: 'Payment Reverted',
+        message: 'Payment record removed successfully',
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to revert EMI payment'
+      setToast({
+        isOpen: true,
+        title: 'Error',
+        message: msg,
+      })
+    }
+  }
+
   const isDark = theme === 'dark'
 
   if (isAuthLoading) {
@@ -2152,6 +2483,10 @@ export default function Home() {
         expenseCounts={expenseCounts}
         onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
         onOpenAddExpenseModal={handleOpenAddExpense}
+        expenseSubView={expenseSubView}
+        onSelectExpenseSubView={setExpenseSubView}
+        cardsCount={cards.length}
+        onOpenCreateCardModal={handleOpenCreateCard}
         onOpenActivityModal={() => setIsActivityModalOpen(true)}
         onOpenVersionModal={() => setIsVersionModalOpen(true)}
         availableVersions={availableVersions}
@@ -2439,21 +2774,43 @@ export default function Home() {
                 {activeTab !== 'notes' && (
                   <button
                     type="button"
-                    onClick={activeTab === 'expenses' ? handleOpenAddExpense : handleOpenCreateTicket}
+                    onClick={
+                      activeTab === 'expenses'
+                        ? expenseSubView === 'cards'
+                          ? handleOpenCreateCard
+                          : handleOpenAddExpense
+                        : handleOpenCreateTicket
+                    }
                     className={`h-8.5 px-3 sm:px-4 rounded-full text-xs font-semibold transition-all duration-150 cursor-pointer active:scale-95 inline-flex items-center gap-1.5 shadow-xs shrink-0 ${
                       isDark
                         ? 'bg-white hover:bg-zinc-100 text-zinc-950 border border-white'
                         : 'bg-zinc-950 hover:bg-zinc-800 text-white border border-zinc-950'
                     }`}
-                    title={activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
-                    aria-label={activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+                    title={
+                      activeTab === 'expenses'
+                        ? expenseSubView === 'cards'
+                          ? 'Create Card'
+                          : 'Add Expense'
+                        : 'New Ticket'
+                    }
+                    aria-label={
+                      activeTab === 'expenses'
+                        ? expenseSubView === 'cards'
+                          ? 'Create Card'
+                          : 'Add Expense'
+                        : 'New Ticket'
+                    }
                   >
                     <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="12" y1="5" x2="12" y2="19" />
                       <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
                     <span className="hidden sm:inline">
-                      {activeTab === 'expenses' ? 'Add Expense' : 'New Ticket'}
+                      {activeTab === 'expenses'
+                        ? expenseSubView === 'cards'
+                          ? 'Create Card'
+                          : 'Add Expense'
+                        : 'New Ticket'}
                     </span>
                   </button>
                 )}
@@ -2610,44 +2967,58 @@ export default function Home() {
 
               {/* View 5: Expense Tracker */}
               {activeTab === 'expenses' && (
-                <ExpenseTracker
-                  expenses={expenses}
-                  availableProjects={availableExpenseProjects}
-                  selectedProject={selectedExpenseProject}
-                  categories={expenseCategories}
-                  availableMonths={availableExpenseMonths}
-                  onAddExpense={handleOpenAddExpense}
-                  onEditExpense={handleOpenEditExpense}
-                  onDeleteExpense={(exp) => setExpenseToDelete(exp)}
-                  onOpenCategoryManager={() => setIsCategoryModalOpen(true)}
-                  theme={theme}
-                  selectedCategory={selectedExpenseCategory}
-                  selectedCategories={selectedExpenseCategories}
-                  onSelectCategory={handleSelectExpenseCategory}
-                  selectedPaymentMethod={selectedPaymentMethod}
-                  selectedPaymentMethods={selectedPaymentMethods}
-                  onSelectPaymentMethod={handleSelectPaymentMethod}
-                  selectedMonth={selectedExpenseMonth}
-                  onSelectMonth={handleSelectExpenseMonth}
-                  minAmount={expenseMinAmount}
-                  maxAmount={expenseMaxAmount}
-                  onMinAmountChange={setExpenseMinAmount}
-                  onMaxAmountChange={setExpenseMaxAmount}
-                  searchQuery={expenseSearchQuery}
-                  onExpenseSearchChange={setExpenseSearchQuery}
-                  onSelectWorkspace={handleSelectExpenseWorkspace}
-                  onFetchExpenseDetails={handleFetchExpenseDetails}
-                  onFetchExpensesForPdf={handleFetchExpensesForPdf}
-                  onClearAllFilters={() => {
-                    setSelectedExpenseCategories([])
-                    setSelectedPaymentMethods([])
-                    handleSelectExpenseMonth('ALL')
-                    handleSelectExpenseWorkspace('ALL')
-                    setExpenseMinAmount('')
-                    setExpenseMaxAmount('')
-                    setExpenseSearchQuery('')
-                  }}
-                />
+                expenseSubView === 'cards' ? (
+                  <ExpenseCardsView
+                    cards={cards}
+                    selectedProject={selectedExpenseProject}
+                    onOpenCreateCard={handleOpenCreateCard}
+                    onOpenCardDetail={handleOpenCardDetail}
+                    onOpenPayEmi={(c) => handleOpenPayEmi(c)}
+                    onEditCard={handleOpenEditCard}
+                    onDeleteCard={handleDeleteCard}
+                    theme={theme}
+                  />
+                ) : (
+                  <ExpenseTracker
+                    expenses={expenses}
+                    availableProjects={availableExpenseProjects}
+                    selectedProject={selectedExpenseProject}
+                    categories={expenseCategories}
+                    availableMonths={availableExpenseMonths}
+                    onAddExpense={handleOpenAddExpense}
+                    onEditExpense={handleOpenEditExpense}
+                    onDeleteExpense={(exp) => setExpenseToDelete(exp)}
+                    onOpenCategoryManager={() => setIsCategoryModalOpen(true)}
+                    theme={theme}
+                    expenseSubView={expenseSubView}
+                    selectedCategory={selectedExpenseCategory}
+                    selectedCategories={selectedExpenseCategories}
+                    onSelectCategory={handleSelectExpenseCategory}
+                    selectedPaymentMethod={selectedPaymentMethod}
+                    selectedPaymentMethods={selectedPaymentMethods}
+                    onSelectPaymentMethod={handleSelectPaymentMethod}
+                    selectedMonth={selectedExpenseMonth}
+                    onSelectMonth={handleSelectExpenseMonth}
+                    minAmount={expenseMinAmount}
+                    maxAmount={expenseMaxAmount}
+                    onMinAmountChange={setExpenseMinAmount}
+                    onMaxAmountChange={setExpenseMaxAmount}
+                    searchQuery={expenseSearchQuery}
+                    onExpenseSearchChange={setExpenseSearchQuery}
+                    onSelectWorkspace={handleSelectExpenseWorkspace}
+                    onFetchExpenseDetails={handleFetchExpenseDetails}
+                    onFetchExpensesForPdf={handleFetchExpensesForPdf}
+                    onClearAllFilters={() => {
+                      setSelectedExpenseCategories([])
+                      setSelectedPaymentMethods([])
+                      handleSelectExpenseMonth('ALL')
+                      handleSelectExpenseWorkspace('ALL')
+                      setExpenseMinAmount('')
+                      setExpenseMaxAmount('')
+                      setExpenseSearchQuery('')
+                    }}
+                  />
+                )
               )}
             </div>
           )}
@@ -2828,6 +3199,56 @@ export default function Home() {
         cancelText="Cancel"
         theme={theme}
         loading={isDeleting}
+      />
+
+      {/* Create / Edit Card Modal */}
+      <CreateCardModal
+        isOpen={isCardModalOpen}
+        onClose={() => {
+          setIsCardModalOpen(false)
+          setEditingCard(null)
+        }}
+        onSave={handleSaveCard}
+        existingCard={editingCard}
+        availableProjects={availableExpenseProjects}
+        currentWorkspace={selectedExpenseProject}
+        theme={theme}
+      />
+
+      {/* Card Detail Statement Modal (Double Click drilldown) */}
+      <CardDetailStatementModal
+        isOpen={Boolean(selectedCardForDetail)}
+        onClose={() => {
+          setSelectedCardForDetail(null)
+          setSelectedCardPayments([])
+        }}
+        card={selectedCardForDetail}
+        payments={selectedCardPayments}
+        onOpenPayEmi={(card, emiNum) => handleOpenPayEmi(card, emiNum)}
+        onDeletePayment={handleDeleteEmiPayment}
+        onEditCard={(card) => {
+          setSelectedCardForDetail(null)
+          handleOpenEditCard(card)
+        }}
+        onDeleteCard={(card) => {
+          handleDeleteCard(card)
+        }}
+        theme={theme}
+      />
+
+      {/* Mark EMI Paid Modal */}
+      <MarkEmiPaidModal
+        isOpen={isPayEmiModalOpen}
+        onClose={() => {
+          setIsPayEmiModalOpen(false)
+          setPayingCard(null)
+          setPayingEmiNumber(undefined)
+        }}
+        card={payingCard}
+        targetEmiNumber={payingEmiNumber}
+        onConfirmPayment={handleRecordEmiPayment}
+        expenseCategories={expenseCategories}
+        theme={theme}
       />
 
       {/* Activity Heatmap Modal */}

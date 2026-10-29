@@ -65,6 +65,40 @@ const typeDefs = /* GraphQL */ `
     updatedAt: String!
   }
 
+  type Card {
+    id: ID!
+    userEmail: String!
+    bankName: String!
+    cardName: String!
+    cardNumber: String!
+    description: String
+    cardLimit: Float!
+    cardLimitUsed: Float!
+    cardColor: String!
+    monthlyEmi: Float!
+    totalEmis: Int!
+    paidEmis: Int!
+    startDate: String!
+    endDate: String!
+    emiDueDay: Int!
+    projectName: String!
+    isActive: Boolean!
+    createdAt: String!
+    updatedAt: String!
+  }
+
+  type CardEmiPayment {
+    id: ID!
+    cardId: ID!
+    userEmail: String!
+    emiNumber: Int!
+    amount: Float!
+    paidDate: String!
+    transactionId: String
+    notes: String
+    createdAt: String!
+  }
+
   input CreateTicketInput {
     title: String!
     ticketId: String
@@ -120,6 +154,52 @@ const typeDefs = /* GraphQL */ `
     paymentMethod: String
     projectName: String
     notes: String
+  }
+
+  input CreateCardInput {
+    bankName: String!
+    cardName: String!
+    cardNumber: String!
+    description: String
+    cardLimit: Float
+    cardLimitUsed: Float
+    cardColor: String
+    monthlyEmi: Float!
+    totalEmis: Int!
+    paidEmis: Int
+    startDate: String!
+    endDate: String
+    emiDueDay: Int!
+    projectName: String
+  }
+
+  input UpdateCardInput {
+    bankName: String
+    cardName: String
+    cardNumber: String
+    description: String
+    cardLimit: Float
+    cardLimitUsed: Float
+    cardColor: String
+    monthlyEmi: Float
+    totalEmis: Int
+    paidEmis: Int
+    startDate: String
+    endDate: String
+    emiDueDay: Int
+    projectName: String
+    isActive: Boolean
+  }
+
+  input RecordEmiPaymentInput {
+    cardId: ID!
+    emiNumber: Int!
+    amount: Float!
+    paidDate: String!
+    transactionId: String
+    notes: String
+    recordAsExpense: Boolean
+    expenseCategory: String
   }
 
   type TicketCounts {
@@ -194,6 +274,9 @@ const typeDefs = /* GraphQL */ `
     ): [Expense!]!
     expenseCategories(userEmail: String): [String!]!
     expenseMonths(userEmail: String, projectName: String): [String!]!
+    card(id: ID!): Card
+    cards(projectName: String, userEmail: String): [Card!]!
+    cardEmiPayments(cardId: ID!, userEmail: String): [CardEmiPayment!]!
   }
 
   # MUTATIONS
@@ -214,6 +297,11 @@ const typeDefs = /* GraphQL */ `
     deleteExpense(id: ID!, userEmail: String): Boolean!
     createExpenseCategory(name: String!, userEmail: String): String!
     deleteExpenseCategory(name: String!, userEmail: String): Boolean!
+    createCard(input: CreateCardInput!, userEmail: String): Card!
+    updateCard(id: ID!, input: UpdateCardInput!, userEmail: String): Card!
+    deleteCard(id: ID!, userEmail: String): Boolean!
+    recordEmiPayment(input: RecordEmiPaymentInput!, userEmail: String): CardEmiPayment!
+    deleteEmiPayment(id: ID!, userEmail: String): Boolean!
   }
 `
 
@@ -472,6 +560,89 @@ function formatExpense(row: ExpenseRow) {
     createdBy: formatAuthor(row.created_by),
     createdAt: row.created_at || new Date().toISOString(),
     updatedAt: row.updated_at || row.created_at || new Date().toISOString(),
+  }
+}
+
+interface CardRow {
+  id: string
+  user_email: string
+  bank_name: string
+  card_name: string
+  card_number: string
+  description?: string | null
+  card_limit: number | string
+  card_limit_used: number | string
+  card_color: string
+  monthly_emi: number | string
+  total_emis: number
+  paid_emis: number
+  start_date: string
+  end_date: string
+  emi_due_day: number
+  project_name: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+interface CardEmiPaymentRow {
+  id: string
+  card_id: string
+  user_email: string
+  emi_number: number
+  amount: number | string
+  paid_date: string
+  transaction_id?: string | null
+  notes?: string | null
+  created_at: string
+}
+
+function computeEndDate(startDateStr: string, totalEmis: number): string {
+  try {
+    const [y, m, d] = startDateStr.split('-').map(Number)
+    if (!y || !m || !d) return startDateStr
+    const dt = new Date(y, m - 1 + (Math.max(1, totalEmis) - 1), d)
+    return dt.toISOString().split('T')[0]
+  } catch {
+    return startDateStr
+  }
+}
+
+function formatCard(row: CardRow) {
+  return {
+    id: row.id,
+    userEmail: row.user_email,
+    bankName: row.bank_name,
+    cardName: row.card_name,
+    cardNumber: row.card_number,
+    description: row.description || null,
+    cardLimit: Number(row.card_limit) || 0,
+    cardLimitUsed: Number(row.card_limit_used) || 0,
+    cardColor: row.card_color || 'black',
+    monthlyEmi: Number(row.monthly_emi) || 0,
+    totalEmis: Number(row.total_emis) || 0,
+    paidEmis: Number(row.paid_emis) || 0,
+    startDate: row.start_date ? String(row.start_date).split('T')[0] : '',
+    endDate: row.end_date ? String(row.end_date).split('T')[0] : '',
+    emiDueDay: Number(row.emi_due_day) || 1,
+    projectName: row.project_name || 'Personal',
+    isActive: row.is_active !== false,
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at || row.created_at || new Date().toISOString(),
+  }
+}
+
+function formatCardEmiPayment(row: CardEmiPaymentRow) {
+  return {
+    id: row.id,
+    cardId: row.card_id,
+    userEmail: row.user_email,
+    emiNumber: Number(row.emi_number),
+    amount: Number(row.amount) || 0,
+    paidDate: row.paid_date ? String(row.paid_date).split('T')[0] : '',
+    transactionId: row.transaction_id || null,
+    notes: row.notes || null,
+    createdAt: row.created_at || new Date().toISOString(),
   }
 }
 
@@ -1677,6 +1848,103 @@ const resolvers = {
 
       return result
     },
+
+    card: async (
+      _: unknown,
+      { id }: { id: string },
+      context?: GraphQLContext
+    ) => {
+      if (!id) return null
+      try {
+        const { data, error } = await supabase
+          .from('cards')
+          .select('*')
+          .eq('id', id)
+          .single()
+
+        if (!error && data) {
+          return formatCard(data as CardRow)
+        }
+      } catch (err) {
+        console.warn('Error fetching single card from Supabase:', err)
+      }
+      return null
+    },
+
+    cards: async (
+      _: unknown,
+      {
+        projectName,
+        userEmail,
+      }: {
+        projectName?: string
+        userEmail?: string
+      },
+      context?: GraphQLContext
+    ) => {
+      const email = resolveTargetEmail(userEmail, context) || 'admin@ticketflow.io'
+
+      try {
+        let query = supabase
+          .from('cards')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (email === 'admin@ticketflow.io') {
+          query = query.or(
+            `user_email.eq.${email},user_email.eq.james nithil,user_email.eq.nithil,user_email.is.null`
+          )
+        } else {
+          query = query.eq('user_email', email)
+        }
+
+        if (projectName && projectName !== 'ALL') {
+          query = query.eq('project_name', projectName)
+        }
+
+        const { data, error } = await query
+
+        if (error) {
+          console.warn('Supabase cards fetch error:', error.message)
+          return []
+        }
+
+        return ((data as CardRow[]) || []).map(formatCard)
+      } catch (err) {
+        console.warn('Error fetching cards:', err)
+        return []
+      }
+    },
+
+    cardEmiPayments: async (
+      _: unknown,
+      {
+        cardId,
+      }: {
+        cardId: string
+        userEmail?: string
+      },
+      context?: GraphQLContext
+    ) => {
+      if (!cardId) return []
+      try {
+        const { data, error } = await supabase
+          .from('card_emi_payments')
+          .select('*')
+          .eq('card_id', cardId)
+          .order('emi_number', { ascending: true })
+
+        if (error) {
+          console.warn('Supabase cardEmiPayments fetch error:', error.message)
+          return []
+        }
+
+        return ((data as CardEmiPaymentRow[]) || []).map(formatCardEmiPayment)
+      } catch (err) {
+        console.warn('Error fetching card emi payments:', err)
+        return []
+      }
+    },
   },
 
   Mutation: {
@@ -2458,6 +2726,267 @@ const resolvers = {
         console.warn('deleteExpenseCategory notice:', err)
       }
       fallbackCategories.delete(name)
+      await bustUserExpenseCache(email)
+      return true
+    },
+
+    createCard: async (
+      _: unknown,
+      {
+        input,
+        userEmail,
+      }: {
+        input: {
+          bankName: string
+          cardName: string
+          cardNumber: string
+          description?: string | null
+          cardLimit?: number | null
+          cardLimitUsed?: number | null
+          cardColor?: string | null
+          monthlyEmi: number
+          totalEmis: number
+          paidEmis?: number | null
+          startDate: string
+          endDate?: string | null
+          emiDueDay: number
+          projectName?: string | null
+        }
+        userEmail?: string
+      },
+      context?: GraphQLContext
+    ) => {
+      const email = resolveTargetEmail(userEmail, context) || 'admin@ticketflow.io'
+
+      const totalEmis = Number(input.totalEmis) || 12
+      const paidEmis = Number(input.paidEmis) || 0
+      const calculatedEndDate = input.endDate || computeEndDate(input.startDate, totalEmis)
+
+      const payload = {
+        user_email: email,
+        bank_name: input.bankName.trim(),
+        card_name: input.cardName.trim(),
+        card_number: input.cardNumber.trim(),
+        description: input.description || null,
+        card_limit: Number(input.cardLimit) || 0,
+        card_limit_used: Number(input.cardLimitUsed) || 0,
+        card_color: input.cardColor || 'black',
+        monthly_emi: Number(input.monthlyEmi) || 0,
+        total_emis: totalEmis,
+        paid_emis: paidEmis,
+        start_date: input.startDate,
+        end_date: calculatedEndDate,
+        emi_due_day: Number(input.emiDueDay) || 1,
+        project_name: input.projectName || 'Personal',
+        is_active: paidEmis < totalEmis,
+      }
+
+      const { data, error } = await supabase
+        .from('cards')
+        .insert([payload])
+        .select()
+        .single()
+
+      if (error) {
+        throw new Error(`Failed to create card: ${error.message}`)
+      }
+
+      await bustUserExpenseCache(email)
+      return formatCard(data as CardRow)
+    },
+
+    updateCard: async (
+      _: unknown,
+      {
+        id,
+        input,
+        userEmail,
+      }: {
+        id: string
+        input: any
+        userEmail?: string
+      },
+      context?: GraphQLContext
+    ) => {
+      const email = resolveTargetEmail(userEmail, context) || 'admin@ticketflow.io'
+
+      const updateData: any = { updated_at: new Date().toISOString() }
+      if (input.bankName !== undefined) updateData.bank_name = input.bankName
+      if (input.cardName !== undefined) updateData.card_name = input.cardName
+      if (input.cardNumber !== undefined) updateData.card_number = input.cardNumber
+      if (input.description !== undefined) updateData.description = input.description
+      if (input.cardLimit !== undefined) updateData.card_limit = Number(input.cardLimit)
+      if (input.cardLimitUsed !== undefined) updateData.card_limit_used = Number(input.cardLimitUsed)
+      if (input.cardColor !== undefined) updateData.card_color = input.cardColor
+      if (input.monthlyEmi !== undefined) updateData.monthly_emi = Number(input.monthlyEmi)
+      if (input.totalEmis !== undefined) updateData.total_emis = Number(input.totalEmis)
+      if (input.paidEmis !== undefined) updateData.paid_emis = Number(input.paidEmis)
+      if (input.startDate !== undefined) updateData.start_date = input.startDate
+      if (input.endDate !== undefined) updateData.end_date = input.endDate
+      if (input.emiDueDay !== undefined) updateData.emi_due_day = Number(input.emiDueDay)
+      if (input.projectName !== undefined) updateData.project_name = input.projectName
+      if (input.isActive !== undefined) updateData.is_active = input.isActive
+
+      const { data, error } = await supabase
+        .from('cards')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        throw new Error(`Failed to update card: ${error.message}`)
+      }
+
+      await bustUserExpenseCache(email)
+      return formatCard(data as CardRow)
+    },
+
+    deleteCard: async (
+      _: unknown,
+      { id, userEmail }: { id: string; userEmail?: string },
+      context?: GraphQLContext
+    ) => {
+      const email = resolveTargetEmail(userEmail, context) || 'admin@ticketflow.io'
+
+      const { error } = await supabase.from('cards').delete().eq('id', id)
+      if (error) {
+        console.warn('Error deleting card:', error.message)
+        return false
+      }
+
+      await bustUserExpenseCache(email)
+      return true
+    },
+
+    recordEmiPayment: async (
+      _: unknown,
+      {
+        input,
+        userEmail,
+      }: {
+        input: {
+          cardId: string
+          emiNumber: number
+          amount: number
+          paidDate: string
+          transactionId?: string | null
+          notes?: string | null
+          recordAsExpense?: boolean | null
+          expenseCategory?: string | null
+        }
+        userEmail?: string
+      },
+      context?: GraphQLContext
+    ) => {
+      const email = resolveTargetEmail(userEmail, context) || 'admin@ticketflow.io'
+
+      // 1. Fetch card first
+      const { data: cardData, error: cardErr } = await supabase
+        .from('cards')
+        .select('*')
+        .eq('id', input.cardId)
+        .single()
+
+      if (cardErr || !cardData) {
+        throw new Error('Card not found')
+      }
+
+      // 2. Insert payment record into card_emi_payments
+      const paymentPayload = {
+        card_id: input.cardId,
+        user_email: email,
+        emi_number: Number(input.emiNumber),
+        amount: Number(input.amount),
+        paid_date: input.paidDate,
+        transaction_id: input.transactionId ? input.transactionId.trim() : null,
+        notes: input.notes ? input.notes.trim() : null,
+      }
+
+      const { data: paymentRecord, error: payErr } = await supabase
+        .from('card_emi_payments')
+        .insert([paymentPayload])
+        .select()
+        .single()
+
+      if (payErr) {
+        throw new Error(`Failed to record payment: ${payErr.message}`)
+      }
+
+      // 3. Count total payments for this card to accurately update paid_emis
+      const { count } = await supabase
+        .from('card_emi_payments')
+        .select('*', { count: 'exact', head: true })
+        .eq('card_id', input.cardId)
+
+      const paidCount = count !== null && count !== undefined ? count : (Number(cardData.paid_emis) + 1)
+      const isActive = paidCount < Number(cardData.total_emis)
+
+      await supabase
+        .from('cards')
+        .update({
+          paid_emis: paidCount,
+          is_active: isActive,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.cardId)
+
+      // 4. Optionally record as an expense in Expense Inbox
+      if (input.recordAsExpense) {
+        const expensePayload = {
+          title: `${cardData.bank_name} - ${cardData.card_name} (EMI #${input.emiNumber})`,
+          amount: Number(input.amount),
+          currency: 'INR',
+          category: input.expenseCategory || 'Bills & Utilities',
+          date: input.paidDate,
+          payment_method: 'Credit Card',
+          project_name: cardData.project_name || 'General',
+          notes: input.transactionId ? `Txn: ${input.transactionId}` : input.notes || 'Card EMI Payment',
+          created_by: email,
+        }
+
+        await supabase.from('expenses').insert([expensePayload])
+      }
+
+      await bustUserExpenseCache(email)
+      return formatCardEmiPayment(paymentRecord as CardEmiPaymentRow)
+    },
+
+    deleteEmiPayment: async (
+      _: unknown,
+      { id, userEmail }: { id: string; userEmail?: string },
+      context?: GraphQLContext
+    ) => {
+      const email = resolveTargetEmail(userEmail, context) || 'admin@ticketflow.io'
+
+      // Find the payment first
+      const { data: payment } = await supabase
+        .from('card_emi_payments')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (!payment) return false
+
+      const cardId = payment.card_id
+      await supabase.from('card_emi_payments').delete().eq('id', id)
+
+      // Recalculate remaining payments for this card
+      const { count } = await supabase
+        .from('card_emi_payments')
+        .select('*', { count: 'exact', head: true })
+        .eq('card_id', cardId)
+
+      const remainingPaidCount = count || 0
+      await supabase
+        .from('cards')
+        .update({
+          paid_emis: remainingPaidCount,
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', cardId)
+
       await bustUserExpenseCache(email)
       return true
     },

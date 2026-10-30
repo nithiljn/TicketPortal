@@ -612,6 +612,21 @@ function computeEndDate(startDateStr: string, totalEmis: number): string {
   }
 }
 
+function computeInstallmentDueDate(startDateStr: string, dueDay: number, monthIndex: number): string {
+  try {
+    const [y, m] = startDateStr.split('-').map(Number)
+    if (!y || !m) return startDateStr
+    const totalMonths = (m - 1) + monthIndex
+    const targetY = y + Math.floor(totalMonths / 12)
+    const targetM = (totalMonths % 12) + 1
+    const daysInMonth = new Date(targetY, targetM, 0).getDate()
+    const validDay = Math.min(dueDay, daysInMonth)
+    return `${targetY}-${String(targetM).padStart(2, '0')}-${String(validDay).padStart(2, '0')}`
+  } catch {
+    return startDateStr
+  }
+}
+
 function formatCard(row: CardRow) {
   return {
     id: row.id,
@@ -1932,7 +1947,7 @@ const resolvers = {
     ) => {
       if (!cardId) return []
       try {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('card_emi_payments')
           .select('*')
           .eq('card_id', cardId)
@@ -1941,6 +1956,52 @@ const resolvers = {
         if (error) {
           console.warn('Supabase cardEmiPayments fetch error:', error.message)
           return []
+        }
+
+        // Auto backfill payments for already-paid EMIs if missing
+        try {
+          const { data: cardRow } = await supabase
+            .from('cards')
+            .select('*')
+            .eq('id', cardId)
+            .single()
+
+          if (cardRow && Number(cardRow.paid_emis) > 0) {
+            const paidEmis = Number(cardRow.paid_emis)
+            const existingEmiNums = new Set(((data as CardEmiPaymentRow[]) || []).map((p) => Number(p.emi_number)))
+            const missingPayments: any[] = []
+
+            for (let i = 0; i < paidEmis; i++) {
+              const emiNum = i + 1
+              if (!existingEmiNums.has(emiNum)) {
+                const dueDate = computeInstallmentDueDate(cardRow.start_date, Number(cardRow.emi_due_day) || 1, i)
+                missingPayments.push({
+                  card_id: cardId,
+                  user_email: cardRow.user_email,
+                  emi_number: emiNum,
+                  amount: Number(cardRow.monthly_emi) || 0,
+                  paid_date: dueDate,
+                  transaction_id: null,
+                  notes: 'Initial Paid EMI',
+                })
+              }
+            }
+
+            if (missingPayments.length > 0) {
+              const { data: inserted } = await supabase
+                .from('card_emi_payments')
+                .insert(missingPayments)
+                .select()
+
+              if (inserted && Array.isArray(inserted)) {
+                data = [...((data as CardEmiPaymentRow[]) || []), ...(inserted as CardEmiPaymentRow[])].sort(
+                  (a, b) => Number(a.emi_number) - Number(b.emi_number)
+                )
+              }
+            }
+          }
+        } catch (syncErr) {
+          console.warn('Notice syncing initial EMI payments:', syncErr)
         }
 
         return ((data as CardEmiPaymentRow[]) || []).map(formatCardEmiPayment)
@@ -2795,6 +2856,31 @@ const resolvers = {
         throw new Error(`Failed to create card: ${error.message}`)
       }
 
+      // Auto-insert initial payment records for already-paid EMIs
+      if (paidEmis > 0 && data?.id) {
+        const initialPayments = []
+        for (let i = 0; i < paidEmis; i++) {
+          const emiNum = i + 1
+          const dueDate = computeInstallmentDueDate(input.startDate, Number(input.emiDueDay) || 1, i)
+          initialPayments.push({
+            card_id: data.id,
+            user_email: email,
+            emi_number: emiNum,
+            amount: Number(input.monthlyEmi) || 0,
+            paid_date: dueDate,
+            transaction_id: null,
+            notes: 'Initial Paid EMI',
+          })
+        }
+        if (initialPayments.length > 0) {
+          try {
+            await supabase.from('card_emi_payments').insert(initialPayments)
+          } catch (seedErr) {
+            console.warn('Initial payments seed notice:', seedErr)
+          }
+        }
+      }
+
       await bustUserExpenseCache(email)
       return formatCard(data as CardRow)
     },
@@ -2923,7 +3009,10 @@ const resolvers = {
         .select('*', { count: 'exact', head: true })
         .eq('card_id', input.cardId)
 
-      const paidCount = count !== null && count !== undefined ? count : (Number(cardData.paid_emis) + 1)
+      const paidCount = Math.min(
+        Number(cardData.total_emis),
+        Math.max(count !== null && count !== undefined ? count : (Number(cardData.paid_emis) + 1), Number(input.emiNumber))
+      )
       const isActive = paidCount < Number(cardData.total_emis)
       const remainingMonths = Math.max(0, Number(cardData.total_emis) - paidCount)
       const newLimitUsed = Math.max(0, Number(cardData.monthly_emi) * remainingMonths)

@@ -390,7 +390,11 @@ export function CardDetailStatementModal({
                             )}
                           </td>
                           <td className="py-3 px-4 font-mono text-zinc-600 dark:text-zinc-400">
-                            {row.paidRecord?.paidDate ? formatDisplayDate(row.paidRecord.paidDate) : '—'}
+                            {row.paidRecord?.paidDate
+                              ? formatDisplayDate(row.paidRecord.paidDate)
+                              : isPaid
+                              ? formatDisplayDate(row.dueDate)
+                              : '—'}
                           </td>
                           <td className="py-3 px-4 font-mono text-[11px] truncate max-w-[150px]">
                             {row.paidRecord?.transactionId || '—'}

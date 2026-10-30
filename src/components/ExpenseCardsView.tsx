@@ -169,7 +169,7 @@ export function ExpenseCardsView({
             <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] block">
               Total Outstanding Balance
             </span>
-            <div className="text-2xl font-bold font-mono tracking-tight text-rose-500 mt-1">
+            <div className="text-2xl font-bold font-mono tracking-tight mt-1">
               {formatMoney(summary.totalRemainingBalance)}
             </div>
             <span className="text-[11px] text-[#86868b] mt-1 block">

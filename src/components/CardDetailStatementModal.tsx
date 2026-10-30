@@ -128,8 +128,8 @@ export function CardDetailStatementModal({
   const tableHeaderBg = isDark ? 'bg-white/[0.04] text-[#86868b]' : 'bg-[#f5f5f7] text-[#1d1d1f]/60'
   const rowBorder = isDark ? 'border-white/[0.06] hover:bg-white/[0.02]' : 'border-black/[0.06] hover:bg-black/[0.01]'
   const deleteBtn = isDark
-    ? 'border-white/[0.1] hover:border-rose-600 bg-white/[0.04] hover:bg-rose-600 text-zinc-400 hover:text-white transition-all duration-150'
-    : 'border-black/[0.12] hover:border-rose-600 bg-white hover:bg-rose-600 text-zinc-600 hover:text-white shadow-2xs transition-all duration-150'
+    ? 'border-white/[0.1] hover:border-[#C04742] bg-white/[0.04] hover:bg-rose-600 text-zinc-400 hover:text-white transition-all duration-150'
+    : 'border-black/[0.12] hover:border-[#C04742] bg-white hover:bg-rose-600 text-zinc-600 hover:text-white shadow-2xs transition-all duration-150'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto bg-black/70 backdrop-blur-md animate-in fade-in duration-150">
@@ -221,7 +221,7 @@ export function CardDetailStatementModal({
                 <span className="text-xl sm:text-2xl font-bold font-mono tracking-tight text-emerald-500 mt-1 block">
                   ₹{totalPaidValue.toLocaleString()}
                 </span>
-                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 block">
+                <span className="text-[11px] text-[#86868b] font-medium mt-0.5 block">
                   {card.paidEmis} of {card.totalEmis} EMIs Paid
                 </span>
               </div>
@@ -349,14 +349,7 @@ export function CardDetailStatementModal({
                           </td>
                           <td className="py-3 px-4">
                             {isPaid ? (
-                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
-                                isDark
-                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              }`}>
-                                <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
+                              <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-medium text-white bg-emerald-600 shadow-2xs">
                                 Paid
                               </span>
                             ) : isOverdue ? (

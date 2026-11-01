@@ -931,8 +931,8 @@ export default function Home() {
       }>(query, {
         userEmail: user.email,
         projectName: selectedExpenseProject !== 'ALL' ? selectedExpenseProject : null,
-        month: selectedExpenseMonth !== 'ALL' ? selectedExpenseMonth : null,
-        limit: 100,
+        month: null, // Load all expenses for full multi-month analytics & instant client filtering
+        limit: 1000,
         offset: 0,
       })
 
@@ -961,7 +961,7 @@ export default function Home() {
         setIsExpenseLoading(false)
       }
     }
-  }, [user?.email, selectedExpenseProject, selectedExpenseMonth])
+  }, [user?.email, selectedExpenseProject])
 
   // 4. Board Loader
   const loadBoardData = useCallback(async () => {
@@ -1126,13 +1126,12 @@ export default function Home() {
     }
   }, [loadInboxData, isAuthLoading, user?.email])
 
-  // Re-fetch expenses when expense filters change while on expenses tab
+  // Re-fetch expenses when workspace changes while on expenses tab
   useEffect(() => {
     if (activeTab !== 'expenses' || !loadedTabs.has('expenses')) return
 
     const filtersChanged =
-      prevExpenseFiltersRef.current.project !== selectedExpenseProject ||
-      prevExpenseFiltersRef.current.month !== selectedExpenseMonth
+      prevExpenseFiltersRef.current.project !== selectedExpenseProject
 
     prevExpenseFiltersRef.current = {
       project: selectedExpenseProject,
@@ -1142,7 +1141,7 @@ export default function Home() {
     if (filtersChanged) {
       loadExpensesData()
     }
-  }, [activeTab, loadedTabs, selectedExpenseProject, selectedExpenseMonth, loadExpensesData])
+  }, [activeTab, loadedTabs, selectedExpenseProject, loadExpensesData])
 
   // Re-fetch board / dashboard when workspace changes
   useEffect(() => {
@@ -2998,6 +2997,10 @@ export default function Home() {
                 ) : (
                   <ExpenseTracker
                     expenses={expenses}
+                    cards={cards}
+                    onOpenCardDetail={handleOpenCardDetail}
+                    onOpenPayEmi={(c) => handleOpenPayEmi(c)}
+                    onSwitchToCards={() => setExpenseSubView('cards')}
                     availableProjects={availableExpenseProjects}
                     selectedProject={selectedExpenseProject}
                     categories={expenseCategories}

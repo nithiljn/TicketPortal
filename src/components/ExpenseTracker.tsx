@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { Expense, PaymentMethod, ExpenseSubView } from '@/types'
+import { Expense, PaymentMethod, ExpenseSubView, Card } from '@/types'
 import { Button } from '@/components/Button'
 import { generateExpensePdf } from '@/lib/generateExpensePdf'
 import { HighlightText } from '@/components/HighlightText'
+import { getCardColorConfig } from '@/components/CreateCardModal'
 
 interface ExpenseTrackerProps {
   expenses: Expense[]
@@ -37,6 +38,11 @@ interface ExpenseTrackerProps {
   onFetchExpenseDetails?: (id: string) => Promise<Expense | null>
   onFetchExpensesForPdf?: () => Promise<Expense[]>
   expenseSubView?: ExpenseSubView
+  // Cards & EMI Integration
+  cards?: Card[]
+  onOpenCardDetail?: (card: Card) => void
+  onOpenPayEmi?: (card: Card) => void
+  onSwitchToCards?: () => void
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -205,6 +211,33 @@ function renderPaymentMethodIcon(method: string) {
   }
 }
 
+function formatCardDueNotice(dueDay: number) {
+  const today = new Date()
+  const currentDay = today.getDate()
+  const daysDiff = dueDay - currentDay
+
+  if (daysDiff === 0) {
+    return {
+      label: 'Due Today',
+      color: 'bg-rose-600 text-white border-rose-600 font-medium',
+    }
+  } else if (daysDiff > 0 && daysDiff <= 7) {
+    return {
+      label: `Due on ${dueDay}th (in ${daysDiff}d)`,
+      color: 'bg-amber-400 text-black border-amber-400 font-medium',
+    }
+  } else if (daysDiff < 0 && daysDiff >= -5) {
+    return {
+      label: `Due day passed (${dueDay}th)`,
+      color: 'bg-rose-600 text-white border-rose-600 font-medium',
+    }
+  }
+  return {
+    label: `Due on ${dueDay}th monthly`,
+    color: 'bg-[#080808] text-white border-white/10 font-medium',
+  }
+}
+
 export function ExpenseTracker({
   expenses,
   availableProjects,
@@ -235,6 +268,10 @@ export function ExpenseTracker({
   onFetchExpenseDetails,
   onFetchExpensesForPdf,
   expenseSubView = 'inbox',
+  cards = [],
+  onOpenCardDetail,
+  onOpenPayEmi,
+  onSwitchToCards,
 }: ExpenseTrackerProps) {
   const isDark = theme === 'dark'
 
@@ -250,6 +287,7 @@ export function ExpenseTracker({
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null)
   const [isLoadingViewingNotes, setIsLoadingViewingNotes] = useState(false)
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
+  const [hoveredOutflowMonth, setHoveredOutflowMonth] = useState<string | null>(null)
 
   const handleOpenViewExpense = async (exp: Expense) => {
     setViewingExpense(exp)
@@ -567,6 +605,212 @@ export function ExpenseTracker({
     })
     return groups
   }, [filteredExpenses])
+
+  // Workspace-filtered Cards
+  const relevantCards = useMemo(() => {
+    if (!cards || cards.length === 0) return []
+    if (selectedProject === 'ALL') return cards
+    return cards.filter(
+      (c) => (c.projectName || 'General').toLowerCase() === selectedProject.toLowerCase()
+    )
+  }, [cards, selectedProject])
+
+  // Active cards (unpaid EMIs remaining)
+  const activeCards = useMemo(() => {
+    return relevantCards.filter((c) => c.isActive !== false && (c.paidEmis ?? 0) < c.totalEmis)
+  }, [relevantCards])
+
+  // Completed cards
+  const completedCards = useMemo(() => {
+    return relevantCards.filter((c) => (c.paidEmis ?? 0) >= c.totalEmis)
+  }, [relevantCards])
+
+  // EMI Summary Stats
+  const emiStats = useMemo(() => {
+    const totalMonthlyCommitment = activeCards.reduce((sum, c) => sum + Number(c.monthlyEmi || 0), 0)
+    const totalRemainingDebt = activeCards.reduce(
+      (sum, c) => sum + (c.totalEmis - (c.paidEmis ?? 0)) * Number(c.monthlyEmi || 0),
+      0
+    )
+    const totalPaidSoFar = relevantCards.reduce(
+      (sum, c) => sum + (c.paidEmis ?? 0) * Number(c.monthlyEmi || 0),
+      0
+    )
+    const totalOriginalDebt = totalRemainingDebt + totalPaidSoFar
+    const overallPayoffProgress = totalOriginalDebt > 0 ? Math.round((totalPaidSoFar / totalOriginalDebt) * 100) : 100
+
+    const totalCardLimit = relevantCards.reduce((sum, c) => sum + Number(c.cardLimit || 0), 0)
+    const totalLimitUsed = relevantCards.reduce((sum, c) => sum + Number(c.cardLimitUsed || 0), 0)
+    const totalAvailableLimit = Math.max(0, totalCardLimit - totalLimitUsed)
+
+    return {
+      totalMonthlyCommitment,
+      totalRemainingDebt,
+      totalPaidSoFar,
+      totalOriginalDebt,
+      overallPayoffProgress,
+      totalCardLimit,
+      totalLimitUsed,
+      totalAvailableLimit,
+      activeCount: activeCards.length,
+      completedCount: completedCards.length,
+      totalCount: relevantCards.length,
+    }
+  }, [relevantCards, activeCards, completedCards])
+
+  // Selected Month EMI Commitment
+  const selectedMonthEmiCommitment = useMemo(() => {
+    if (activeMonth === 'ALL') return emiStats.totalMonthlyCommitment
+    let sum = 0
+    relevantCards.forEach((c) => {
+      const startKey = (c.startDate || '').slice(0, 7)
+      if (startKey && activeMonth >= startKey) {
+        const [sYear, sMonth] = startKey.split('-').map(Number)
+        const [cYear, cMonth] = activeMonth.split('-').map(Number)
+        const diffMonths = (cYear - sYear) * 12 + (cMonth - sMonth)
+        if (diffMonths >= 0 && diffMonths < c.totalEmis) {
+          sum += Number(c.monthlyEmi) || 0
+        }
+      } else if (!startKey && activeMonth === currentMonthKey && (c.paidEmis ?? 0) < c.totalEmis) {
+        sum += Number(c.monthlyEmi) || 0
+      }
+    })
+    return sum
+  }, [activeMonth, relevantCards, emiStats.totalMonthlyCommitment, currentMonthKey])
+
+  // Combined Monthly Outflow (Direct Spend + Month EMI Commitment)
+  const combinedMonthlyOutflow = stats.totalAmount + selectedMonthEmiCommitment
+
+  // Monthly Outflow 6-Month Comparative Trend (Direct Spend vs Monthly EMI)
+  const monthlyOutflowTrend = useMemo(() => {
+    const list: {
+      key: string
+      label: string
+      direct: number
+      emi: number
+      total: number
+      directPct: number
+      emiPct: number
+    }[] = []
+
+    const today = new Date()
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const label = d.toLocaleDateString('en-US', { month: 'short' })
+
+      const direct = expenses
+        .filter((e) => {
+          if (!e.date || !e.date.startsWith(key)) return false
+          if (selectedProject !== 'ALL') {
+            return (e.projectName || 'General').toLowerCase() === selectedProject.toLowerCase()
+          }
+          return true
+        })
+        .reduce((sum, e) => sum + Number(e.amount), 0)
+
+      let emi = 0
+      relevantCards.forEach((c) => {
+        const startKey = (c.startDate || '').slice(0, 7)
+        if (startKey && key >= startKey) {
+          const [sYear, sMonth] = startKey.split('-').map(Number)
+          const [cYear, cMonth] = key.split('-').map(Number)
+          const diffMonths = (cYear - sYear) * 12 + (cMonth - sMonth)
+          if (diffMonths >= 0 && diffMonths < c.totalEmis) {
+            emi += Number(c.monthlyEmi) || 0
+          }
+        } else if (!startKey && key === currentMonthKey && (c.paidEmis ?? 0) < c.totalEmis) {
+          emi += Number(c.monthlyEmi) || 0
+        }
+      })
+
+      list.push({
+        key,
+        label,
+        direct,
+        emi,
+        total: direct + emi,
+        directPct: 0,
+        emiPct: 0,
+      })
+    }
+
+    const maxMonthTotal = Math.max(...list.map((m) => m.total), 1)
+    return list.map((m) => ({
+      ...m,
+      directPct: Math.round((m.direct / maxMonthTotal) * 100),
+      emiPct: Math.round((m.emi / maxMonthTotal) * 100),
+    }))
+  }, [expenses, relevantCards, selectedProject, currentMonthKey])
+
+  // Payment Channels & Outflow Allocation
+  const channelBreakdown = useMemo(() => {
+    const directTotal = stats.totalAmount
+    const emiTotal = selectedMonthEmiCommitment
+    const grandTotal = directTotal + emiTotal
+
+    if (grandTotal === 0) return []
+
+    const items: { id: string; label: string; amount: number; color: string; icon: string }[] = []
+
+    if (emiTotal > 0) {
+      items.push({
+        id: 'EMI',
+        label: 'Active EMIs (Commitment)',
+        amount: emiTotal,
+        color: '#6366f1', // Indigo
+        icon: 'CREDIT_CARD',
+      })
+    }
+
+    const pmTotals: Record<string, number> = {}
+    filteredExpenses.forEach((e) => {
+      const m = (e.paymentMethod || 'OTHER').toUpperCase()
+      pmTotals[m] = (pmTotals[m] || 0) + Number(e.amount)
+    })
+
+    const pmColors: Record<string, string> = {
+      UPI: '#10b981', // Emerald
+      CREDIT_CARD: '#0071e3', // Apple Blue
+      DEBIT_CARD: '#06b6d4', // Cyan
+      CASH: '#f59e0b', // Amber
+      NET_BANKING: '#8b5cf6', // Violet
+      OTHER: '#94a3b8', // Slate
+    }
+
+    Object.entries(pmTotals).forEach(([method, amt]) => {
+      if (amt > 0) {
+        items.push({
+          id: method,
+          label: PAYMENT_METHOD_LABELS[method] || method,
+          amount: amt,
+          color: pmColors[method] || '#94a3b8',
+          icon: method,
+        })
+      }
+    })
+
+    items.sort((a, b) => b.amount - a.amount)
+
+    return items.map((item) => ({
+      ...item,
+      percentage: Math.round((item.amount / grandTotal) * 100),
+    }))
+  }, [stats.totalAmount, selectedMonthEmiCommitment, filteredExpenses])
+
+  // Upcoming EMIs this month (sorted by urgency)
+  const upcomingEmisThisMonth = useMemo(() => {
+    const today = new Date()
+    const currentDay = today.getDate()
+
+    return [...activeCards].sort((a, b) => {
+      const diffA = a.emiDueDay - currentDay
+      const diffB = b.emiDueDay - currentDay
+      const scoreA = diffA === 0 ? -1000 : diffA > 0 ? diffA : 100 + diffA
+      const scoreB = diffB === 0 ? -1000 : diffB > 0 ? diffB : 100 + diffB
+      return scoreA - scoreB
+    })
+  }, [activeCards])
 
   // Format currency
   const formatMoney = (val: number) => {
@@ -934,284 +1178,732 @@ export function ExpenseTracker({
           </div>
         </div>
 
-        {/* 2 & 3. KPI Cards & Analytics (Shown only on Expense Dashboard) */}
+        {/* 2 & 3. Executive Dashboard: Outflow, Commitments, Analytics & EMI Payoff Tracker */}
         {expenseSubView === 'dashboard' && (
-          <>
-            {/* 2. KPI Cards Grid (Apple Store Utility Cards Style) */}
+          <div className="space-y-6 sm:space-y-8">
+            {/* 1. Primary Financial Health & Outflow Overview Cards (Apple Utility Cards Grid) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-          {/* Card 1: Total Spent */}
-          <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] truncate">
-                Total Spent
-              </span>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
-                {stats.count} {stats.count === 1 ? 'item' : 'items'}
-              </span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
-              {formatMoney(stats.totalAmount)}
-            </div>
-            <div className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-1.5 truncate">
-              {activeMonth === 'ALL' ? 'Total all time spend' : `Spend for ${formatMonthName(activeMonth)}`}
-            </div>
-          </div>
-
-          {/* Card 2: Today's Spend */}
-          <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] block truncate">
-              Today&apos;s Spend
-            </span>
-            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
-              {formatMoney(stats.todayAmount)}
-            </div>
-            <div className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-1.5 truncate">
-              Recorded for today
-            </div>
-          </div>
-
-          {/* Card 3: Daily Average */}
-          <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] block truncate">
-              Daily Average
-            </span>
-            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
-              {formatMoney(stats.dailyAverage)}
-            </div>
-            <div className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-1.5 truncate">
-              Average per active day
-            </div>
-          </div>
-
-          {/* Card 4: Top Category */}
-          <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] truncate">
-                Top Category
-              </span>
-              {stats.topCategoryPercent > 0 && (
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
-                  {stats.topCategoryPercent}%
-                </span>
-              )}
-            </div>
-            <div className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
-              {stats.topCategory}
-            </div>
-            <div className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-1.5 truncate font-normal">
-              {stats.topCategoryAmount > 0 ? formatMoney(stats.topCategoryAmount) : 'No data'}
-            </div>
-          </div>
-        </div>
-
-        {/* 3. Analytics Section: Donut Chart + Daily Spend Bars */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-          {/* Left: Category Circular Donut Chart */}
-          <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-inherit">
-              <div>
-                <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
-                  Category Distribution
-                </h3>
-                <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
-                  Breakdown of spending across categories
-                </p>
+              {/* Card 1: Combined Monthly Outflow */}
+              <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] truncate">
+                    Total Monthly Outflow
+                  </span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+                    Direct + EMI
+                  </span>
+                </div>
+                <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
+                  {formatMoney(combinedMonthlyOutflow)}
+                </div>
+                <div className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-1.5 truncate">
+                  {formatMoney(stats.totalAmount)} spend + {formatMoney(selectedMonthEmiCommitment)} EMI
+                </div>
               </div>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
-                {donutSegments.length} categories
-              </span>
-            </div>
 
-            {donutSegments.length === 0 ? (
-            <div className="h-44 flex flex-col items-center justify-center text-zinc-500 text-xs">
-              <span>No expenses recorded for this period</span>
-            </div>
-          ) : (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-2">
-              {/* Circular SVG Donut Chart */}
-              <div className="relative flex items-center justify-center shrink-0">
-                <svg
-                  className="w-36 h-36 transform -rotate-90 overflow-visible"
-                  viewBox="0 0 100 100"
-                  onMouseLeave={() => setHoveredCategory(null)}
-                >
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    className={isDark ? 'stroke-white/[0.06]' : 'stroke-zinc-100'}
-                    strokeWidth="12"
-                    fill="none"
-                  />
-                  {donutSegments.map((seg) => {
-                    const isHovered =
-                      hoveredCategory?.toLowerCase() === seg.category.toLowerCase()
-                    const isSelected =
-                      activeCategories.some((c) => c.toLowerCase() === seg.category.toLowerCase())
-                    const isAnyHovered = Boolean(hoveredCategory)
-
-                    return (
-                      <circle
-                        key={seg.category}
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        stroke={seg.color}
-                        strokeWidth={isHovered ? 16 : isSelected ? 14 : isAnyHovered ? 10 : 12}
-                        strokeDasharray={seg.strokeDasharray}
-                        strokeDashoffset={seg.strokeDashoffset}
-                        fill="none"
-                        opacity={isHovered || isSelected ? 1 : isAnyHovered ? 0.35 : 1}
-                        className="transition-all duration-200 cursor-pointer"
-                        onMouseEnter={() => setHoveredCategory(seg.category)}
-                        onClick={() => handleCategoryChange(seg.category)}
-                      >
-                        <title>{`${seg.category}: ${formatMoney(seg.amount)} (${seg.percentage}%)`}</title>
-                      </circle>
-                    )
-                  })}
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1 transition-all duration-200">
-                  {hoveredSeg ? (
-                    <div className="animate-in fade-in zoom-in-95 duration-150 flex flex-col items-center max-w-[85px]">
-                      <span
-                        className="text-[10px] font-bold font-mono uppercase tracking-tight truncate max-w-full"
-                        style={{ color: hoveredSeg.color }}
-                        title={hoveredSeg.category}
-                      >
-                        {hoveredSeg.category}
-                      </span>
-                      <span className="text-xs font-bold font-mono text-zinc-900 dark:text-zinc-100 truncate max-w-full mt-0.5">
-                        {formatMoney(hoveredSeg.amount)}
-                      </span>
-                      <span className="text-[10px] font-mono font-medium text-zinc-500">
-                        {hoveredSeg.percentage}%
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] uppercase font-mono text-zinc-400">Total</span>
-                      <span className="text-xs font-bold font-mono text-zinc-900 dark:text-zinc-100">
-                        {formatMoney(stats.totalAmount)}
-                      </span>
-                    </div>
+              {/* Card 2: Active Monthly EMI Commitment */}
+              <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] truncate">
+                    Active EMI Commitment
+                  </span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+                    {emiStats.activeCount} {emiStats.activeCount === 1 ? 'plan' : 'plans'}
+                  </span>
+                </div>
+                <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
+                  {formatMoney(selectedMonthEmiCommitment)}
+                </div>
+                <div className="flex items-center justify-between text-xs text-[#86868b] dark:text-[#a1a1a6] mt-1.5 truncate">
+                  <span>Monthly auto-debit</span>
+                  {onSwitchToCards && (
+                    <button
+                      type="button"
+                      onClick={onSwitchToCards}
+                      className="text-[#0071e3] hover:underline cursor-pointer font-medium ml-1"
+                    >
+                      Cards & EMI →
+                    </button>
                   )}
                 </div>
               </div>
 
-              {/* Legend List */}
-              <div
-                className="flex-1 w-full space-y-1.5 max-h-48 overflow-y-auto pr-1"
-                onMouseLeave={() => setHoveredCategory(null)}
-              >
-                {donutSegments.map((seg) => {
-                  const isHovered =
-                    hoveredCategory?.toLowerCase() === seg.category.toLowerCase()
-                  const isSelected = activeCategories.some(
-                    (c) => c.toLowerCase() === seg.category.toLowerCase()
-                  )
+              {/* Card 3: Total Outstanding EMI Liability */}
+              <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] truncate">
+                    Total EMI Debt
+                  </span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+                    {emiStats.overallPayoffProgress}% paid
+                  </span>
+                </div>
+                <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
+                  {formatMoney(emiStats.totalRemainingDebt)}
+                </div>
+                {/* Mini Payoff Bar */}
+                <div className={`w-full h-1.5 ${progressTrack} rounded-full overflow-hidden mt-2`}>
+                  <div
+                    className="h-full bg-gradient-to-r from-[#0071e3] to-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(4, emiStats.overallPayoffProgress))}%` }}
+                  />
+                </div>
+                <div className="text-[11px] text-[#86868b] dark:text-[#a1a1a6] mt-1.5 truncate">
+                  {formatMoney(emiStats.totalPaidSoFar)} cleared so far
+                </div>
+              </div>
 
-                  return (
-                    <div
-                      key={seg.category}
-                      onMouseEnter={() => setHoveredCategory(seg.category)}
-                      onClick={() => handleCategoryChange(seg.category)}
-                      className={`flex items-center justify-between p-1.5 rounded-lg text-xs cursor-pointer transition-all duration-150 ${
-                        isSelected
-                          ? isDark
-                            ? 'bg-white/[0.12] ring-1 ring-white/20'
-                            : 'bg-zinc-200 ring-1 ring-zinc-300'
-                          : isHovered
-                          ? isDark
-                            ? 'bg-white/[0.08] translate-x-1'
-                            : 'bg-zinc-100 translate-x-1'
-                          : 'hover:bg-zinc-500/5'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <span
-                          className={`rounded-full shrink-0 transition-transform duration-150 ${
-                            isHovered ? 'w-3 h-3 scale-125' : 'w-2.5 h-2.5'
-                          }`}
-                          style={{ backgroundColor: seg.color }}
-                        />
-                        <span
-                          className={`truncate ${
-                            isHovered || isSelected
-                              ? 'font-semibold text-zinc-900 dark:text-zinc-100'
-                              : 'font-medium'
-                          }`}
-                        >
-                          {seg.category}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 font-mono">
-                        <span className="text-zinc-500 text-[11px]">{seg.percentage}%</span>
-                        <span
-                          className={`font-semibold ${
-                            isHovered ? 'text-zinc-950 dark:text-white' : ''
-                          }`}
-                        >
-                          {formatMoney(seg.amount)}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
+              {/* Card 4: Direct Flexible Spend */}
+              <div className={`p-5 sm:p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] dark:text-[#a1a1a6] truncate">
+                    Direct Expenses
+                  </span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+                    {stats.count} {stats.count === 1 ? 'item' : 'items'}
+                  </span>
+                </div>
+                <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mt-2.5 truncate">
+                  {formatMoney(stats.totalAmount)}
+                </div>
+                <div className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-1.5 truncate">
+                  Avg {formatMoney(stats.dailyAverage)}/day • Today: {formatMoney(stats.todayAmount)}
+                </div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Right: Daily Spending Trend Bars */}
-        <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
-          <div className="flex items-center justify-between pb-4 mb-4 border-b border-inherit">
-            <div>
-              <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
-                Daily Spending Trend
-              </h3>
-              <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
-                Day by day expenditure pattern
-              </p>
-            </div>
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
-              Recent Activity
-            </span>
-          </div>
-
-          {dailySpendData.length === 0 ? (
-            <div className="h-44 flex flex-col items-center justify-center text-[#86868b] dark:text-[#a1a1a6] text-xs">
-              <span>No daily spend trend to display</span>
-            </div>
-          ) : (
-            <div className="overflow-x-auto custom-scrollbar -mx-1 px-1">
-              <div className="h-44 flex items-end gap-2 pt-6 pb-2 px-1 min-w-[280px]">
-                {dailySpendData.map((d) => (
-                  <div key={d.date} className="flex-1 min-w-[24px] flex flex-col items-center gap-1.5 h-full justify-end group relative">
-                    {/* Tooltip on Hover */}
-                    <div className="absolute -top-7 hidden group-hover:flex flex-col items-center z-10 pointer-events-none">
-                      <span className="px-2 py-0.5 rounded-full bg-zinc-900 text-white text-[10px] font-medium whitespace-nowrap shadow-lg">
-                        {formatMoney(d.amount)}
-                      </span>
-                    </div>
-                    {/* Bar (Apple Health Green Rounded Bar) */}
-                    <div className={`w-full max-w-[28px] ${progressTrack} rounded-full flex items-end h-full overflow-hidden`}>
-                      <div
-                        className="w-full bg-[#34c759] hover:bg-[#30b753] rounded-full transition-all duration-300"
-                        style={{ height: `${Math.max(8, d.percentage)}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-[#86868b] dark:text-[#a1a1a6] truncate max-w-full">
-                      {d.displayDate}
-                    </span>
+            {/* 2. Visual Analytics Row 1: Category Donut + Multi-Month Outflow Comparison (Direct vs EMI) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+              {/* Left: Category Circular Donut Chart */}
+              <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+                <div className="flex items-center justify-between pb-4 mb-4 border-b border-inherit">
+                  <div>
+                    <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
+                      Category Distribution
+                    </h3>
+                    <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
+                      Breakdown of direct spending across categories
+                    </p>
                   </div>
-                ))}
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+                    {donutSegments.length} categories
+                  </span>
+                </div>
+
+                {donutSegments.length === 0 ? (
+                  <div className="h-48 flex flex-col items-center justify-center text-zinc-500 text-xs">
+                    <span>No expenses recorded for this period</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-2">
+                    {/* Circular SVG Donut Chart */}
+                    <div className="relative flex items-center justify-center shrink-0">
+                      <svg
+                        className="w-36 h-36 transform -rotate-90 overflow-visible"
+                        viewBox="0 0 100 100"
+                        onMouseLeave={() => setHoveredCategory(null)}
+                      >
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          className={isDark ? 'stroke-white/[0.06]' : 'stroke-zinc-100'}
+                          strokeWidth="12"
+                          fill="none"
+                        />
+                        {donutSegments.map((seg) => {
+                          const isHovered =
+                            hoveredCategory?.toLowerCase() === seg.category.toLowerCase()
+                          const isSelected =
+                            activeCategories.some((c) => c.toLowerCase() === seg.category.toLowerCase())
+                          const isAnyHovered = Boolean(hoveredCategory)
+
+                          return (
+                            <circle
+                              key={seg.category}
+                              cx="50"
+                              cy="50"
+                              r="40"
+                              stroke={seg.color}
+                              strokeWidth={isHovered ? 16 : isSelected ? 14 : isAnyHovered ? 10 : 12}
+                              strokeDasharray={seg.strokeDasharray}
+                              strokeDashoffset={seg.strokeDashoffset}
+                              fill="none"
+                              opacity={isHovered || isSelected ? 1 : isAnyHovered ? 0.35 : 1}
+                              className="transition-all duration-200 cursor-pointer"
+                              onMouseEnter={() => setHoveredCategory(seg.category)}
+                              onClick={() => handleCategoryChange(seg.category)}
+                            >
+                              <title>{`${seg.category}: ${formatMoney(seg.amount)} (${seg.percentage}%)`}</title>
+                            </circle>
+                          )
+                        })}
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1 transition-all duration-200">
+                        {hoveredSeg ? (
+                          <div className="animate-in fade-in zoom-in-95 duration-150 flex flex-col items-center max-w-[85px]">
+                            <span
+                              className="text-[10px] font-bold font-mono uppercase tracking-tight truncate max-w-full"
+                              style={{ color: hoveredSeg.color }}
+                              title={hoveredSeg.category}
+                            >
+                              {hoveredSeg.category}
+                            </span>
+                            <span className="text-xs font-bold font-mono text-zinc-900 dark:text-zinc-100 truncate max-w-full mt-0.5">
+                              {formatMoney(hoveredSeg.amount)}
+                            </span>
+                            <span className="text-[10px] font-mono font-medium text-zinc-500">
+                              {hoveredSeg.percentage}%
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center">
+                            <span className="text-[10px] uppercase font-mono text-zinc-400">Total</span>
+                            <span className="text-xs font-bold font-mono text-zinc-900 dark:text-zinc-100">
+                              {formatMoney(stats.totalAmount)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Legend List */}
+                    <div
+                      className="flex-1 w-full space-y-1.5 max-h-48 overflow-y-auto pr-1"
+                      onMouseLeave={() => setHoveredCategory(null)}
+                    >
+                      {donutSegments.map((seg) => {
+                        const isHovered =
+                          hoveredCategory?.toLowerCase() === seg.category.toLowerCase()
+                        const isSelected = activeCategories.some(
+                          (c) => c.toLowerCase() === seg.category.toLowerCase()
+                        )
+
+                        return (
+                          <div
+                            key={seg.category}
+                            onMouseEnter={() => setHoveredCategory(seg.category)}
+                            onClick={() => handleCategoryChange(seg.category)}
+                            className={`flex items-center justify-between p-1.5 rounded-lg text-xs cursor-pointer transition-all duration-150 ${
+                              isSelected
+                                ? isDark
+                                  ? 'bg-white/[0.12] ring-1 ring-white/20'
+                                  : 'bg-zinc-200 ring-1 ring-zinc-300'
+                                : isHovered
+                                ? isDark
+                                  ? 'bg-white/[0.08] translate-x-1'
+                                  : 'bg-zinc-100 translate-x-1'
+                                : 'hover:bg-zinc-500/5'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <span
+                                className={`rounded-full shrink-0 transition-transform duration-150 ${
+                                  isHovered ? 'w-3 h-3 scale-125' : 'w-2.5 h-2.5'
+                                }`}
+                                style={{ backgroundColor: seg.color }}
+                              />
+                              <span
+                                className={`truncate ${
+                                  isHovered || isSelected
+                                    ? 'font-semibold text-zinc-900 dark:text-zinc-100'
+                                    : 'font-medium'
+                                }`}
+                              >
+                                {seg.category}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 font-mono">
+                              <span className="text-zinc-500 text-[11px]">{seg.percentage}%</span>
+                              <span
+                                className={`font-semibold ${
+                                  isHovered ? 'text-zinc-950 dark:text-white' : ''
+                                }`}
+                              >
+                                {formatMoney(seg.amount)}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Monthly Outflow Comparison: Direct Spend vs Card EMIs */}
+              <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-inherit">
+                  <div>
+                    <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
+                      Monthly Outflow: Spend vs EMI
+                    </h3>
+                    <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
+                      Direct flexible expenses vs fixed credit EMI commitments
+                    </p>
+                  </div>
+                  {/* Legend */}
+                  <div className="flex items-center gap-3 shrink-0 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" />
+                      <span className="text-[#86868b] dark:text-[#a1a1a6]">Direct</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#6366f1]" />
+                      <span className="text-[#86868b] dark:text-[#a1a1a6]">Card EMI</span>
+                    </div>
+                  </div>
+                </div>
+
+                {monthlyOutflowTrend.every((m) => m.total === 0) ? (
+                  <div className="h-56 flex flex-col items-center justify-center text-zinc-500 text-xs">
+                    <span>No historical outflow data to display</span>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto custom-scrollbar -mx-1 px-1">
+                    <div className="h-56 flex items-end justify-between gap-3 pt-16 pb-2 px-3 min-w-[340px] relative">
+                      {monthlyOutflowTrend.map((m, idx) => {
+                        const isCurrent = m.key === currentMonthKey
+                        const isSelected = activeMonth === m.key
+                        const isHovered = hoveredOutflowMonth === m.key
+
+                        return (
+                          <div
+                            key={m.key}
+                            className="flex-1 min-w-[42px] flex flex-col items-center gap-1.5 h-full justify-end group relative cursor-pointer"
+                            onMouseEnter={() => setHoveredOutflowMonth(m.key)}
+                            onMouseLeave={() => setHoveredOutflowMonth(null)}
+                            onClick={() => handleMonthChange(m.key)}
+                          >
+                            {/* Hover Tooltip - Positioned within container headroom to prevent clipping */}
+                            {isHovered && (
+                              <div
+                                className={`absolute top-1 z-30 pointer-events-none animate-in fade-in zoom-in-95 duration-100 ${
+                                  idx === 0
+                                    ? 'left-0'
+                                    : idx === monthlyOutflowTrend.length - 1
+                                    ? 'right-0'
+                                    : 'left-1/2 -translate-x-1/2'
+                                }`}
+                              >
+                                <div className="px-3 py-1.5 rounded-xl bg-[#1c1c1e] text-white dark:bg-[#252528] text-xs font-medium shadow-2xl border border-white/10 dark:border-white/15 flex flex-col items-center whitespace-nowrap">
+                                  <div className="flex items-center gap-2 font-semibold text-[11px] text-zinc-100">
+                                    <span>{formatMonthName(m.key)}</span>
+                                    <span className="text-zinc-500">•</span>
+                                    <span className="font-mono text-white">Total: {formatMoney(m.total)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-3 mt-1 font-mono text-[10px]">
+                                    <span className="flex items-center gap-1.5 text-emerald-400">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                      Spend: {formatMoney(m.direct)}
+                                    </span>
+                                    <span className="flex items-center gap-1.5 text-indigo-400">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                      EMI: {formatMoney(m.emi)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Twin Bars (Direct vs EMI) */}
+                            <div className="w-full flex items-end justify-center gap-1.5 h-full pb-1">
+                              {/* Direct Spend Bar */}
+                              <div
+                                className={`w-3 sm:w-3.5 ${progressTrack} rounded-full flex items-end h-full overflow-hidden`}
+                                title={`Direct Spend: ${formatMoney(m.direct)}`}
+                              >
+                                <div
+                                  className="w-full bg-[#10b981] hover:bg-[#059669] rounded-full transition-all duration-300"
+                                  style={{ height: `${Math.max(6, m.directPct)}%` }}
+                                />
+                              </div>
+                              {/* EMI Commitment Bar */}
+                              <div
+                                className={`w-3 sm:w-3.5 ${progressTrack} rounded-full flex items-end h-full overflow-hidden`}
+                                title={`EMI Commitment: ${formatMoney(m.emi)}`}
+                              >
+                                <div
+                                  className="w-full bg-[#6366f1] hover:bg-[#4f46e5] rounded-full transition-all duration-300"
+                                  style={{ height: `${Math.max(6, m.emiPct)}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Month Label & Total Indicator */}
+                            <div className="flex flex-col items-center">
+                              <span
+                                className={`text-[11px] truncate max-w-full transition-colors ${
+                                  isSelected || isCurrent
+                                    ? 'font-bold text-[#0071e3] dark:text-[#2997ff]'
+                                    : 'font-medium text-[#86868b] dark:text-[#a1a1a6]'
+                                }`}
+                              >
+                                {m.label}
+                              </span>
+                              <span className="text-[9px] font-mono text-zinc-400 truncate">
+                                {m.total >= 1000 ? `₹${(m.total / 1000).toFixed(0)}k` : `₹${m.total}`}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          )}
-        </div>
-      </div>
-          </>
+
+            {/* 3. Visual Analytics Row 2: Daily Rhythm Trend + Payment Channels & Outflow Allocation */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+              {/* Left: Daily Spending Rhythm */}
+              <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+                <div className="flex items-center justify-between pb-4 mb-4 border-b border-inherit">
+                  <div>
+                    <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
+                      Daily Spending Trend
+                    </h3>
+                    <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
+                      Day-by-day flexible spending pattern
+                    </p>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+                    Recent Activity
+                  </span>
+                </div>
+
+                {dailySpendData.length === 0 ? (
+                  <div className="h-48 flex flex-col items-center justify-center text-[#86868b] dark:text-[#a1a1a6] text-xs">
+                    <span>No daily spend trend to display</span>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto custom-scrollbar -mx-1 px-1">
+                    <div className="h-56 flex items-end gap-2 pt-12 pb-2 px-2 min-w-[280px] relative">
+                      {dailySpendData.map((d, idx) => (
+                        <div key={d.date} className="flex-1 min-w-[24px] flex flex-col items-center gap-1.5 h-full justify-end group relative">
+                          {/* Tooltip on Hover */}
+                          <div
+                            className={`absolute top-1 hidden group-hover:flex flex-col items-center z-20 pointer-events-none animate-in fade-in duration-100 ${
+                              idx === 0
+                                ? 'left-0'
+                                : idx === dailySpendData.length - 1
+                                ? 'right-0'
+                                : 'left-1/2 -translate-x-1/2'
+                            }`}
+                          >
+                            <span className="px-2.5 py-1 rounded-full bg-[#1c1c1e] text-white dark:bg-[#252528] text-[10px] font-medium whitespace-nowrap shadow-xl border border-white/10 dark:border-white/15 font-mono">
+                              {formatMoney(d.amount)}
+                            </span>
+                          </div>
+                          {/* Bar */}
+                          <div className={`w-full max-w-[28px] ${progressTrack} rounded-full flex items-end h-full overflow-hidden`}>
+                            <div
+                              className="w-full bg-[#34c759] hover:bg-[#30b753] rounded-full transition-all duration-300"
+                              style={{ height: `${Math.max(8, d.percentage)}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-[#86868b] dark:text-[#a1a1a6] truncate max-w-full font-mono">
+                            {d.displayDate}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Payment Channels & Outflow Allocation */}
+              <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+                <div className="flex items-center justify-between pb-4 mb-4 border-b border-inherit">
+                  <div>
+                    <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
+                      Outflow Allocation by Method
+                    </h3>
+                    <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
+                      Distribution across digital, cash, and active EMI auto-debit
+                    </p>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+                    {channelBreakdown.length} channels
+                  </span>
+                </div>
+
+                {channelBreakdown.length === 0 ? (
+                  <div className="h-48 flex flex-col items-center justify-center text-[#86868b] dark:text-[#a1a1a6] text-xs">
+                    <span>No outflow recorded for this period</span>
+                  </div>
+                ) : (
+                  <div className="space-y-3.5 max-h-48 overflow-y-auto pr-1">
+                    {channelBreakdown.map((ch) => (
+                      <div key={ch.id} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2 truncate">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: ch.color }}
+                            />
+                            <span className="font-medium text-[#1d1d1f] dark:text-white truncate">
+                              {ch.label}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 font-mono">
+                            <span className="text-[#86868b] dark:text-[#a1a1a6] text-[11px]">
+                              {ch.percentage}%
+                            </span>
+                            <span className="font-semibold text-[#1d1d1f] dark:text-white">
+                              {formatMoney(ch.amount)}
+                            </span>
+                          </div>
+                        </div>
+                        {/* Progress Bar */}
+                        <div className={`w-full h-2 rounded-full ${progressTrack} overflow-hidden`}>
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${Math.max(4, ch.percentage)}%`,
+                              backgroundColor: ch.color,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 4. EMI Command Center: Active Cards Payoff Progress & Upcoming Due Dates Schedule */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
+              {/* Left Column (2 Cols): Active Cards & EMI Payoff Status */}
+              <div className={`lg:col-span-2 p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+                <div className="flex items-center justify-between pb-4 mb-4 border-b border-inherit">
+                  <div>
+                    <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
+                      Active EMI Plans & Payoff Tracker
+                    </h3>
+                    <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
+                      Real-time installment payoff tracking and remaining liability
+                    </p>
+                  </div>
+                  {onSwitchToCards && (
+                    <button
+                      type="button"
+                      onClick={onSwitchToCards}
+                      className="px-3 py-1 rounded-full text-xs font-medium text-[#0071e3] hover:bg-blue-500/10 transition cursor-pointer shrink-0"
+                    >
+                      Manage Cards →
+                    </button>
+                  )}
+                </div>
+
+                {activeCards.length === 0 ? (
+                  <div className="py-8 text-center flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3">
+                      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold text-[#1d1d1f] dark:text-white">
+                      No Active EMI Commitments
+                    </p>
+                    <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-1 max-w-xs">
+                      All credit card EMIs for this workspace are fully settled, or no cards have been added yet.
+                    </p>
+                    {onSwitchToCards && (
+                      <button
+                        type="button"
+                        onClick={onSwitchToCards}
+                        className="mt-3.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-[#0071e3] hover:bg-[#0077ed] text-white transition cursor-pointer"
+                      >
+                        Open Cards & EMI View
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {activeCards.map((c) => {
+                      const colorCfg = getCardColorConfig(c.cardColor)
+                      const dueNotice = formatCardDueNotice(c.emiDueDay)
+                      const paidCount = c.paidEmis ?? 0
+                      const payoffPct = Math.min(100, Math.round((paidCount / c.totalEmis) * 100))
+                      const remainingDebt = (c.totalEmis - paidCount) * Number(c.monthlyEmi || 0)
+                      const availLimit = Math.max(0, Number(c.cardLimit || 0) - Number(c.cardLimitUsed || 0))
+
+                      return (
+                        <div
+                          key={c.id}
+                          className="p-4 rounded-[16px] border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.03] flex flex-col justify-between gap-3 transition hover:border-[#0071e3]/40"
+                        >
+                          <div>
+                            {/* Card Header */}
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2 truncate">
+                                <span
+                                  className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                                  style={{ backgroundColor: colorCfg.accent }}
+                                />
+                                <div className="truncate">
+                                  <h4 className="text-xs font-bold text-[#1d1d1f] dark:text-white truncate">
+                                    {c.bankName} • {c.cardName}
+                                  </h4>
+                                  <span className="text-[10px] text-[#86868b] dark:text-[#a1a1a6] font-mono">
+                                    •••• {c.cardNumber.slice(-4)}
+                                  </span>
+                                </div>
+                              </div>
+                              {/* Urgency Badge (Matches User Rules: Yellow Due Soon, Dark Upcoming) */}
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] shrink-0 border ${dueNotice.color}`}>
+                                {dueNotice.label}
+                              </span>
+                            </div>
+
+                            {/* Figures Row */}
+                            <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                              <div>
+                                <span className="text-[10px] text-[#86868b] dark:text-[#a1a1a6] block">
+                                  Monthly EMI
+                                </span>
+                                <span className="font-bold text-[#1d1d1f] dark:text-white font-mono">
+                                  ₹{c.monthlyEmi.toLocaleString('en-IN')}/mo
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-[#86868b] dark:text-[#a1a1a6] block">
+                                  Remaining Debt
+                                </span>
+                                <span className="font-bold text-[#1d1d1f] dark:text-white font-mono">
+                                  ₹{remainingDebt.toLocaleString('en-IN')}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Payoff Progress Bar */}
+                            <div className="mt-3 space-y-1">
+                              <div className="flex items-center justify-between text-[10px]">
+                                <span className="text-[#86868b] dark:text-[#a1a1a6]">
+                                  {paidCount} of {c.totalEmis} paid
+                                </span>
+                                <span className="font-semibold text-[#1d1d1f] dark:text-white font-mono">
+                                  {payoffPct}%
+                                </span>
+                              </div>
+                              <div className={`w-full h-1.5 rounded-full ${progressTrack} overflow-hidden`}>
+                                <div
+                                  className="h-full bg-gradient-to-r from-[#0071e3] to-indigo-500 rounded-full transition-all duration-300"
+                                  style={{ width: `${payoffPct}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Footer Actions */}
+                          <div className="pt-2 border-t border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between gap-2">
+                            <span className="text-[10px] text-[#86868b] dark:text-[#a1a1a6] truncate font-mono">
+                              Avail: ₹{availLimit.toLocaleString('en-IN')}
+                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {onOpenCardDetail && (
+                                <button
+                                  type="button"
+                                  onClick={() => onOpenCardDetail(c)}
+                                  className={`px-2.5 py-1 rounded-full border text-[11px] font-medium cursor-pointer transition active:scale-95 ${appleGhostBtn}`}
+                                >
+                                  Statement
+                                </button>
+                              )}
+                              {onOpenPayEmi && (
+                                <button
+                                  type="button"
+                                  onClick={() => onOpenPayEmi(c)}
+                                  className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#0071e3] hover:bg-[#0077ed] text-white cursor-pointer transition shadow-2xs active:scale-95"
+                                >
+                                  Pay Next
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column (1 Col): Upcoming EMI Schedule Calendar Widget */}
+              <div className={`p-6 rounded-[20px] border transition-all duration-200 ${cardBg}`}>
+                <div className="flex items-center justify-between pb-4 mb-4 border-b border-inherit">
+                  <div>
+                    <h3 className="text-base font-semibold tracking-tight text-[#1d1d1f] dark:text-white">
+                      Upcoming EMI Schedule
+                    </h3>
+                    <p className="text-xs text-[#86868b] dark:text-[#a1a1a6] mt-0.5">
+                      Debits due this month
+                    </p>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-normal border shrink-0 ${appleCapsule}`}>
+                    {upcomingEmisThisMonth.length} due
+                  </span>
+                </div>
+
+                {upcomingEmisThisMonth.length === 0 ? (
+                  <div className="h-48 flex flex-col items-center justify-center text-[#86868b] dark:text-[#a1a1a6] text-xs text-center px-2">
+                    <svg className="w-8 h-8 text-emerald-500 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 14 14" />
+                    </svg>
+                    <span>All monthly EMIs are paid or no cards registered.</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                    {upcomingEmisThisMonth.map((c) => {
+                      const dueNotice = formatCardDueNotice(c.emiDueDay)
+                      const paidCount = c.paidEmis ?? 0
+
+                      return (
+                        <div
+                          key={c.id}
+                          className="p-3 rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.03] flex items-center justify-between gap-3 transition hover:border-[#0071e3]/30"
+                        >
+                          <div className="truncate">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="text-xs font-semibold text-[#1d1d1f] dark:text-white truncate">
+                                {c.bankName} {c.cardName}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-[#86868b] dark:text-[#a1a1a6]">
+                              <span className="font-mono">Installment #{paidCount + 1} of {c.totalEmis}</span>
+                            </div>
+                            {/* Notice Badge */}
+                            <div className="mt-1.5">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] border ${dueNotice.color}`}>
+                                {dueNotice.label}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-1.5 shrink-0">
+                            <span className="text-xs font-bold text-[#1d1d1f] dark:text-white font-mono">
+                              ₹{c.monthlyEmi.toLocaleString('en-IN')}
+                            </span>
+                            {onOpenPayEmi && (
+                              <button
+                                type="button"
+                                onClick={() => onOpenPayEmi(c)}
+                                className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-[#0071e3] hover:bg-[#0077ed] text-white cursor-pointer transition shadow-2xs active:scale-95"
+                              >
+                                Pay
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
       {/* 4. Grouped Expenses List (Apple Style Transactions Inbox - Shown on Inbox) */}

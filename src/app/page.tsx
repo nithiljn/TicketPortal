@@ -318,7 +318,6 @@ export default function Home() {
   const handleSelectExpenseMonth = useCallback((month: string) => {
     setSelectedExpenseMonth((prev) => {
       if (prev === month) return prev
-      setIsExpenseLoading(true)
       return month
     })
   }, [])

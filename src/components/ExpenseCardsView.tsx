@@ -7,6 +7,11 @@ import { CARD_COLORS, getCardColorConfig } from '@/components/CreateCardModal'
 interface ExpenseCardsViewProps {
   cards: Card[]
   selectedProject: string
+  selectedCardBank?: string | 'ALL'
+  onSelectCardBank?: (bank: string | 'ALL') => void
+  selectedCardPurpose?: string | 'ALL'
+  onSelectCardPurpose?: (purpose: string | 'ALL') => void
+  onClearFilters?: () => void
   onOpenCreateCard: () => void
   onOpenCardDetail: (card: Card) => void
   onOpenPayEmi: (card: Card) => void
@@ -49,6 +54,11 @@ function formatCardDueNotice(dueDay: number) {
 export function ExpenseCardsView({
   cards,
   selectedProject,
+  selectedCardBank = 'ALL',
+  onSelectCardBank,
+  selectedCardPurpose = 'ALL',
+  onSelectCardPurpose,
+  onClearFilters,
   onOpenCreateCard,
   onOpenCardDetail,
   onOpenPayEmi,
@@ -59,18 +69,21 @@ export function ExpenseCardsView({
   const isDark = theme === 'dark'
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Filter cards by workspace and search
+  // Filter cards by workspace, bank, purpose, and search (card name, bank, number, description)
   const filteredCards = useMemo(() => {
     return cards.filter((card) => {
       const matchProject = selectedProject === 'ALL' || card.projectName === selectedProject
+      const matchBank = !selectedCardBank || selectedCardBank === 'ALL' || card.bankName.toLowerCase() === selectedCardBank.toLowerCase()
+      const matchPurpose = !selectedCardPurpose || selectedCardPurpose === 'ALL' || card.cardName.toLowerCase() === selectedCardPurpose.toLowerCase()
       const matchSearch =
         !searchQuery.trim() ||
         card.cardName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         card.bankName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        card.cardNumber.toLowerCase().includes(searchQuery.toLowerCase())
-      return matchProject && matchSearch
+        card.cardNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (card.description && card.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      return matchProject && matchBank && matchPurpose && matchSearch
     })
-  }, [cards, selectedProject, searchQuery])
+  }, [cards, selectedProject, selectedCardBank, selectedCardPurpose, searchQuery])
 
   // Summary Metrics
   const summary = useMemo(() => {
@@ -122,6 +135,48 @@ export function ExpenseCardsView({
               {filteredCards.length === 1 ? 'card' : 'cards'}
             </span>
           </span>
+
+          {/* Active Bank Filter Chip */}
+          {selectedCardBank && selectedCardBank !== 'ALL' && (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-normal border ${appleCapsule}`}>
+              <span className="text-[#86868b] text-[11px]">Bank:</span>
+              <span className="font-medium">{selectedCardBank}</span>
+              {onSelectCardBank && (
+                <button
+                  type="button"
+                  onClick={() => onSelectCardBank('ALL')}
+                  className="w-3.5 h-3.5 rounded-full flex items-center justify-center hover:opacity-100 opacity-60 cursor-pointer ml-0.5"
+                  title="Clear bank filter"
+                >
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+            </span>
+          )}
+
+          {/* Active Purpose Filter Chip */}
+          {selectedCardPurpose && selectedCardPurpose !== 'ALL' && (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-normal border ${appleCapsule}`}>
+              <span className="text-[#86868b] text-[11px]">Purpose:</span>
+              <span className="font-medium">{selectedCardPurpose}</span>
+              {onSelectCardPurpose && (
+                <button
+                  type="button"
+                  onClick={() => onSelectCardPurpose('ALL')}
+                  className="w-3.5 h-3.5 rounded-full flex items-center justify-center hover:opacity-100 opacity-60 cursor-pointer ml-0.5"
+                  title="Clear purpose filter"
+                >
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

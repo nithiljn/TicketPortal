@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { TicketStatus, TicketPriority, AuthUser, DailyNote, ExpenseSubView } from '@/types'
+import { TicketStatus, TicketPriority, AuthUser, DailyNote, ExpenseSubView, Card } from '@/types'
 import { Button } from '@/components/Button'
 import packageInfo from '../../package.json'
 
@@ -200,6 +200,12 @@ interface SidebarProps {
   onSelectExpenseSubView?: (subView: ExpenseSubView) => void
   cardsCount?: number
   onOpenCreateCardModal?: () => void
+  // Cards & EMI Specific Filters (used when activeTab === 'expenses' && expenseSubView === 'cards')
+  cards?: Card[]
+  selectedCardBank?: string | 'ALL'
+  onSelectCardBank?: (bank: string | 'ALL') => void
+  selectedCardPurpose?: string | 'ALL'
+  onSelectCardPurpose?: (purpose: string | 'ALL') => void
   availableVersions?: string[]
   selectedVersion?: string | 'ALL'
   selectedVersions?: string[]
@@ -277,6 +283,11 @@ export function Sidebar({
   onSelectExpenseSubView,
   cardsCount = 0,
   onOpenCreateCardModal,
+  cards = [],
+  selectedCardBank = 'ALL',
+  onSelectCardBank,
+  selectedCardPurpose = 'ALL',
+  onSelectCardPurpose,
   onOpenActivityModal,
   onOpenVersionModal,
   availableVersions = [],
@@ -333,6 +344,42 @@ export function Sidebar({
     if (!clean) return availableTicketIds
     return availableTicketIds.filter((id) => id.toLowerCase().includes(clean))
   }, [availableTicketIds, typedTicketId])
+
+  // Cards & EMI Dynamic Aggregations
+  const cardBankCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    cards.forEach((c) => {
+      const bank = c.bankName.trim()
+      counts[bank] = (counts[bank] || 0) + 1
+    })
+    return counts
+  }, [cards])
+
+  const availableBanks = useMemo(() => {
+    return Object.keys(cardBankCounts).sort()
+  }, [cardBankCounts])
+
+  const cardPurposeCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    cards.forEach((c) => {
+      const name = c.cardName.trim()
+      counts[name] = (counts[name] || 0) + 1
+    })
+    return counts
+  }, [cards])
+
+  const availablePurposes = useMemo(() => {
+    return Object.keys(cardPurposeCounts).sort()
+  }, [cardPurposeCounts])
+
+  const cardWorkspaceCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    cards.forEach((c) => {
+      const ws = c.projectName || 'General'
+      counts[ws] = (counts[ws] || 0) + 1
+    })
+    return counts
+  }, [cards])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -765,7 +812,13 @@ export function Sidebar({
             {activeTab !== 'notes' && (
               <div>
                 <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
-                  <span>{activeTab === 'expenses' ? 'Expense Folders' : 'Workspaces'}</span>
+                  <span>
+                    {activeTab === 'expenses'
+                      ? expenseSubView === 'cards'
+                        ? 'Card Folders'
+                        : 'Expense Folders'
+                      : 'Workspaces'}
+                  </span>
                   <div className="flex items-center gap-1.5">
                     <span className="font-mono text-[10px] text-[#86868b]">{visibleWorkspaces.length}</span>
                     {onOpenCreateWorkspaceModal && (
@@ -800,15 +853,25 @@ export function Sidebar({
                       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z" />
                     </svg>
                     <span className="truncate">
-                      {activeTab === 'expenses' ? 'All Expense Folders' : 'All Workspaces'}
+                      {activeTab === 'expenses'
+                        ? expenseSubView === 'cards'
+                          ? 'All Card Folders'
+                          : 'All Expense Folders'
+                        : 'All Workspaces'}
                     </span>
                   </div>
-                  {selectedProject === 'ALL' && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
+                  <div className="flex items-center gap-1.5">
+                    {selectedProject === 'ALL' && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
+                    {activeTab === 'expenses' && expenseSubView === 'cards' && (
+                      <span className={countBadge(selectedProject === 'ALL')}>{cards.length}</span>
+                    )}
+                  </div>
                 </button>
 
                 {visibleWorkspaces.map((proj) => {
                   const isSelected = selectedProject === proj
                   const canDelete = visibleWorkspaces.length > 1
+                  const cardCount = cardWorkspaceCounts[proj] ?? 0
 
                   return (
                     <div
@@ -828,9 +891,12 @@ export function Sidebar({
                         <span className="truncate">{proj}</span>
                       </div>
 
-                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                         {isSelected && (
                           <span className={`w-1.5 h-1.5 rounded-full bg-current ${canDelete ? 'group-hover/ws:hidden' : ''}`} />
+                        )}
+                        {activeTab === 'expenses' && expenseSubView === 'cards' && (
+                          <span className={countBadge(isSelected)}>{cardCount}</span>
                         )}
 
                         {canDelete && onDeleteWorkspace && (
@@ -880,9 +946,160 @@ export function Sidebar({
             )}
 
             {activeTab === 'expenses' ? (
-              /* Expense Specific Filters */
-              <>
-                {/* 1. Month / Period Filter */}
+              expenseSubView === 'cards' ? (
+                /* Cards & EMI Contextual Filters */
+                <>
+                  {/* 1. Banks & Card Companies Filter */}
+                  <div>
+                    <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
+                      <span>Bank / Card Company</span>
+                      {selectedCardBank !== 'ALL' && (
+                        <button
+                          onClick={() => onSelectCardBank?.('ALL')}
+                          className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
+                        >
+                          All Banks
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-0.5 max-h-48 overflow-y-auto pr-0.5 custom-scrollbar">
+                      <button
+                        onClick={() => {
+                          onSelectCardBank?.('ALL')
+                        }}
+                        className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
+                          selectedCardBank === 'ALL' ? itemActive : itemHover
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <svg className="w-3.5 h-3.5 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="2" y="5" width="20" height="14" rx="2" />
+                            <line x1="2" y1="10" x2="22" y2="10" />
+                          </svg>
+                          <span className={selectedCardBank === 'ALL' ? 'font-semibold' : ''}>
+                            All Banks
+                          </span>
+                        </div>
+                        <span className={countBadge(selectedCardBank === 'ALL')}>
+                          {cards.length}
+                        </span>
+                      </button>
+
+                      {availableBanks.map((bank) => {
+                        const isSelected = selectedCardBank.toLowerCase() === bank.toLowerCase()
+                        const count = cardBankCounts[bank] ?? 0
+                        return (
+                          <button
+                            key={bank}
+                            onClick={() => {
+                              onSelectCardBank?.(isSelected ? 'ALL' : bank)
+                            }}
+                            className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
+                              isSelected ? itemActive : itemHover
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate flex-1 min-w-0 pr-1">
+                              <svg className="w-3.5 h-3.5 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 21h18" />
+                                <path d="M3 10h18" />
+                                <path d="M5 6l7-3 7 3" />
+                                <path d="M4 10v11" />
+                                <path d="M20 10v11" />
+                                <path d="M8 14v4" />
+                                <path d="M12 14v4" />
+                                <path d="M16 14v4" />
+                              </svg>
+                              <span className={`truncate ${isSelected ? 'font-semibold' : ''}`}>
+                                {bank}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              {isSelected && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                              )}
+                              <span className={countBadge(isSelected)}>{count}</span>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 2. Card Purpose / Description Filter */}
+                  <div>
+                    <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
+                      <span>Purpose / Description</span>
+                      {selectedCardPurpose !== 'ALL' && (
+                        <button
+                          onClick={() => onSelectCardPurpose?.('ALL')}
+                          className="text-[11px] text-[#0071e3] dark:text-[#2997ff] hover:underline cursor-pointer"
+                        >
+                          All Purposes
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-0.5 max-h-48 overflow-y-auto pr-0.5 custom-scrollbar">
+                      <button
+                        onClick={() => {
+                          onSelectCardPurpose?.('ALL')
+                        }}
+                        className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
+                          selectedCardPurpose === 'ALL' ? itemActive : itemHover
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <svg className="w-3.5 h-3.5 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                            <line x1="7" y1="7" x2="7.01" y2="7" />
+                          </svg>
+                          <span className={selectedCardPurpose === 'ALL' ? 'font-semibold' : ''}>
+                            All Purposes
+                          </span>
+                        </div>
+                        <span className={countBadge(selectedCardPurpose === 'ALL')}>
+                          {cards.length}
+                        </span>
+                      </button>
+
+                      {availablePurposes.map((purpose) => {
+                        const isSelected = selectedCardPurpose.toLowerCase() === purpose.toLowerCase()
+                        const count = cardPurposeCounts[purpose] ?? 0
+                        return (
+                          <button
+                            key={purpose}
+                            onClick={() => {
+                              onSelectCardPurpose?.(isSelected ? 'ALL' : purpose)
+                            }}
+                            className={`w-full px-2.5 py-1.5 rounded-[10px] flex items-center justify-between text-xs transition cursor-pointer text-left active:scale-[0.99] ${
+                              isSelected ? itemActive : itemHover
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate flex-1 min-w-0 pr-1">
+                              <svg className="w-3.5 h-3.5 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="16" x2="12" y2="12" />
+                                <line x1="12" y1="8" x2="12.01" y2="8" />
+                              </svg>
+                              <span className={`truncate ${isSelected ? 'font-semibold' : ''}`}>
+                                {purpose}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              {isSelected && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                              )}
+                              <span className={countBadge(isSelected)}>{count}</span>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Expense Specific Filters */
+                <>
+                  {/* 1. Month / Period Filter */}
                 <div>
                   <div className="px-2 pb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
                     <span>Month / Period</span>
@@ -1091,7 +1308,7 @@ export function Sidebar({
                   </div>
                 </div>
               </>
-            ) : activeTab === 'notes' ? (
+            ) ) : activeTab === 'notes' ? (
               /* Notes Specific Filters */
               <>
                 {/* 1. Productivity Summary Card */}

@@ -152,6 +152,8 @@ export default function Home() {
   const [isPayEmiModalOpen, setIsPayEmiModalOpen] = useState(false)
   const [payingCard, setPayingCard] = useState<Card | null>(null)
   const [payingEmiNumber, setPayingEmiNumber] = useState<number | undefined>(undefined)
+  const [selectedCardBank, setSelectedCardBank] = useState<string | 'ALL'>('ALL')
+  const [selectedCardPurpose, setSelectedCardPurpose] = useState<string | 'ALL'>('ALL')
   const [availableProjects, setAvailableProjects] = useState<string[]>([])
   const [availableExpenseProjects, setAvailableExpenseProjects] = useState<string[]>([])
   const [availableVersions, setAvailableVersions] = useState<string[]>([])
@@ -2487,6 +2489,11 @@ export default function Home() {
         expenseSubView={expenseSubView}
         onSelectExpenseSubView={setExpenseSubView}
         cardsCount={cards.length}
+        cards={cards}
+        selectedCardBank={selectedCardBank}
+        onSelectCardBank={setSelectedCardBank}
+        selectedCardPurpose={selectedCardPurpose}
+        onSelectCardPurpose={setSelectedCardPurpose}
         onOpenCreateCardModal={handleOpenCreateCard}
         onOpenActivityModal={() => setIsActivityModalOpen(true)}
         onOpenVersionModal={() => setIsVersionModalOpen(true)}
@@ -2972,6 +2979,15 @@ export default function Home() {
                   <ExpenseCardsView
                     cards={cards}
                     selectedProject={selectedExpenseProject}
+                    selectedCardBank={selectedCardBank}
+                    onSelectCardBank={setSelectedCardBank}
+                    selectedCardPurpose={selectedCardPurpose}
+                    onSelectCardPurpose={setSelectedCardPurpose}
+                    onClearFilters={() => {
+                      setSelectedCardBank('ALL')
+                      setSelectedCardPurpose('ALL')
+                      setSelectedExpenseProject('ALL')
+                    }}
                     onOpenCreateCard={handleOpenCreateCard}
                     onOpenCardDetail={handleOpenCardDetail}
                     onOpenPayEmi={(c) => handleOpenPayEmi(c)}

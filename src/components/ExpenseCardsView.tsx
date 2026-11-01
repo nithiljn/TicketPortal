@@ -25,21 +25,24 @@ function formatCardDueNotice(dueDay: number) {
   const daysDiff = dueDay - currentDay
 
   if (daysDiff === 0) {
-    return { label: 'Due Today! ⚠️', color: 'bg-rose-500/10 text-rose-500 border-rose-500/20 animate-pulse' }
+    return {
+      label: 'Due Today',
+      color: 'bg-rose-600 text-white border-rose-600 font-medium',
+    }
   } else if (daysDiff > 0 && daysDiff <= 7) {
     return {
       label: `Due on ${dueDay}th (in ${daysDiff}d)`,
-      color: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+      color: 'bg-amber-400 text-black border-amber-400 font-medium',
     }
   } else if (daysDiff < 0 && daysDiff >= -5) {
     return {
       label: `Due day passed (${dueDay}th)`,
-      color: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
+      color: 'bg-rose-600 text-white border-rose-600 font-medium',
     }
   }
   return {
     label: `Due on ${dueDay}th monthly`,
-    color: 'bg-black/5 dark:bg-white/10 text-[#86868b] border-black/10 dark:border-white/10',
+    color: 'bg-[#080808] text-white border-white/10 font-medium',
   }
 }
 
@@ -306,7 +309,7 @@ export function ExpenseCardsView({
                   <div className="px-5 pb-5 pt-0 space-y-4">
                     {/* Status & Due Date Chips */}
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${dueNotice.color}`}>
+                      <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border shadow-2xs ${dueNotice.color}`}>
                         {dueNotice.label}
                       </span>
                       <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono border ${appleCapsule}`}>

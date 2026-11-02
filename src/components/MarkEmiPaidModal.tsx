@@ -75,23 +75,90 @@ export function MarkEmiPaidModal({
   }
 
   const cardBg = isDark ? 'bg-[#1c1c1e] text-white border-white/[0.08]' : 'bg-white text-zinc-900 border-black/[0.08]'
+  const ashCardBg = isDark
+    ? 'bg-[#262628] border-white/[0.08] text-white'
+    : 'bg-[#f0f0f2] border-black/[0.08] text-zinc-900'
   const inputBg = isDark
     ? 'bg-white/[0.06] border-white/[0.1] text-white placeholder-zinc-500 focus:border-[#0071e3]'
     : 'bg-[#f5f5f7] border-black/[0.08] text-zinc-900 placeholder-zinc-400 focus:border-[#0071e3]'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+      {/* PhonePe Animation Keyframes */}
+      <style>{`
+        @keyframes phonepeCirclePop {
+          0% {
+            transform: scale(0.35);
+            opacity: 0;
+          }
+          65% {
+            transform: scale(1.12);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        @keyframes phonepeCheckDraw {
+          0% {
+            stroke-dashoffset: 24;
+            opacity: 0;
+          }
+          30% {
+            opacity: 1;
+          }
+          100% {
+            stroke-dashoffset: 0;
+            opacity: 1;
+          }
+        }
+        @keyframes phonepePulseRing {
+          0% {
+            transform: scale(0.85);
+            opacity: 0.7;
+          }
+          100% {
+            transform: scale(1.45);
+            opacity: 0;
+          }
+        }
+        .phonepe-circle {
+          animation: phonepeCirclePop 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .phonepe-tick {
+          stroke-dasharray: 24;
+          stroke-dashoffset: 24;
+          animation: phonepeCheckDraw 0.4s cubic-bezier(0.65, 0, 0.45, 1) 0.15s forwards;
+        }
+        .phonepe-ring {
+          animation: phonepePulseRing 0.7s ease-out 0.1s forwards;
+        }
+      `}</style>
+
       <div
         className={`w-full max-w-md rounded-[24px] border shadow-2xl overflow-hidden transition-all my-auto ${cardBg}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+          <div className="flex items-center gap-3">
+            {/* PhonePe Style Animated Light Green Tick Icon */}
+            <div className="relative flex items-center justify-center shrink-0">
+              <div className="absolute inset-0 rounded-full bg-[#22c55e]/30 phonepe-ring" />
+              <div className="w-10 h-10 rounded-full bg-[#22c55e] flex items-center justify-center shadow-md shadow-green-500/25 phonepe-circle z-10">
+                <svg
+                  className="w-5 h-5 text-white"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline className="phonepe-tick" points="5 13 9 17 19 7" />
+                </svg>
+              </div>
             </div>
             <div>
               <h2 className="text-base font-bold tracking-tight">Record EMI Payment</h2>
@@ -114,29 +181,28 @@ export function MarkEmiPaidModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {errorMsg && (
-            <div className="p-3 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center gap-2">
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
+            <div className="p-3 rounded-xl text-xs font-semibold bg-[#fecdd3] text-black">
               <span>{errorMsg}</span>
             </div>
           )}
 
-          {/* EMI Indicator Capsule */}
-          <div className="p-3.5 rounded-2xl bg-emerald-500/[0.06] border border-emerald-500/20 flex items-center justify-between text-xs">
+          {/* EMI Indicator Capsule — Clean Ash Color, Human Design */}
+          <div className={`p-4 rounded-2xl border flex items-center justify-between text-xs transition-colors ${ashCardBg}`}>
             <div>
-              <span className="text-[11px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">
+              <span className="text-[11px] uppercase font-semibold text-[#86868b] dark:text-[#a1a1a6] tracking-wider block">
                 Installment
               </span>
-              <div className="text-sm font-semibold font-mono mt-0.5">
+              <div className="text-sm font-semibold font-mono mt-0.5 text-[#1d1d1f] dark:text-white">
                 EMI #{emiNo} of {card.totalEmis}
               </div>
             </div>
             <div className="text-right">
-              <span className="text-[11px] text-[#86868b]">Monthly Scheduled</span>
-              <div className="text-sm font-mono font-bold">₹{card.monthlyEmi.toLocaleString()}</div>
+              <span className="text-[11px] text-[#86868b] dark:text-[#a1a1a6] font-medium block">
+                Monthly Scheduled
+              </span>
+              <div className="text-sm font-mono font-bold text-[#1d1d1f] dark:text-white mt-0.5">
+                ₹{card.monthlyEmi.toLocaleString('en-IN')}
+              </div>
             </div>
           </div>
 

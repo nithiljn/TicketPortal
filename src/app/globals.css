@@ -171,3 +171,66 @@ input, button, select, textarea {
   animation: otpShake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
+/* Liquid Tube Wave, Sway & Bubble Animations */
+@keyframes liquidWaveMoveFront {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes liquidWaveMoveBack {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes liquidSway {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(2deg) translateY(-0.5px); }
+  75% { transform: rotate(-2deg) translateY(0.5px); }
+}
+
+@keyframes liquidBubble1 {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  25% { opacity: 0.85; }
+  75% { opacity: 0.85; }
+  100% { transform: translateY(-75px) scale(1.1) translateX(4px); opacity: 0; }
+}
+
+@keyframes liquidBubble2 {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  20% { opacity: 0.75; }
+  70% { opacity: 0.75; }
+  100% { transform: translateY(-90px) scale(1) translateX(-4px); opacity: 0; }
+}
+
+@keyframes liquidBubble3 {
+  0% { transform: translateY(0) scale(0.4); opacity: 0; }
+  30% { opacity: 0.7; }
+  70% { opacity: 0.7; }
+  100% { transform: translateY(-55px) scale(0.9) translateX(3px); opacity: 0; }
+}
+
+.animate-liquidWaveFront {
+  animation: liquidWaveMoveFront 3s linear infinite;
+}
+
+.animate-liquidWaveBack {
+  animation: liquidWaveBack 4.2s linear infinite;
+}
+
+.animate-liquidSway {
+  animation: liquidSway 2.5s ease-in-out infinite;
+}
+
+.animate-liquidBubble1 {
+  animation: liquidBubble1 2.4s ease-in-out infinite;
+}
+
+.animate-liquidBubble2 {
+  animation: liquidBubble2 3.1s ease-in-out infinite 0.7s;
+}
+
+.animate-liquidBubble3 {
+  animation: liquidBubble3 2.7s ease-in-out infinite 1.3s;
+}
+
+

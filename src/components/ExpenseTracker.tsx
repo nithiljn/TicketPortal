@@ -238,6 +238,12 @@ function formatCardDueNotice(dueDay: number) {
   }
 }
 
+function formatCompactMoney(val: number) {
+  if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`
+  if (val >= 1000) return `₹${(val / 1000).toFixed(val % 1000 === 0 ? 0 : 1)}k`
+  return `₹${Math.round(val)}`
+}
+
 export function ExpenseTracker({
   expenses,
   availableProjects,
@@ -594,6 +600,10 @@ export function ExpenseTracker({
       percentage: Math.min(100, Math.round((dayMap[d] / maxSpend) * 100)),
     }))
   }, [filteredExpenses])
+
+  const dailyMaxSpend = useMemo(() => {
+    return Math.max(...dailySpendData.map((d) => d.amount), 100)
+  }, [dailySpendData])
 
   // Grouped expenses by Date
   const groupedExpenses = useMemo(() => {
@@ -1573,40 +1583,125 @@ export function ExpenseTracker({
                 </div>
 
                 {dailySpendData.length === 0 ? (
-                  <div className="h-48 flex flex-col items-center justify-center text-[#86868b] dark:text-[#a1a1a6] text-xs">
+                  <div className="h-60 flex flex-col items-center justify-center text-[#86868b] dark:text-[#a1a1a6] text-xs">
                     <span>No daily spend trend to display</span>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto custom-scrollbar -mx-1 px-1">
-                    <div className="h-56 flex items-end gap-2 pt-12 pb-2 px-2 min-w-[280px] relative">
-                      {dailySpendData.map((d, idx) => (
-                        <div key={d.date} className="flex-1 min-w-[24px] flex flex-col items-center gap-1.5 h-full justify-end group relative">
-                          {/* Tooltip on Hover */}
+                  <div className="relative flex items-stretch h-64 select-none pt-8 pb-1">
+                    {/* Y-Axis Column */}
+                    <div className="w-12 sm:w-14 shrink-0 flex flex-col justify-between text-right pr-2 pb-6 text-[10px] font-mono text-[#86868b] dark:text-[#a1a1a6] border-r border-zinc-200/80 dark:border-white/10 select-none">
+                      <span className="truncate">{formatCompactMoney(dailyMaxSpend)}</span>
+                      <span className="truncate">{formatCompactMoney(dailyMaxSpend * 0.66)}</span>
+                      <span className="truncate">{formatCompactMoney(dailyMaxSpend * 0.33)}</span>
+                      <span>₹0</span>
+                    </div>
+
+                    {/* Plot Area */}
+                    <div className="relative flex-1 h-full min-w-0">
+                      {/* Horizontal Gridlines & Baseline */}
+                      <div className="absolute inset-x-0 top-0 bottom-6 flex flex-col justify-between pointer-events-none z-0">
+                        <div className="w-full border-b border-dashed border-zinc-200/70 dark:border-white/5" />
+                        <div className="w-full border-b border-dashed border-zinc-200/70 dark:border-white/5" />
+                        <div className="w-full border-b border-dashed border-zinc-200/70 dark:border-white/5" />
+                        <div className="w-full border-b border-zinc-300/80 dark:border-white/15" /> {/* Baseline */}
+                      </div>
+
+                      {/* Tubes Row with X-Axis */}
+                      <div
+                        className={`relative z-10 h-full flex items-end ${
+                          dailySpendData.length <= 4
+                            ? 'justify-around'
+                            : 'justify-between sm:justify-around'
+                        } px-3 overflow-x-auto custom-scrollbar gap-2 sm:gap-4`}
+                      >
+                        {dailySpendData.map((d) => (
                           <div
-                            className={`absolute top-1 hidden group-hover:flex flex-col items-center z-20 pointer-events-none animate-in fade-in duration-100 ${
-                              idx === 0
-                                ? 'left-0'
-                                : idx === dailySpendData.length - 1
-                                ? 'right-0'
-                                : 'left-1/2 -translate-x-1/2'
-                            }`}
+                            key={d.date}
+                            className="group relative flex flex-col items-center h-full justify-end shrink-0 min-w-[40px] pb-0.5"
                           >
-                            <span className="px-2.5 py-1 rounded-full bg-[#1c1c1e] text-white dark:bg-[#252528] text-[10px] font-medium whitespace-nowrap shadow-xl border border-white/10 dark:border-white/15 font-mono">
-                              {formatMoney(d.amount)}
-                            </span>
+                            {/* Hover Tooltip Popover */}
+                            <div className="absolute top-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 z-50 pointer-events-none">
+                              <div className="px-2.5 py-1.5 rounded-xl bg-[#1c1c1e] text-white dark:bg-[#252528] text-[11px] shadow-2xl border border-white/15 dark:border-white/20 whitespace-nowrap flex flex-col items-center">
+                                <span className="font-mono font-bold text-emerald-400 text-xs">
+                                  {formatMoney(d.amount)}
+                                </span>
+                                <span className="text-[9px] text-zinc-400 font-mono mt-0.5">
+                                  {d.percentage}% peak day
+                                </span>
+                                {/* Downward Arrow Triangle */}
+                                <div className="w-2 h-2 bg-[#1c1c1e] dark:bg-[#252528] rotate-45 border-r border-b border-white/15 dark:border-white/20 absolute -bottom-1 left-1/2 -translate-x-1/2" />
+                              </div>
+                            </div>
+
+                            {/* Liquid Tube Container */}
+                            <div className="flex flex-col items-center mb-1">
+                              {/* Top Glass Rim / Flange */}
+                              <div className="w-9 sm:w-10 h-1 rounded-full bg-zinc-300/80 dark:bg-white/25 border border-zinc-400/40 dark:border-white/30 shadow-xs z-20 mb-[-1px]" />
+
+                              {/* Glass Cylinder Body */}
+                              <div className="relative w-8 sm:w-9 h-[150px] rounded-b-full border-x-2 border-b-2 border-zinc-300/80 dark:border-white/20 bg-zinc-100/50 dark:bg-white/[0.04] backdrop-blur-[2px] shadow-inner overflow-hidden flex flex-col justify-end group-hover:border-emerald-500/70 group-hover:shadow-[0_0_16px_rgba(16,185,129,0.3)] transition-all duration-300">
+                                {/* Left Glass Sheen Highlight */}
+                                <div className="absolute left-1 top-1 bottom-3 w-[2px] rounded-full bg-gradient-to-b from-white/70 via-white/25 to-transparent pointer-events-none z-30" />
+
+                                {/* Glass Measurement Ticks (Graduations) */}
+                                <div className="absolute right-0 top-[25%] w-1.5 border-t border-zinc-400/50 dark:border-white/30 pointer-events-none z-30" />
+                                <div className="absolute right-0 top-[50%] w-2 border-t border-zinc-400/60 dark:border-white/40 pointer-events-none z-30" />
+                                <div className="absolute right-0 top-[75%] w-1.5 border-t border-zinc-400/50 dark:border-white/30 pointer-events-none z-30" />
+
+                                {/* Fluid / Water Fill */}
+                                <div
+                                  className="relative w-full rounded-b-full overflow-hidden transition-[height] duration-700 ease-out flex flex-col justify-end"
+                                  style={{
+                                    height: `${d.amount > 0 ? Math.max(12, d.percentage) : 3}%`,
+                                  }}
+                                >
+                                  {/* Water Column Gradient */}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-600 via-teal-500 to-emerald-400 dark:from-emerald-700 dark:via-teal-500/90 dark:to-emerald-400" />
+
+                                  {/* Animated Water Surface Slosh Wave */}
+                                  {d.amount > 0 && (
+                                    <div className="absolute top-0 inset-x-0 h-3 -translate-y-1 overflow-hidden pointer-events-none animate-liquidSway">
+                                      {/* Wave Layer 1 (Front wave) */}
+                                      <svg
+                                        className="absolute top-0 left-0 w-[200%] h-full fill-teal-100/70 dark:fill-teal-200/60 animate-liquidWaveFront pointer-events-none"
+                                        viewBox="0 0 200 20"
+                                        preserveAspectRatio="none"
+                                      >
+                                        <path d="M0,10 Q25,3 50,10 T100,10 Q125,3 150,10 T200,10 L200,20 L0,20 Z" />
+                                      </svg>
+                                      {/* Wave Layer 2 (Back wave) */}
+                                      <svg
+                                        className="absolute top-0 left-0 w-[200%] h-full fill-emerald-200/50 dark:fill-emerald-300/40 animate-liquidWaveBack pointer-events-none"
+                                        viewBox="0 0 200 20"
+                                        preserveAspectRatio="none"
+                                      >
+                                        <path d="M0,10 Q25,17 50,10 T100,10 Q125,17 150,10 T200,10 L200,20 L0,20 Z" />
+                                      </svg>
+                                    </div>
+                                  )}
+
+                                  {/* Floating Bubbles */}
+                                  {d.amount > 0 && (
+                                    <>
+                                      <div className="absolute bottom-1 left-1.5 w-1.5 h-1.5 rounded-full bg-white/70 animate-liquidBubble1 pointer-events-none" />
+                                      <div className="absolute bottom-3 right-1.5 w-1 h-1 rounded-full bg-white/60 animate-liquidBubble2 pointer-events-none" />
+                                      <div className="absolute bottom-2 left-3 w-1 h-1 rounded-full bg-white/50 animate-liquidBubble3 pointer-events-none" />
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* X-Axis Tick Notch & Date Label */}
+                            <div className="flex flex-col items-center">
+                              <div className="w-0.5 h-1 bg-zinc-300 dark:bg-white/20 mb-1 group-hover:bg-emerald-400 transition-colors" />
+                              <span className="text-[10px] text-[#86868b] dark:text-[#a1a1a6] font-mono group-hover:text-emerald-500 dark:group-hover:text-emerald-400 font-medium transition-colors">
+                                {d.displayDate}
+                              </span>
+                            </div>
                           </div>
-                          {/* Bar */}
-                          <div className={`w-full max-w-[28px] ${progressTrack} rounded-full flex items-end h-full overflow-hidden`}>
-                            <div
-                              className="w-full bg-[#34c759] hover:bg-[#30b753] rounded-full transition-all duration-300"
-                              style={{ height: `${Math.max(8, d.percentage)}%` }}
-                            />
-                          </div>
-                          <span className="text-[10px] text-[#86868b] dark:text-[#a1a1a6] truncate max-w-full font-mono">
-                            {d.displayDate}
-                          </span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
